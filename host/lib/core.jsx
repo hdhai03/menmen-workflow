@@ -1,0 +1,273 @@
+// core.jsx - helpers dùng chung cho mọi tool (ES3, ExtendScript).
+MMW.VERSION = "0.1.0";
+
+MMW.fail = function (msg) { throw new Error(msg); };
+
+// Chạy một tool trong undo group, trả về "OK|msg" hoặc "ERR|msg" cho panel.
+MMW.run = function (id, opts) {
+    var fn = MMW.tools[id];
+    if (!fn) return "ERR|Không tìm thấy tool: " + id;
+    opts = opts || {};
+    app.beginUndoGroup("MenMen: " + id);
+    try {
+        var r = fn(opts);
+        return "OK|" + (r === undefined || r === null ? "" : r);
+    } catch (e) {
+        return "ERR|" + e.message + (e.line ? " (line " + e.line + ")" : "");
+    } finally {
+        app.endUndoGroup();
+    }
+};
+
+MMW.comp = function () {
+    var c = app.project.activeItem;
+    if (!(c && c instanceof CompItem)) MMW.fail("Hãy mở (active) một composition.");
+    return c;
+};
+
+MMW.selLayers = function (c, min) {
+    var s = c.selectedLayers, out = [];
+    min = min || 1;
+    if (s.length < min) MMW.fail("Hãy chọn ít nhất " + min + " layer.");
+    for (var i = 0; i < s.length; i++) out.push(s[i]);
+    return out;
+};
+
+MMW.sortByIndex = function (arr) {
+    arr.sort(function (a, b) { return a.index - b.index; });
+    return arr;
+};
+
+MMW.indexOf = function (arr, v) {
+    for (var i = 0; i < arr.length; i++) if (arr[i] === v) return i;
+    return -1;
+};
+
+MMW.quote = function (s) {
+    return '"' + String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
+};
+
+MMW.isProp = function (p) { return p && p.propertyType === PropertyType.PROPERTY; };
+
+// Thuộc tính (Property, không phải group) đang được chọn trên các layer đã chọn.
+MMW.selProps = function (c) {
+    var out = [], L = c.selectedLayers;
+    for (var i = 0; i < L.length; i++) {
+        var sp = L[i].selectedProperties;
+        for (var j = 0; j < sp.length; j++) {
+            if (MMW.isProp(sp[j])) out.push({ layer: L[i], prop: sp[j] });
+        }
+    }
+    return out;
+};
+
+// Các property có keyframe đang chọn: [{layer, prop, keys:[index...]}]
+MMW.keyProps = function (c, need) {
+    var out = [], all = MMW.selProps(c);
+    for (var i = 0; i < all.length; i++) {
+        var p = all[i].prop;
+        if (p.numKeys > 0 && p.selectedKeys && p.selectedKeys.length) {
+            var ks = [];
+            for (var k = 0; k < p.selectedKeys.length; k++) ks.push(p.selectedKeys[k]);
+            ks.sort(function (a, b) { return a - b; });
+            out.push({ layer: all[i].layer, prop: p, keys: ks });
+        }
+    }
+    if (need !== false && !out.length) MMW.fail("Hãy chọn keyframe.");
+    return out;
+};
+
+// ---- Đọc / ghi toàn bộ dữ liệu của một keyframe ----
+MMW.readKey = function (p, k) {
+    var d = { t: p.keyTime(k), v: p.keyValue(k), inI: p.keyInInterpolationType(k), outI: p.keyOutInterpolationType(k) };
+    try { d.inE = p.keyInTemporalEase(k); d.outE = p.keyOutTemporalEase(k); } catch (e1) {}
+    try { d.tc = p.keyTemporalContinuous(k); d.tab = p.keyTemporalAutoBezier(k); } catch (e2) {}
+    if (p.isSpatial) {
+        try {
+            d.inT = p.keyInSpatialTangent(k); d.outT = p.keyOutSpatialTangent(k);
+            d.sc = p.keySpatialContinuous(k); d.sab = p.keySpatialAutoBezier(k); d.rov = p.keyRoving(k);
+        } catch (e3) {}
+    }
+    try { d.label = p.keyLabel(k); } catch (e4) {}
+    return d;
+};
+
+MMW.writeKey = function (p, d, t, opt) {
+    opt = opt || {};
+    var k = p.addKey(t);
+    if (opt.noValue !== true) { try { p.setValueAtKey(k, d.v); } catch (e0) {} }
+    if (opt.noEase !== true) {
+        if (d.inE && d.outE) { try { p.setTemporalEaseAtKey(k, MMW.fitEase(p, k, d.inE), MMW.fitEase(p, k, d.outE)); } catch (e1) {} }
+        try { p.setInterpolationTypeAtKey(k, d.inI, d.outI); } catch (e2) {}
+        try { if (d.tc !== undefined) { p.setTemporalContinuousAtKey(k, d.tc); p.setTemporalAutoBezierAtKey(k, d.tab); } } catch (e3) {}
+    }
+    if (d.inT && p.isSpatial) {
+        try {
+            p.setSpatialContinuousAtKey(k, d.sc); p.setSpatialAutoBezierAtKey(k, d.sab);
+            p.setSpatialTangentsAtKey(k, d.inT, d.outT);
+            if (d.rov) p.setRovingAtKey(k, true);
+        } catch (e4) {}
+    }
+    if (d.label !== undefined) { try { p.setLabelAtKey(k, d.label); } catch (e5) {} }
+    return k;
+};
+
+// Chuyển mảng KeyframeEase cho khớp số chiều của property đích.
+MMW.fitEase = function (p, k, ease) {
+    var n = 1;
+    try { n = p.keyInTemporalEase(k).length; } catch (e) {}
+    var out = [];
+    for (var i = 0; i < n; i++) {
+        var s = ease[Math.min(i, ease.length - 1)];
+        out.push(new KeyframeEase(s.speed, Math.max(0.1, Math.min(100, s.influence))));
+    }
+    return out;
+};
+
+// Di chuyển các key (index) tới thời gian mới: fnTime(dataKey, i) => time
+MMW.moveKeys = function (p, keys, fnTime) {
+    var data = [], i;
+    for (i = 0; i < keys.length; i++) data.push(MMW.readKey(p, keys[i]));
+    for (i = keys.length - 1; i >= 0; i--) p.removeKey(keys[i]);
+    var newKeys = [];
+    for (i = 0; i < data.length; i++) newKeys.push(MMW.writeKey(p, data[i], fnTime(data[i], i)));
+    return newKeys;
+};
+
+MMW.addVec = function (a, b) {
+    if (!(a instanceof Array)) return a + b;
+    var r = [];
+    for (var i = 0; i < a.length; i++) r.push(a[i] + (i < b.length ? b[i] : 0));
+    return r;
+};
+
+// Cộng một offset vào property (mọi keyframe hoặc giá trị tĩnh).
+MMW.offsetProp = function (p, delta) {
+    if (p.numKeys > 0) {
+        for (var k = 1; k <= p.numKeys; k++) p.setValueAtKey(k, MMW.addVec(p.keyValue(k), delta));
+    } else {
+        p.setValue(MMW.addVec(p.value, delta));
+    }
+};
+
+// Duyệt đệ quy mọi Property bên trong một group/layer.
+MMW.walkProps = function (group, fn) {
+    for (var i = 1; i <= group.numProperties; i++) {
+        var p = group.property(i);
+        if (!p) continue;
+        if (p.propertyType === PropertyType.PROPERTY) fn(p);
+        else MMW.walkProps(p, fn);
+    }
+};
+
+MMW.removeLayerAndSource = function (layer) {
+    var src = null;
+    try { src = layer.source; } catch (e) {}
+    layer.remove();
+    try { if (src && src.usedIn && src.usedIn.length === 0) src.remove(); } catch (e2) {}
+};
+
+// Layer phụ để "hỏi" AE giá trị của một expression (toComp, sourceRectAtTime...).
+MMW.helper = function (comp) {
+    var h = comp.layers.addNull();
+    h.name = "__mmw_helper__";
+    h.enabled = false;
+    var fx = h.property("ADBE Effect Parade");
+    fx.addProperty("ADBE Point3D Control");
+    fx.addProperty("ADBE Point3D Control");
+    return {
+        layer: h,
+        evalAt: function (expr, t, slot) {
+            var p = h.property("ADBE Effect Parade").property(slot || 1).property(1);
+            p.expression = expr;
+            return p.valueAtTime(t, false);
+        },
+        remove: function () { MMW.removeLayerAndSource(h); }
+    };
+};
+
+// Chuỗi expression tham chiếu tới property (dùng index/matchName để không phụ thuộc ngôn ngữ).
+MMW.exprRef = function (prop) {
+    var chain = [], p = prop;
+    while (p.parentProperty) { chain.unshift(p); p = p.parentProperty; }
+    var layer = p;
+    var s = "thisComp.layer(" + MMW.quote(layer.name) + ")";
+    for (var i = 0; i < chain.length; i++) {
+        var c = chain[i], parent = chain[i].parentProperty;
+        if (parent.propertyType === PropertyType.INDEXED_GROUP) s += "(" + c.propertyIndex + ")";
+        else s += "(" + MMW.quote(c.matchName) + ")";
+    }
+    return s;
+};
+
+// Lấy property theo "đường dẫn" chỉ số từ layer: [i1, i2, ...]. Luôn resolve lại để tránh object invalid.
+MMW.resolve = function (layer, path) {
+    var p = layer;
+    for (var i = 0; i < path.length; i++) p = p.property(path[i]);
+    return p;
+};
+
+// Copy giá trị / keyframe / expression của một Property sang Property khác.
+MMW.copyPropValue = function (sp, dp) {
+    try {
+        if (sp.propertyValueType === PropertyValueType.NO_VALUE) return;
+        if (sp.numKeys > 0) {
+            for (var k = 1; k <= sp.numKeys; k++) MMW.writeKey(dp, MMW.readKey(sp, k), sp.keyTime(k));
+        } else if (!sp.isTimeVarying || sp.numKeys === 0) {
+            dp.setValue(sp.value);
+        }
+    } catch (e) {}
+    try { if (sp.canSetExpression && sp.expression !== "") { dp.expression = sp.expression; dp.expressionEnabled = sp.expressionEnabled; } } catch (e2) {}
+};
+
+// Copy đệ quy nội dung shape giữa 2 layer theo đường dẫn chỉ số.
+MMW.copyGroup = function (srcLayer, srcPath, dstLayer, dstPath) {
+    var src = MMW.resolve(srcLayer, srcPath);
+    var n = src.numProperties;
+    for (var i = 1; i <= n; i++) {
+        src = MMW.resolve(srcLayer, srcPath);
+        var sp = src.property(i);
+        var dst = MMW.resolve(dstLayer, dstPath);
+        if (sp.propertyType === PropertyType.PROPERTY) {
+            var dp = dst.property(sp.matchName);
+            if (dp) MMW.copyPropValue(sp, dp);
+            continue;
+        }
+        var newIdx;
+        if (dst.propertyType === PropertyType.INDEXED_GROUP) {
+            if (!dst.canAddProperty(sp.matchName)) continue;
+            var added = dst.addProperty(sp.matchName);
+            newIdx = added.propertyIndex;
+            try { added.name = sp.name; } catch (e) {}
+        } else {
+            var ex = dst.property(sp.matchName);
+            if (!ex) continue;
+            newIdx = ex.propertyIndex;
+        }
+        try {
+            var sEnabled = sp.enabled;
+            MMW.copyGroup(srcLayer, srcPath.concat([i]), dstLayer, dstPath.concat([newIdx]));
+            if (!sEnabled) MMW.resolve(dstLayer, dstPath.concat([newIdx])).enabled = false;
+        } catch (e3) {}
+    }
+};
+
+MMW.newNull = function (comp, name) {
+    var n = comp.layers.addNull();
+    n.name = name;
+    n.transform.anchorPoint.setValue([50, 50]);
+    return n;
+};
+
+MMW.addEffect = function (layer, matchName, name) {
+    var fx = layer.property("ADBE Effect Parade").addProperty(matchName);
+    fx.name = name;
+    return layer.property("ADBE Effect Parade").property(fx.propertyIndex);
+};
+
+MMW.uniqueLayerName = function (comp, base) {
+    var name = base, n = 1, taken = {};
+    for (var i = 1; i <= comp.numLayers; i++) taken[comp.layer(i).name] = true;
+    while (taken[name]) { n++; name = base + " " + n; }
+    return name;
+};
