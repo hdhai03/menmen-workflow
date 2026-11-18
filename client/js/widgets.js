@@ -11,48 +11,119 @@
 
   var W = {};
 
-  // ---------- Easy Keyframes ----------
+  // ---------- Speed graph helpers ----------
+  // Value curve = cubic bezier P0(0,0) P1(x1,y1) P2(x2,y2) P3(1,1).
+  // Speed (relative to the segment average) = y'(t) / x'(t).
+  function speedSamples(x1, y1, x2, y2, n) {
+    var out = [];
+    n = n || 120;
+    for (var i = 0; i <= n; i++) {
+      var t = i / n, u = 1 - t;
+      var x = 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t;
+      var dx = 3 * u * u * x1 + 6 * u * t * (x2 - x1) + 3 * t * t * (1 - x2);
+      var dy = 3 * u * u * y1 + 6 * u * t * (y2 - y1) + 3 * t * t * (1 - y2);
+      var v = dx > 1e-6 ? dy / dx : (dy >= 0 ? 50 : -50);
+      out.push([x, Math.max(-50, Math.min(50, v))]);
+    }
+    return out;
+  }
+  function speedRange(samples, extra) {
+    var lo = 0, hi = 1;
+    samples.forEach(function (p) { lo = Math.min(lo, p[1]); hi = Math.max(hi, p[1]); });
+    (extra || []).forEach(function (v) { hi = Math.max(hi, v); });
+    hi = Math.min(hi, 12);
+    return { lo: lo, hi: hi * 1.12 + 0.05 };
+  }
+  // Path through the samples, clamped to the visible speed range.
+  function pathOf(samples, map, range) {
+    return samples.map(function (p, i) {
+      var v = range ? Math.max(range.lo, Math.min(range.hi, p[1])) : p[1];
+      var q = map(p[0], v); return (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1);
+    }).join('');
+  }
+
+  // ---------- Keyframe Assistant (speed graph editor) ----------
   W.easyKeyframes = function (d, ctx) {
     if (d.inInf == null) d.inInf = 70;
     if (d.outInf == null) d.outInf = 70;
+    if (d.inSpeed == null) d.inSpeed = 0;
+    if (d.outSpeed == null) d.outSpeed = 0;
     var root = el('div', 'w w-easy');
-    var curve = el('div', 'w-curve');
-    var sliders = el('div', 'w-sliders');
+    var box = el('div', 'w-speed');
+    var read = el('div', 'w-read');
+    var PAD = 10, range = null, drag = null, W_ = 300, H_ = 160;
 
+    function bez() {
+      var xo = d.outInf / 100, xi = d.inInf / 100;
+      return [xo, xo * d.outSpeed, 1 - xi, 1 - xi * d.inSpeed];
+    }
+    function map(x, v) {
+      return [PAD + x * (W_ - 2 * PAD), H_ - PAD - (v - range.lo) / (range.hi - range.lo) * (H_ - 2 * PAD)];
+    }
+    function unmap(px, py) {
+      return [(px - PAD) / (W_ - 2 * PAD), range.lo + (H_ - PAD - py) / (H_ - 2 * PAD) * (range.hi - range.lo)];
+    }
     function draw() {
-      var x1 = d.outInf / 100, x2 = 1 - d.inInf / 100;
-      curve.innerHTML = '<svg viewBox="0 0 100 60" preserveAspectRatio="none">' +
-        '<path class="grid-l" d="M0 59.5H100M0 .5H100"/>' +
-        '<path class="handle" d="M2 58L' + (2 + x1 * 96) + ' 58M98 2L' + (2 + x2 * 96) + ' 2"/>' +
-        '<path class="curve" d="M2 58C' + (2 + x1 * 96) + ' 58 ' + (2 + x2 * 96) + ' 2 98 2"/>' +
-        '<circle cx="' + (2 + x1 * 96) + '" cy="58" r="2.6"/><circle cx="' + (2 + x2 * 96) + '" cy="2" r="2.6"/></svg>';
+      var r = box.getBoundingClientRect();
+      W_ = Math.max(120, Math.round(r.width) || 300); H_ = Math.max(80, Math.round(r.height) || 160);
+      var b = bez(), smp = speedSamples(b[0], b[1], b[2], b[3]);
+      if (!drag) range = speedRange(smp, [d.outSpeed, d.inSpeed]);
+      var base = map(0, 0), avg = map(0, 1);
+      var ko = map(d.outInf / 100, d.outSpeed), ki = map(1 - d.inInf / 100, d.inSpeed);
+      var so = map(0, d.outSpeed), si = map(1, d.inSpeed);
+      box.innerHTML = '<svg width="' + W_ + '" height="' + H_ + '" viewBox="0 0 ' + W_ + ' ' + H_ + '">' +
+        '<path class="sg-grid" d="M0 ' + base[1] + 'H' + W_ + '"/>' +
+        '<path class="sg-avg" d="M0 ' + avg[1] + 'H' + W_ + '"/>' +
+        '<path class="sg-curve" d="' + pathOf(smp, map, range) + '"/>' +
+        '<path class="sg-handle" d="M' + so[0] + ' ' + so[1] + 'L' + ko[0] + ' ' + ko[1] + 'M' + si[0] + ' ' + si[1] + 'L' + ki[0] + ' ' + ki[1] + '"/>' +
+        '<rect class="sg-knob" x="' + (ko[0] - 4) + '" y="' + (ko[1] - 4) + '" width="8" height="8"/>' +
+        '<rect class="sg-knob" x="' + (ki[0] - 4) + '" y="' + (ki[1] - 4) + '" width="8" height="8"/>' +
+        '</svg>';
+      read.innerHTML = '<span>Out <b>' + Math.round(d.outInf) + '%</b> · ' + d.outSpeed.toFixed(2) + '×</span>' +
+        '<span>In <b>' + Math.round(d.inInf) + '%</b> · ' + d.inSpeed.toFixed(2) + '×</span>';
     }
-    function slider(label, key) {
-      var row = el('label', 'w-slider');
-      var name = el('span', 'w-lbl', label);
-      var input = el('input'); input.type = 'range'; input.min = 1; input.max = 100; input.value = d[key];
-      var val = el('span', 'w-val', Math.round(d[key]) + '%');
-      input.addEventListener('input', function () { d[key] = Number(input.value); val.textContent = input.value + '%'; draw(); });
-      input.addEventListener('change', function () { ctx.save(); });
-      row.append(name, input, val);
-      return row;
-    }
-    sliders.append(slider('Out', 'outInf'), slider('In', 'inInf'));
+    function local(e) { var r = box.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+    box.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      var p = local(e);
+      var ko = map(d.outInf / 100, d.outSpeed), ki = map(1 - d.inInf / 100, d.inSpeed);
+      var dOut = Math.hypot(p[0] - ko[0], p[1] - ko[1]), dIn = Math.hypot(p[0] - ki[0], p[1] - ki[1]);
+      drag = dOut <= dIn ? 'out' : 'in';
+      var mv = function (ev) {
+        var q = unmap.apply(null, local(ev));
+        var spd = ev.shiftKey ? (drag === 'out' ? d.outSpeed : d.inSpeed) : Math.max(0, q[1]);
+        if (spd < (range.hi - range.lo) * 0.04) spd = 0;            // snap to full ease
+        if (drag === 'out') { d.outInf = Math.max(0.1, Math.min(100, q[0] * 100)); d.outSpeed = spd; }
+        else { d.inInf = Math.max(0.1, Math.min(100, (1 - q[0]) * 100)); d.inSpeed = spd; }
+        draw();
+      };
+      var up = function () {
+        document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up);
+        drag = null; draw(); ctx.save();
+      };
+      document.addEventListener('mousemove', mv);
+      document.addEventListener('mouseup', up);
+      mv(e);
+    });
+    box.addEventListener('dblclick', function () {
+      d.outInf = d.inInf = 33.33; d.outSpeed = d.inSpeed = 0; draw(); ctx.save();
+    });
+    box.title = 'Drag a handle: left/right = influence, up/down = speed. Shift = influence only. Double-click to reset.';
 
     var btns = el('div', 'w-btns');
-    [['ease', 'Ease'], ['in', 'In'], ['out', 'Out'], ['linear', 'Lin'], ['hold', 'Hold']].forEach(function (b) {
-      var x = el('button', 'w-btn', b[1]);
-      x.title = { ease: 'Ease both sides', in: 'Ease in only', out: 'Ease out only', linear: 'Linear', hold: 'Hold' }[b[0]];
+    [['ease', 'Apply'], ['in', 'In only'], ['out', 'Out only'], ['linear', 'Linear'], ['hold', 'Hold']].forEach(function (b) {
+      var x = el('button', 'w-btn' + (b[0] === 'ease' ? ' w-primary' : ''), b[1]);
+      x.title = { ease: 'Apply both handles to the selected keys', in: 'Apply only the incoming (right) handle', out: 'Apply only the outgoing (left) handle', linear: 'Linear', hold: 'Hold' }[b[0]];
       x.addEventListener('click', function (e) {
         stop(e);
-        ctx.run('easyKeyframes', { mode: b[0], inInf: d.inInf, outInf: d.outInf }, e);
+        ctx.run('easyKeyframes', { mode: b[0], inInf: d.inInf, outInf: d.outInf, inSpeed: d.inSpeed, outSpeed: d.outSpeed }, e);
       });
       btns.appendChild(x);
     });
-    var top = el('div', 'w-easy-top');
-    top.append(curve, sliders);
-    root.append(top, btns);
+    root.append(box, read, btns);
     draw();
+    requestAnimationFrame(draw);
+    if (window.ResizeObserver) new ResizeObserver(function () { if (!drag) draw(); }).observe(box);
     return root;
   };
 
@@ -124,9 +195,10 @@
     backIn: [0.36, 0, 0.66, -0.56], backOut: [0.34, 1.56, 0.64, 1], backInOut: [0.68, -0.6, 0.32, 1.6]
   };
   function thumb(b) {
-    var y = function (v) { return 34 - v * 26; };
-    return '<svg viewBox="0 0 40 40"><path class="grid-l" d="M4 34H36M4 8H36"/>' +
-      '<path class="curve" d="M4 ' + y(0) + 'C' + (4 + b[0] * 32) + ' ' + y(b[1]) + ' ' + (4 + b[2] * 32) + ' ' + y(b[3]) + ' 36 ' + y(1) + '"/></svg>';
+    var smp = speedSamples(b[0], b[1], b[2], b[3], 48), r = speedRange(smp);
+    var map = function (x, v) { return [3 + x * 54, 27 - (v - r.lo) / (r.hi - r.lo) * 24]; };
+    var z = map(0, 0)[1];
+    return '<svg viewBox="0 0 60 30" preserveAspectRatio="none"><path class="grid-l" d="M0 ' + z + 'H60"/><path class="curve" d="' + pathOf(smp, map, r) + '"/></svg>';
   }
   W.easingPresets = function (d, ctx) {
     var root = el('div', 'w w-presets');

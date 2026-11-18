@@ -3,12 +3,15 @@
     var T = MMW.tools;
 
     // ---------------- Easy Keyframes ----------------
-    // o.mode: "ease" | "in" | "out" | "linear" | "hold"; o.inInf / o.outInf: influence 0.1-100
+    // o.mode: "ease" | "in" | "out" | "linear" | "hold"
+    // o.outInf / o.inInf: influence 0.1-100
+    // o.outSpeed / o.inSpeed: speed at the keys as a ratio of the segment's average speed (0 = full ease)
     T.easyKeyframes = function (o) {
         var c = MMW.comp(), list = MMW.keyProps(c), n = 0;
         var mode = o.mode || "ease";
         var inInf = Math.max(0.1, Math.min(100, Number(o.inInf) || 33.33));
         var outInf = Math.max(0.1, Math.min(100, Number(o.outInf) || 33.33));
+        var inSpd = Number(o.inSpeed) || 0, outSpd = Number(o.outSpeed) || 0;
         for (var i = 0; i < list.length; i++) {
             var p = list[i].prop;
             for (var j = 0; j < list[i].keys.length; j++) {
@@ -18,11 +21,12 @@
                 } else if (mode === "hold") {
                     p.setInterpolationTypeAtKey(k, KeyframeInterpolationType.HOLD, KeyframeInterpolationType.HOLD);
                 } else {
-                    var dims = p.keyInTemporalEase(k).length, ein = [], eout = [];
-                    var curIn = p.keyInTemporalEase(k), curOut = p.keyOutTemporalEase(k);
+                    var curIn = p.keyInTemporalEase(k), curOut = p.keyOutTemporalEase(k), dims = curIn.length, ein = [], eout = [];
                     for (var d = 0; d < dims; d++) {
-                        ein.push(mode === "out" ? curIn[d] : new KeyframeEase(0, inInf));
-                        eout.push(mode === "in" ? curOut[d] : new KeyframeEase(0, outInf));
+                        var avgIn = k > 1 ? MMW.segAvgSpeed(p, k - 1, k, d) : 0;
+                        var avgOut = k < p.numKeys ? MMW.segAvgSpeed(p, k, k + 1, d) : 0;
+                        ein.push(mode === "out" ? curIn[d] : new KeyframeEase(avgIn * inSpd, inInf));
+                        eout.push(mode === "in" ? curOut[d] : new KeyframeEase(avgOut * outSpd, outInf));
                     }
                     p.setTemporalEaseAtKey(k, ein, eout);
                     var tIn = mode === "out" ? p.keyInInterpolationType(k) : KeyframeInterpolationType.BEZIER;

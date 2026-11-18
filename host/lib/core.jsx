@@ -124,6 +124,20 @@ MMW.fitEase = function (p, k, ease) {
     return out;
 };
 
+// Average speed of the segment between keys a and b for ease dimension d (signed; spatial = path length / time).
+MMW.segAvgSpeed = function (p, a, b, d) {
+    var dt = p.keyTime(b) - p.keyTime(a);
+    if (dt <= 0) return 0;
+    var va = p.keyValue(a), vb = p.keyValue(b), dims = p.keyOutTemporalEase(a).length;
+    if (!(va instanceof Array)) return (vb - va) / dt;
+    if (dims === 1) {
+        var sum = 0;
+        for (var i = 0; i < va.length; i++) sum += (vb[i] - va[i]) * (vb[i] - va[i]);
+        return Math.sqrt(sum) / dt;
+    }
+    return (vb[d] - va[d]) / dt;
+};
+
 // Moves keys (indices) to new times: fnTime(keyData, i) => time
 MMW.moveKeys = function (p, keys, fnTime) {
     var data = [], i;
