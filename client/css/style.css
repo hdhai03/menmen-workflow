@@ -592,3 +592,8 @@ body.w-xs .m-body { padding-left: 0; padding-right: 0; scrollbar-width: none; }
 body.w-xs .m-body::-webkit-scrollbar { width: 0; }
 body.w-xs .sep { margin-left: 4px; margin-right: 4px; }
 body.icons-only .m-head { align-items: center; padding-left: 0; padding-right: 0; }
+.ge-status { position: absolute; right: 4px; top: 4px; padding: 1px 6px; font-size: 10px; pointer-events: none; opacity: 0; transition: opacity .15s; background: var(--surface-3); color: var(--muted); }
+.ge-status.show { opacity: 1; }
+.ge-status.ok { color: var(--ok); }
+.ge-status.warn { color: #f5a524; }
+body.native .ge-status.ok { color: var(--text); }

@@ -52,6 +52,7 @@
   ];
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   function initCurve(d) {
+    if (d.auto == null) d.auto = true;  // apply on release is the default
     if (!d.bz) {
       if (d.outInf != null) {
         var xo = d.outInf / 100, xi = d.inInf / 100;
@@ -239,7 +240,7 @@
       var moved = drag.moved;
       drag = null; ghost = null; box.style.cursor = 'grab';
       draw(); ctx.save();
-      if (moved && d.auto) apply('both', e);
+      if (moved && d.auto) autoApply();
     }
     // The graph only reacts inside its own box: leaving the box or releasing the button ends the
     // drag. (Listening on the whole document kept a drag alive when the button was released outside
@@ -273,11 +274,31 @@
       e.preventDefault(); e.stopPropagation();
       setHandle(d.sel, x, v, d.link || e.altKey);
       range = null; draw(); ctx.save();
+      if (d.auto) { clearTimeout(autoT); autoT = setTimeout(autoApply, 350); }
     });
     box.title = 'Drag a handle (or click the graph). Shift = lock axis, Ctrl/Cmd = fine, Alt = mirror, double-click = reset. Arrows nudge, Tab switches handle, Enter applies.';
 
-    function setCurve(bz) { d.bz = bz.slice(); range = null; draw(); ctx.save(); if (d.auto) apply('both'); }
+    function setCurve(bz) { d.bz = bz.slice(); range = null; draw(); ctx.save(); if (d.auto) autoApply(); }
     function apply(side, e) { return ctx.run('easingPreset', { bezier: d.bz, side: side, alt: false, shift: false }, e); }
+    // Auto: applied quietly on every release - a small note in the graph instead of a toast,
+    // and no error popup when no keyframes are selected.
+    var status = el('div', 'ge-status'), statusT = null, autoT = null;
+    box.appendChild(status);
+    function note(msg, ok) {
+      status.textContent = msg; status.className = 'ge-status show ' + (ok ? 'ok' : 'warn');
+      clearTimeout(statusT); statusT = setTimeout(function () { status.className = 'ge-status'; }, ok ? 900 : 2200);
+    }
+    function autoApply() {
+      clearTimeout(autoT);
+      autoT = setTimeout(function () {
+        var q = ctx.query || ctx.run;
+        q('easingPreset', { bezier: d.bz.slice(), side: 'both', alt: false, shift: false }).then(function (r) {
+          if (!r) return;
+          if (r.ok) note('Applied', true);
+          else note(/select|keyframe/i.test(r.msg) ? 'Select keyframes to apply' : r.msg, false);
+        });
+      }, 60);
+    }
 
     // ---- toolbar ----
     var read = null, bzInput = null, typing = false;
@@ -298,7 +319,7 @@
       return b;
     };
     var link = tool('Link', 'link', 'Mirror the two handles (symmetric curve)', function () { d.bz[2] = 1 - d.bz[0]; d.bz[3] = 1 - d.bz[1]; draw(); });
-    var auto = tool('Auto', 'auto', 'Apply to the selected keys every time you release a handle or pick a preset');
+    var auto = tool('Auto', 'auto', 'On: the curve is applied to the selected keys as soon as you release a handle or pick a preset (no need to click Apply). Off: only Apply / In / Out apply.');
     var rd = el('button', 'w-btn ge-tool', 'Read');
     rd.title = 'Read the curve from the selected keyframes';
     rd.addEventListener('click', function (e) {
