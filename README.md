@@ -15,7 +15,7 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 - **Sub panels** show one category or one user panel, as a list or a grid.
   - Category panels: hide the tools you don't use; "Unhide all" brings them back temporarily.
   - User panels: drag to reorder, right-click to edit / delete items.
-- **Layout view / Quick Panel**: sub panels can also show a compact grid of square cells (like a classic tool palette). Widgets work inline (Keyframe Assistant sliders, Copy/Paste keys, 3×3 anchor grid, Offset Layers); other tools are icon tiles. In edit mode, drag cells to reorder and drag the corner to resize (or right-click ▸ Size). A ready-made **Quick Panel** opens in MenMen Panel 1; create more with ☰ ▸ New quick panel.
+- **Layout view / Quick Panel**: sub panels can also show a compact grid of square cells (like a classic tool palette). Widgets work inline (the full Graph Editor across the top, Copy/Paste keys, 3×3 anchor grid, Offset Layers); other tools are icon tiles. In edit mode, drag cells to reorder and drag the corner to resize (or right-click ▸ Size). A ready-made **Quick Panel** opens in MenMen Panel 1; create more with ☰ ▸ New quick panel.
 - **User panels** can hold: MenMen tools, Expressions, Scriptlets (ExtendScript), Script files (.jsx/.jsxbin), Presets (.ffx), Effects, Menu Commands, Dividers.
 - **Tools with parameters** open a small form that remembers the last values. **Widgets** (Keyframe Assistant, Easing Presets, Easings Manager, Offset Layers, Set Anchor Point) open in a dialog.
 - **Responsive**: below ~220px wide secondary labels hide; below ~130px the main panel becomes an icon column (search expands on click); short panels hide the help bar; Layout cells always fill the panel width; dialogs and the speed graph shrink to fit.
@@ -49,14 +49,20 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 - **Spot Blur**: draggable focus nulls; everything outside them is blurred by Compound Blur driven by an auto-built map comp (Max Blur, Spot Size, Feather, Blur Inside Spots on the controller).
 - **Audio to Precomps**: copies the selected audio layers into every nested precomp (time-offset, locked, named `♪ …`); precomps with time remapping/stretch or used more than once are skipped. Shift = remove all synced audio.
 
+### Main panel + Panel 1
+Opening either the main panel (**MenMen Workflow**) or **MenMen Panel 1** (Quick Panel) opens the other one too (Settings ▸ Panels to turn it off). The main panel has two modes, switched with the button next to ☰ (or ☰ ▸ Icons only): **icons + names**, or **icons only**, a thin column that saves workspace; hover an icon to see its name.
+
 ### Graph Editor
 Easing ▸ **Graph Editor** edits one curve between two keyframes, inspired by the graph editors of Motion-style toolkits:
 - **Value graph** (default): a cubic-bezier curve with two handles you drag freely; pull a handle outside the box for overshoot. **Speed graph** shows the same curve as AE's speed graph.
-- Shift = influence only (full ease), Alt or **Link** = mirrored handles, double-click = reset.
+- Dragging works like Motion 4: grab a handle anywhere near it (it keeps its offset, no jump), or click the empty graph to move the nearest handle there. The drag continues outside the graph; past the top/bottom edge the view grows step by step for overshoot. A dashed ghost shows the curve before the drag, and a live readout shows influence and speed.
+- **Shift** = lock to the axis you move along, **Ctrl/Cmd** = fine (1/5 speed), **Alt** or **Link** = mirrored handles, double-click = reset. Handles snap softly to flat ease (0 / 1) and to 1/3, 2/3.
+- Keyboard: click the graph, then arrows nudge the active handle (Shift = ×10), Tab switches handle, Enter applies.
+- **Auto** applies the curve to the selected keys every time you release a handle or pick a preset.
 - Type or paste `cubic-bezier(x1, y1, x2, y2)`; **Read** loads the curve from the selected keyframes.
 - Built-in curves plus your own (**+** saves, right-click deletes); click a curve to load it, double-click to load and apply.
 - **Apply** / **In** / **Out** / **Linear** / **Hold**. Applies to each pair of selected keys, or to both sides of a single selected key.
-- A compact version sits in the Quick Panel (Alt+Apply = In only, Shift+Apply = Out only).
+- The full editor also sits at the top of the Quick Panel, spanning the panel width.
 
 ### Metronome
 One `Metronome` null drives the beat tools (BPM, Beats per Bar, Start Time, Mode, Beats/Frames per Step, Step, Random Order):

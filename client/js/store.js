@@ -43,7 +43,7 @@
       slots: { 'com.menmen.workflow.panel1': { kind: 'user', id: 'quick', view: 'layout' } },  // { extId: { kind, id, view: 'list'|'grid'|'layout' } }
       quickAdded: true,
       curves: [],        // saved Graph Editor curves [{ name, bz: [x1,y1,x2,y2] }]
-      main: { collapsedFav: false }
+      main: { collapsedFav: false, iconsOnly: false, together: true }
     };
   }
 

@@ -254,6 +254,9 @@
     // header
     var head = el('header', 'm-head');
     head.innerHTML = '<span class="brand">MenMen</span>';
+    var io = svgBtn('m-view' + (S.data.main.iconsOnly ? ' on' : ''), S.data.main.iconsOnly ? 'Show icons + names' : 'Icons only (narrow panel)',
+      S.data.main.iconsOnly ? ICONS.list : ICONS.grid, function () { S.data.main.iconsOnly = !S.data.main.iconsOnly; S.save(); sizeClasses(); render(); });
+    head.appendChild(io);
     head.appendChild(svgBtn('m-menu', 'Menu', ICONS.menu, mainMenu));
     root.appendChild(head);
     // search
@@ -322,6 +325,7 @@
     T.CATS.forEach(function (c) {
       var r = catStyle(el('button', 'm-row'), c.id);
       r.innerHTML = '<span class="mr-ico">' + T.iconSvg('cat-' + c.id) + '</span><span class="mr-name">' + esc(c.name) + '</span><span class="mr-count">' + T.inCat(c.id).length + '</span>';
+      r.title = c.name;
       r.addEventListener('click', function () { openSheet({ kind: 'category', id: c.id }); });
       hoverTip(r, '<b>' + esc(c.name) + '</b><span class="tip-desc">' + T.inCat(c.id).length + ' tools · click to open, Dock to pin as a panel</span>');
       cats.appendChild(r);
@@ -335,6 +339,7 @@
       var u = S.data.userPanels[id];
       var r = el('button', 'm-row user');
       r.innerHTML = '<span class="mr-ico">' + T.iconSvg('user') + '<i>' + (idx + 1) + '</i></span><span class="mr-name">' + esc(u.name) + '</span><span class="mr-count">' + u.items.filter(function (x) { return x.type !== 'divider'; }).length + '</span>';
+      r.title = u.name;
       r.addEventListener('click', function () { openSheet({ kind: 'user', id: id }); });
       r.addEventListener('contextmenu', function (e) { e.preventDefault(); userPanelMenu(id, e); });
       hoverTip(r, '<b>' + esc(u.name) + '</b><span class="tip-desc">User panel · right-click to rename / delete</span>');
@@ -391,6 +396,7 @@
     var r = e.currentTarget.getBoundingClientRect();
     U.menu(r.left, r.bottom + 4, [
       { label: 'Settings…', onClick: openSettings },
+      { label: S.data.main.iconsOnly ? 'Show icons + names' : 'Icons only', onClick: function () { S.data.main.iconsOnly = !S.data.main.iconsOnly; S.save(); sizeClasses(); render(); } },
       { label: 'New user panel…', onClick: newUserPanel },
       { label: 'New quick panel (layout)…', onClick: newQuickPanel },
       { label: 'Add New Item…', onClick: function () { addItemDialog(null); } },
@@ -634,7 +640,8 @@
     setTip();
   }
   // ============ LAYOUT VIEW (compact grid, inline widgets) ============
-  var INLINE = { easyKeyframes: 'easyKeyframesCompact', easings: 'easings', moveAnchor: 'moveAnchor', sequencer: 'sequencerCompact', align: 'align' };
+  var INLINE = { easyKeyframes: 'easyKeyframes', easings: 'easings', moveAnchor: 'moveAnchor', sequencer: 'sequencerCompact', align: 'align' };
+  var FULL_WIDTH = { easyKeyframes: true };  // full editor: spans the whole row, height fits its content
   var DEFAULT_SIZE = { easyKeyframes: [2, 2], easings: [2, 1], moveAnchor: [2, 2], sequencer: [2, 1], align: [2, 2] };
   function cellSize(it) {
     var t = it.type === 'tool' ? T.get(it.tool) : null, d = (t && t.widget && DEFAULT_SIZE[t.widget]) || [1, 1];
@@ -675,6 +682,7 @@
       grid.style.gridAutoRows = cell + 'px';
       Array.prototype.forEach.call(grid.children, function (c) {
         if (!c.dataset.w) return;
+        if (c.dataset.full) return fitFull(c, cols, cell, gap);
         c.style.gridColumn = 'span ' + Math.min(cols, Number(c.dataset.w));
       });
       grid.classList.toggle('q-narrow', cols < 2);
@@ -682,6 +690,17 @@
     apply();
     requestAnimationFrame(apply);
     if (window.ResizeObserver) new ResizeObserver(apply).observe(grid);
+  }
+  // Full-width widget: graph height ~ half the width (110-260px) + its toolbar rows, rounded up to whole cells.
+  function fitFull(c, cols, cell, gap) {
+    c.style.gridColumn = '1 / -1';
+    var w = c.firstChild, g = c.querySelector('.ge-graph');
+    if (!w || !g) return;
+    var chrome = 10, kids = w.children;
+    for (var i = 0; i < kids.length; i++) if (kids[i] !== g) chrome += kids[i].offsetHeight + 5;
+    var want = chrome + Math.max(110, Math.min(260, c.clientWidth * 0.55));
+    var rows = Math.max(Number(c.dataset.h) || 1, Math.ceil((want + gap) / (cell + gap)));
+    c.style.gridRow = 'span ' + rows;
   }
   function layoutCell(it, idx, u) {
     if (it.type === 'divider') {
@@ -707,6 +726,7 @@
     }
     if (t) catStyle(n, t.cat); else n.classList.add('custom');
     n.dataset.w = sz[0];
+    if (t && t.widget && FULL_WIDTH[t.widget]) { n.dataset.full = 1; n.dataset.h = it.h && it.h > 2 ? it.h : 0; n.classList.add('q-full'); }
     n.style.gridColumn = 'span ' + sz[0];
     n.style.gridRow = 'span ' + sz[1];
     if (!u) return n;
@@ -808,6 +828,12 @@
       i.addEventListener('change', function () { th[key] = i.checked; S.save(); render(); });
       f.appendChild(i); return f;
     }
+    function mainToggle(label, key) {
+      var f = el('label', 'field inline check', '<span>' + label + '</span>');
+      var i = el('input'); i.type = 'checkbox'; i.checked = S.data.main[key] !== false && !!(S.data.main[key] || key === 'together');
+      i.addEventListener('change', function () { S.data.main[key] = i.checked; S.save(); sizeClasses(); render(); });
+      f.appendChild(i); return f;
+    }
     var accent = el('label', 'field inline', '<span>Accent color</span>');
     var ai = el('input'); ai.type = 'color'; ai.value = th.accent;
     ai.addEventListener('input', function () { th.accent = ai.value; applyTheme(); });
@@ -829,6 +855,9 @@
       toggle('Show tooltips / help bar', 'tooltips'),
       toggle('Match After Effects background', 'followHost'),
       accent,
+      el('div', 'sec', 'Panels'),
+      mainToggle('Open the main panel and Panel 1 together', 'together'),
+      mainToggle('Main panel: icons only', 'iconsOnly'),
       el('div', 'sec', 'Data'), data
     );
     if (S.file) form.appendChild(el('div', 'muted small', 'Settings file: ' + esc(S.file)));
@@ -938,7 +967,9 @@
   // Responsive size classes: w-xs (< 130px), w-sm (< 220px), h-sm (< 260px tall).
   function sizeClasses() {
     var w = window.innerWidth, h = window.innerHeight, b = document.body;
-    b.classList.toggle('w-xs', w < 130);
+    var io = B.isMain && S.data && S.data.main && S.data.main.iconsOnly;
+    b.classList.toggle('icons-only', !!io);
+    b.classList.toggle('w-xs', w < 130 || !!io);
     b.classList.toggle('w-sm', w < 220);
     b.classList.toggle('h-sm', h < 260);
   }
@@ -955,5 +986,10 @@
   checkOrientation();
   render();
   loadHost();
+  // Main panel + Panel 1 (Quick Panel) open together: each one opens the other once when it starts.
+  if (B.inCEP && S.data.main.together !== false) {
+    var partner = B.isMain ? S.SLOTS[0] : (B.panelNo === '1' ? 'com.menmen.workflow.main' : null);
+    if (partner) setTimeout(function () { B.openPanel(partner); }, 400);
+  }
   window.MMWApp = { render: render, state: st, dock: dock };
 })();

@@ -192,7 +192,7 @@
     { id: 'loop', name: 'Key Looper', cat: 'keyframes', desc: 'Adds loopOut("cycle").', mods: { alt: 'pingpong', ctrl: 'continue', shift: 'offset' } },
 
     // ---------------- Easing ----------------
-    { id: 'easyKeyframes', name: 'Graph Editor', cat: 'easing', widget: 'easyKeyframes', desc: 'Value / speed graph: drag the handles freely (overshoot allowed), Shift = influence only, Alt or Link = mirror. Built-in and saved curves, Read from keys, Apply / In / Out / Linear / Hold.' },
+    { id: 'easyKeyframes', name: 'Graph Editor', cat: 'easing', widget: 'easyKeyframes', desc: 'Value / speed graph: drag the handles freely (overshoot allowed). Shift = lock axis, Ctrl = fine, Alt or Link = mirror, Auto = apply on release. Built-in and saved curves, Read from keys, Apply / In / Out / Linear / Hold.' },
     { id: 'easingPresets', name: 'Easing Presets', cat: 'easing', widget: 'easingPresets', icon: 'curvePreset', desc: 'Sine, Quad, Cubic, Quart, Quint, Expo, Circ, Back – In / Out / InOut.' },
     { id: 'easings', name: 'Easings Manager', cat: 'easing', widget: 'easings', desc: 'Copy / paste values and easing.', mods: { alt: 'Easing only', shift: 'Values only' } },
     { id: 'copyKeyEasing', name: 'Copy Key Easing', cat: 'easing', host: 'easingsCopy', opts: { alt: true }, icon: 'easings', desc: 'Copies the easing of the selected keys.' },

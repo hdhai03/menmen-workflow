@@ -441,11 +441,25 @@ body.h-sm .toast, body.w-xs .toast { bottom: 8px; }
 .ge-save { color: var(--muted); font-size: 16px; text-align: center; }
 .ge-save:hover { color: var(--accent); }
 .ge-btns .w-btn { padding: 5px 2px; }
-/* compact (Quick Panel cell) */
-.ge-compact { gap: 3px; height: 100%; }
-.ge-compact .ge-graph { flex: 1; height: auto; min-height: 24px; }
-.wq-easyKeyframes { padding: 3px; }
-.wq-easyKeyframes .w { flex: 1; }
+/* full editor inside a Quick Panel cell */
+.q-full { padding: 5px; justify-content: flex-start; }
+.q-full .ge { gap: 5px; height: 100%; }
+.q-full .ge-graph { flex: 1 1 auto; height: auto; min-height: 60px; }
+.q-full .ge-btns .w-btn { padding: 4px 1px; font-size: calc(var(--fs) - 1px); }
+.q-full .q-expand { display: none; }
+.ge-graph { position: relative; outline: none; touch-action: none; }
+.ge-graph:focus-visible { border-color: rgba(var(--accent-rgb), .6); }
+.ge-svg, .ge-svg svg { width: 100%; height: 100%; }
+.ge-gridl { stroke: var(--line); stroke-width: 1; fill: none; }
+.ge-ghost { stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 3 3; fill: none; opacity: .7; }
+.ge-knob.hov { fill: var(--accent); }
+.ge-knob.sel:not(.on):not(.hov) { fill: var(--text); stroke: var(--accent); stroke-width: 1.5; }
+.ge-tip { position: absolute; display: none; pointer-events: none; white-space: pre; padding: 2px 5px; font-size: 10px; font-variant-numeric: tabular-nums; background: var(--surface-3); color: var(--text); }
+.ge-tip.show { display: block; }
+.ge-bar { flex-wrap: wrap; row-gap: 3px; }
+body.w-sm .ge-tool, .q-full .ge-tool { padding: 4px 6px; }
+body.w-sm .ge-tabs .seg-btn, .q-full .ge-tabs .seg-btn { padding: 3px 7px; }
+body.w-sm .ge-bz { flex: 1 1 100%; width: auto; }
 @media (max-width: 320px) {
   .ge-bz { flex: 1 1 100%; width: auto; }
 }
@@ -455,3 +469,9 @@ body.h-sm .toast, body.w-xs .toast { bottom: 8px; }
 .q-widget .w-align { min-height: 0; height: 100%; }
 .w-align .wc-ico { height: auto; min-height: 20px; }
 .wa-to { font-size: calc(var(--fs) - 2px); padding: 0; }
+
+/* main panel: icons only (toggle in the header / menu) */
+body.icons-only .m-head { flex-direction: column; gap: 2px; }
+body.icons-only .m-fav { flex-direction: column; align-items: center; }
+body.icons-only .m-row { justify-content: center; padding: 0; }
+.m-view.on { color: var(--accent); }
