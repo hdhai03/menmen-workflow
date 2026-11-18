@@ -628,13 +628,6 @@ body.native .gx-bar i { background: var(--icon-c); }
 .ge-mode svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.4; }
 .ge-mode:hover { color: var(--text); }
 .ge-mode.on { background: var(--surface-3); color: var(--text); }
-.ge-strength { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.ge-track { width: 100%; height: 10px; position: relative; cursor: ew-resize; }
-.ge-track::before { content: ""; position: absolute; left: 0; right: 0; top: 4px; height: 2px; background: var(--surface-3); }
-.ge-track i { position: absolute; left: 0; top: 4px; height: 2px; width: 0; background: var(--muted); }
-.ge-track:hover i { background: var(--text); }
-.ge-big { font: 600 18px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 3px; color: var(--text); opacity: .85; }
-.q-full .ge-big { font-size: 16px; }
-body.w-sm .ge-mode { width: 22px; }
+.q-full body.w-sm .ge-mode { width: 22px; }
 .ge > .ge-bz { flex: none; width: 100%; height: 24px; }
 body.ge-dragging, body.ge-dragging * { cursor: move !important; user-select: none; }

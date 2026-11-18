@@ -75,7 +75,7 @@
   //  - once started, the drag continues anywhere in the panel; it ends on release, when the pointer
   //    leaves the panel or the panel loses focus (so a release outside AE's panel can't leave it stuck);
   //    release applies when Auto is on
-  // Detail strip under the graph: [Out ›] [○ ◇ □] [‹ In], then a Strength slider with a big readout.
+  // Detail strip under the graph: [Out ›] [○ ◇ □] [‹ In]; Apply / In / Out / Linear / Hold buttons at the bottom.
   // The two number boxes can be dragged sideways (scrub) or clicked to type.
   function graphEditor(d, ctx) {
     initCurve(d);
@@ -260,7 +260,7 @@
     bar.append(tabs, el('span', 'spacer'), link, auto, rd);
     root.append(bar, box);
 
-    // ---- detail strip: [Out ›] [○ ◇ □] [‹ In] + strength slider with a big readout ----
+    // ---- detail strip: [Out ›] [○ ◇ □] [‹ In] ----
     var strip = el('div', 'ge-strip');
     function scrubBox(cls, label, arrow, side) {
       var wrap = el('div', 'ge-sb ' + cls);
@@ -284,7 +284,7 @@
         var mv = function (ev) {
           var dv = Math.round((ev.clientX - x0) / 2) * (ev.shiftKey ? 5 : 1);
           if (Math.abs(ev.clientX - x0) > 2) moved = true;
-          if (moved) { set(v0 + dv); big.textContent = pad3(get()); }
+          if (moved) set(v0 + dv);
         };
         var up = function () {
           document.removeEventListener('mousemove', mv, true); document.removeEventListener('mouseup', up, true);
@@ -315,32 +315,12 @@
       modes.appendChild(b);
     });
     strip.append(outBox, modes, inBox);
-    // strength: average influence; dragging scales both and keeps the skew
-    var sl = el('div', 'ge-strength');
-    var track = el('div', 'ge-track', '<i></i>'), big = el('div', 'ge-big');
-    track.title = 'Ease strength (average influence) – drag';
-    big.title = 'Ease strength %';
-    sl.append(track, big);
-    function pad3(v) { return ('00' + Math.round(v)).slice(-3); }
-    track.addEventListener('mousedown', function (e) {
-      e.preventDefault();
-      var r = track.getBoundingClientRect(), f0 = infl(), s0 = (f0[0] + f0[1]) / 2;
-      var mv = function (ev) {
-        var s = clamp((ev.clientX - r.left) / r.width, 0.01, 1), k = s / Math.max(0.001, s0);
-        setInfl(f0[0] * k, f0[1] * k); draw();
-      };
-      var up = function () { document.removeEventListener('mousemove', mv, true); document.removeEventListener('mouseup', up, true); ctx.save(); if (d.auto) autoApply(); };
-      document.addEventListener('mousemove', mv, true); document.addEventListener('mouseup', up, true);
-      mv(e);
-    });
     function paintStrip() {
-      var f = infl(), o = Math.round(f[0] * 100), i = Math.round(f[1] * 100), s = (o + i) / 2;
-      if (document.activeElement !== outBox.inp) outBox.inp.value = o;
-      if (document.activeElement !== inBox.inp) inBox.inp.value = i;
-      track.firstChild.style.width = Math.min(100, s) + '%';
-      big.textContent = pad3(s);
+      var f = infl();
+      if (document.activeElement !== outBox.inp) outBox.inp.value = Math.round(f[0] * 100);
+      if (document.activeElement !== inBox.inp) inBox.inp.value = Math.round(f[1] * 100);
     }
-    root.append(strip, sl);
+    root.append(strip);
 
     // ---- cubic-bezier text + presets ----
     bzInput = el('input', 'input ge-bz'); bzInput.spellcheck = false; bzInput.title = 'cubic-bezier(x1, y1, x2, y2) - edit or paste, then press Enter';
@@ -373,6 +353,20 @@
       pres.appendChild(sv);
     };
     if (ctx.lib) { fillPresets(); root.appendChild(pres); }
+
+    var btns = el('div', 'w-btns ge-btns');
+    [['apply', 'Apply', 'Apply the curve to the selected keys'], ['in', 'In', 'Incoming side only'], ['out', 'Out', 'Outgoing side only'],
+     ['linear', 'Linear', 'Linear keyframes'], ['hold', 'Hold', 'Hold keyframes']].forEach(function (b) {
+      var x = el('button', 'w-btn' + (b[0] === 'apply' ? ' w-primary' : ''), b[1]);
+      x.title = b[2];
+      x.addEventListener('click', function (e) {
+        stop(e);
+        if (b[0] === 'linear' || b[0] === 'hold') return ctx.run('easyKeyframes', { mode: b[0] }, e);
+        apply(b[0] === 'apply' ? 'both' : b[0], e);
+      });
+      btns.appendChild(x);
+    });
+    root.appendChild(btns);
 
     draw();
     requestAnimationFrame(draw);
