@@ -68,15 +68,15 @@
   }
   function fmt(v) { return String(Math.round(v * 100) / 100); }
 
-  // Interaction: no handles - drag the curve itself.
-  //  - drag sideways  = move the peak (skew): Out influence grows, In shrinks (or the other way)
-  //  - drag up / down = stronger / softer ease (both influences together)
-  //  - Shift = one axis only, Ctrl/Cmd = fine, Alt or Link = keep it symmetric, double-click = reset
-  //  - once started, the drag continues anywhere in the panel; it ends on release, when the pointer
-  //    leaves the panel or the panel loses focus (so a release outside AE's panel can't leave it stuck);
-  //    release applies when Auto is on
+  // Interaction
+  //  Value view: the two bezier handles - grab one (it keeps its offset) or click the graph to move the
+  //    nearest; Shift = lock axis, Ctrl/Cmd = fine, Alt or Link = mirror, soft snap to flat ease;
+  //    past the top/bottom edge the view grows for overshoot; arrows nudge, Tab switches handle.
+  //  Speed view: no handles - drag the curve itself: sideways = move the peak, up/down = stronger /
+  //    softer ease (both keys stay at speed 0); Shift = one axis, Ctrl = fine, Alt or Link = symmetric.
+  //  Both: the drag continues anywhere in the panel and ends on release, leaving the panel or blur;
+  //  double-click resets; release applies when Auto is on.
   // Detail strip under the graph: [Out ›] [‹ In]; Apply / In / Out / Linear / Hold buttons at the bottom.
-  // The two number boxes can be dragged sideways (scrub) or clicked to type.
   function graphEditor(d, ctx) {
     initCurve(d);
     var root = el('div', 'w ge');
@@ -110,21 +110,47 @@
       return 'M' + p0[0] + ' ' + p0[1] + 'C' + c1[0] + ' ' + c1[1] + ' ' + c2[0] + ' ' + c2[1] + ' ' + p3[0] + ' ' + p3[1];
     }
 
+    // ---- Value view: the two bezier handles (as before) ----
+    if (d.sel == null) d.sel = 0;
+    var hover = null, HIT = 14;
+    function unmap(px, py) { return [(px - PX) / (W_ - 2 * PX), range.lo + (H_ - PY - py) / (H_ - 2 * PY) * (range.hi - range.lo)]; }
+    function pxPerV() { return (H_ - 2 * PY) / (range.hi - range.lo); }
+    function handleVal(i) { var b = d.bz; return i ? [b[2], b[3]] : [b[0], b[1]]; }
+    function knobs() { return [0, 1].map(function (i) { var h = handleVal(i); return map(h[0], h[1]); }); }
+    function setHandle(i, x, v, mirror) {
+      var b = d.bz;
+      v = clamp(v, -1.5, 2.5);
+      if (i === 0) { b[0] = clamp(x, 0, 1); b[1] = v; } else { b[2] = clamp(x, 0, 1); b[3] = v; }
+      if (mirror) { if (i === 0) { b[2] = 1 - b[0]; b[3] = 1 - b[1]; } else { b[0] = 1 - b[2]; b[1] = 1 - b[3]; } }
+    }
+    function local(e) { var r = box.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+    function nearest(p) {
+      var k = knobs(), d0 = Math.hypot(p[0] - k[0][0], p[1] - k[0][1]), d1 = Math.hypot(p[0] - k[1][0], p[1] - k[1][1]);
+      return { i: d0 <= d1 ? 0 : 1, dist: Math.min(d0, d1) };
+    }
+
     // ---- drawing ----
     function draw() {
       var r = box.getBoundingClientRect();
       W_ = Math.max(80, Math.round(r.width) || 300); H_ = Math.max(50, Math.round(r.height) || 180);
       PX = W_ < 160 ? 8 : 14; PY = H_ < 100 ? 7 : 12;
-      range = computeRange();
+      if (!range || !(drag && drag.handle)) range = computeRange();  // handle drags keep (and grow) the view
       var b = d.bz, svg = '<svg width="' + W_ + '" height="' + H_ + '" viewBox="0 0 ' + W_ + ' ' + H_ + '">', gx = '';
       for (var q = 1; q < 4; q++) { var gp = map(q / 4, 0)[0]; gx += 'M' + gp.toFixed(1) + ' 0V' + H_; }
       svg += '<path class="ge-gridl" d="' + gx + '"/>';
+      var f = infl(), sp = speedOf();
       if (d.view === 'value') {
-        var p0 = map(0, 0), p3 = map(1, 1);
+        var p0 = map(0, 0), p3 = map(1, 1), c1 = map(b[0], b[1]), c2 = map(b[2], b[3]), k = knobs();
         svg += '<rect class="ge-unit" x="' + p0[0] + '" y="' + p3[1] + '" width="' + (p3[0] - p0[0]) + '" height="' + (p0[1] - p3[1]) + '"/>';
         if (ghost) svg += '<path class="ge-ghost" d="' + bezPath(ghost) + '"/>';
-        svg += '<path class="ge-curve" d="' + bezPath(b) + '"/>';
-        svg += '<rect class="ge-key" x="' + (p0[0] - 3) + '" y="' + (p0[1] - 3) + '" width="6" height="6"/><rect class="ge-key" x="' + (p3[0] - 3) + '" y="' + (p3[1] - 3) + '" width="6" height="6"/>';
+        svg += '<path class="ge-handle" d="M' + p0[0] + ' ' + p0[1] + 'L' + c1[0] + ' ' + c1[1] + 'M' + p3[0] + ' ' + p3[1] + 'L' + c2[0] + ' ' + c2[1] + '"/>' +
+          '<path class="ge-curve" d="' + bezPath(b) + '"/>' +
+          '<rect class="ge-key" x="' + (p0[0] - 3) + '" y="' + (p0[1] - 3) + '" width="6" height="6"/><rect class="ge-key" x="' + (p3[0] - 3) + '" y="' + (p3[1] - 3) + '" width="6" height="6"/>';
+        k.forEach(function (pt, i) {
+          var on = drag && drag.handle && drag.i === i, ks = on || hover === i ? 11 : 9;
+          svg += '<rect class="ge-knob' + (on ? ' on' : '') + (hover === i ? ' hov' : '') + (d.sel === i ? ' sel' : '') +
+            '" x="' + (pt[0] - ks / 2) + '" y="' + (pt[1] - ks / 2) + '" width="' + ks + '" height="' + ks + '"/>';
+        });
       } else {
         var base = map(0, 0), avg = map(0, 1), end = map(1, 0);
         svg += '<path class="sg-grid" d="M0 ' + base[1] + 'H' + W_ + '"/><path class="sg-avg" d="M0 ' + avg[1] + 'H' + W_ + '"/>';
@@ -133,8 +159,14 @@
         svg += '<rect class="ge-key" x="' + (base[0] - 3) + '" y="' + (base[1] - 3) + '" width="6" height="6"/><rect class="ge-key" x="' + (end[0] - 3) + '" y="' + (end[1] - 3) + '" width="6" height="6"/>';
       }
       svgHost.innerHTML = svg + '</svg>';
-      var f = infl();
-      if (drag) {
+      if (drag && drag.handle) {  // value view: readout next to the dragged handle
+        var hi = drag.i, kp = knobs()[hi];
+        tip.textContent = (hi ? 'In ' + Math.round(f[1] * 100) : 'Out ' + Math.round(f[0] * 100)) + '%  ' + fmt(sp[hi]) + '×' + (drag.fine ? '  fine' : '') + (drag.axis ? '  ' + drag.axis : '');
+        tip.className = 'ge-tip show';
+        var tw = tip.offsetWidth || 80;
+        tip.style.left = clamp(kp[0] + (hi ? -tw - 10 : 10), 2, W_ - tw - 2) + 'px';
+        tip.style.top = clamp(kp[1] - 24, 2, H_ - 20) + 'px';
+      } else if (drag) {  // speed view: shape drag readout
         tip.textContent = 'Out ' + Math.round(f[0] * 100) + '%  ·  In ' + Math.round(f[1] * 100) + '%' + (drag.fine ? '  fine' : '');
         tip.className = 'ge-tip show';
         tip.style.left = Math.max(2, (W_ - (tip.offsetWidth || 120)) / 2) + 'px'; tip.style.top = '4px';
@@ -143,17 +175,29 @@
       if (bzInput && !typing) bzInput.value = b.map(fmt).join(', ');
     }
 
-    // ---- shape drag on the graph ----
+    // ---- dragging: Value view = handles, Speed view = the curve's shape ----
+    // Mouse events on the document while the button is down (reliable in AE's embedded Chromium);
+    // the drag continues anywhere in the panel and ends on release, leaving the panel or blur.
     var docMove = null, docUp = null;
     function onDown(e) {
       if (e.button !== 0 || drag) return;
       e.preventDefault();
       try { box.focus({ preventScroll: true }); } catch (x) { /* keyboard only */ }
-      var f = infl();
-      drag = { x: e.clientX, y: e.clientY, o: f[0], i: f[1], moved: false, fine: false };
       ghost = d.bz.slice();
+      if (d.view === 'value') {
+        var p = local(e), n = nearest(p), ptr = unmap(p[0], p[1]);
+        drag = { handle: true, i: n.i, moved: false, fine: false, axis: null };
+        d.sel = n.i;
+        // on the knob: keep the grab offset; on empty graph: the handle jumps to the pointer
+        drag.start = n.dist <= HIT ? handleVal(n.i) : ptr;
+        drag.ptr0 = ptr; drag.px0 = p;
+        if (n.dist > HIT) { setHandle(n.i, ptr[0], ptr[1], d.link || e.altKey); drag.moved = true; }
+      } else {
+        var f = infl();
+        drag = { x: e.clientX, y: e.clientY, o: f[0], i: f[1], moved: false, fine: false };
+      }
       document.body.classList.add('ge-dragging');
-      docMove = function (ev) { onMove(ev); };  // anywhere in the panel
+      docMove = function (ev) { onMove(ev); };
       docUp = function () { endDrag(); };
       document.addEventListener('mousemove', docMove, true);
       document.addEventListener('mouseup', docUp, true);
@@ -162,6 +206,34 @@
     }
     function onMove(e) {
       var fine = e.ctrlKey || e.metaKey;
+      if (drag.handle) {
+        var p = local(e);
+        p = [clamp(p[0], 0, W_), p[1]];
+        // past the top / bottom edge: the view grows a little per move (overshoot), the pointer is clamped to it
+        var over = p[1] < 4 ? 1 : (p[1] > H_ - 4 ? -1 : 0);
+        if (over) {
+          var g = (range.hi - range.lo) * 0.03;
+          if (over > 0) range.hi = Math.min(2.7, range.hi + g); else range.lo = Math.max(-1.7, range.lo - g);
+          p = [p[0], clamp(p[1], 0, H_)];
+        }
+        var ptr = unmap(p[0], p[1]);
+        if (fine !== drag.fine) { drag.start = handleVal(drag.i); drag.ptr0 = ptr; drag.px0 = p; drag.fine = fine; }
+        var fk = fine ? 0.2 : 1;
+        var x = drag.start[0] + (ptr[0] - drag.ptr0[0]) * fk, v = drag.start[1] + (ptr[1] - drag.ptr0[1]) * fk;
+        drag.axis = null;
+        if (e.shiftKey) {  // lock the axis the pointer moved most along
+          var adx = Math.abs(p[0] - drag.px0[0]), ady = Math.abs(p[1] - drag.px0[1]);
+          if (adx >= ady) { v = drag.start[1]; drag.axis = 'H'; } else { x = drag.start[0]; drag.axis = 'V'; }
+        }
+        if (!fine) {  // soft snap to flat ease (0 / 1) and to 1/3, 2/3
+          var tol = 5 / pxPerV(), tx = 4 / (W_ - 2 * PX);
+          [0, 1].forEach(function (s) { if (Math.abs(v - s) < tol) v = s; });
+          [0, 1 / 3, 2 / 3, 1].forEach(function (s) { if (Math.abs(x - s) < tx) x = s; });
+        }
+        setHandle(drag.i, x, v, d.link || e.altKey);
+        drag.moved = true;
+        return draw();
+      }
       if (fine !== drag.fine) {  // re-base so switching fine mode never jumps
         var cur = infl(); drag.o = cur[0]; drag.i = cur[1]; drag.x = e.clientX; drag.y = e.clientY; drag.fine = fine;
       }
@@ -186,21 +258,45 @@
       if (moved && d.auto) autoApply();
     }
     box.addEventListener('mousedown', onDown);
+    box.addEventListener('mousemove', function (e) {  // value view: hover a handle
+      if (drag || d.view !== 'value') { if (!drag) box.style.cursor = ''; return; }
+      var n = nearest(local(e)), h = n.dist <= HIT ? n.i : null;
+      box.style.cursor = h != null ? 'grab' : 'crosshair';
+      if (h !== hover) { hover = h; draw(); }
+    });
+    box.addEventListener('mouseleave', function () { if (!drag && hover != null) { hover = null; draw(); } });
     window.addEventListener('blur', function () { if (drag) endDrag(); });
     box.addEventListener('dblclick', function () { d.bz = [0.333, 0, 0.667, 1]; if (d.view === 'speed') setInfl(0.333, 0.333); draw(); ctx.save(); if (d.auto) autoApply(); });
     box.addEventListener('keydown', function (e) {
-      var f = infl(), s = e.shiftKey ? 0.1 : 0.01;
-      if (e.key === 'ArrowLeft') setInfl(f[0] - s, f[1] + s);
-      else if (e.key === 'ArrowRight') setInfl(f[0] + s, f[1] - s);
-      else if (e.key === 'ArrowUp') setInfl(f[0] + s, f[1] + s);
-      else if (e.key === 'ArrowDown') setInfl(f[0] - s, f[1] - s);
-      else if (e.key === 'Enter') { apply('both', e); return; }
-      else return;
-      e.preventDefault(); e.stopPropagation();
-      draw(); ctx.save();
+      var key = e.key;
+      if (d.view === 'value') {  // arrows nudge the active handle (Shift x10), Tab switches handle
+        if (key === 'Tab') { e.preventDefault(); d.sel = 1 - d.sel; draw(); return; }
+        var h = handleVal(d.sel), x = h[0], v = h[1], st = e.shiftKey ? 0.1 : 0.01;
+        if (key === 'ArrowLeft') x -= st; else if (key === 'ArrowRight') x += st;
+        else if (key === 'ArrowUp') v += st; else if (key === 'ArrowDown') v -= st;
+        else if (key === 'Enter') { apply('both', e); return; }
+        else return;
+        e.preventDefault(); e.stopPropagation();
+        setHandle(d.sel, x, v, d.link || e.altKey);
+      } else {
+        var f = infl(), s = e.shiftKey ? 0.1 : 0.01;
+        if (key === 'ArrowLeft') setInfl(f[0] - s, f[1] + s);
+        else if (key === 'ArrowRight') setInfl(f[0] + s, f[1] - s);
+        else if (key === 'ArrowUp') setInfl(f[0] + s, f[1] + s);
+        else if (key === 'ArrowDown') setInfl(f[0] - s, f[1] - s);
+        else if (key === 'Enter') { apply('both', e); return; }
+        else return;
+        e.preventDefault(); e.stopPropagation();
+      }
+      range = null; draw(); ctx.save();
       if (d.auto) { clearTimeout(autoT); autoT = setTimeout(autoApply, 350); }
     });
-    box.title = 'Drag the curve: sideways = move the peak, up/down = stronger/softer ease. Shift = one axis, Ctrl = fine, Alt = symmetric, double-click = reset. Arrow keys work too.';
+    function setTitle() {
+      box.title = d.view === 'value'
+        ? 'Drag a handle (or click the graph). Shift = lock axis, Ctrl/Cmd = fine, Alt = mirror, double-click = reset. Arrows nudge, Tab switches handle, Enter applies.'
+        : 'Drag the curve: sideways = move the peak, up/down = stronger/softer ease. Shift = one axis, Ctrl = fine, Alt = symmetric, double-click = reset. Arrow keys work too.';
+    }
+    setTitle();
 
     function apply(side, e) { return ctx.run('easingPreset', { bezier: d.bz, side: side, alt: false, shift: false }, e); }
     // Auto: applied quietly - a small note in the graph, no popup when no keyframes are selected
@@ -234,9 +330,8 @@
       var t = el('button', 'seg-btn' + (d.view === v[0] ? ' on' : ''), v[1]);
       t.addEventListener('click', function () {
         d.view = v[0];
-        if (d.view === 'speed' && (Math.abs(d.bz[1]) > 1e-6 || Math.abs(d.bz[3] - 1) > 1e-6)) { var f = infl(); setInfl(f[0], f[1]); if (d.auto) autoApply(); }
         ctx.save();
-        tabs.querySelectorAll('.seg-btn').forEach(function (x) { x.classList.remove('on'); }); t.classList.add('on'); draw();
+        tabs.querySelectorAll('.seg-btn').forEach(function (x) { x.classList.remove('on'); }); t.classList.add('on'); hover = null; setTitle(); draw();
       });
       tabs.appendChild(t);
     });
