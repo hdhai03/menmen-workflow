@@ -105,7 +105,7 @@
     function handleVal(i) {
       var b = d.bz, sp = speedOf();
       if (d.view === 'value') return i ? [b[2], b[3]] : [b[0], b[1]];
-      return i ? [b[2], sp[1]] : [b[0], sp[0]];
+      return i ? [b[2], 0] : [b[0], 0];  // speed view: knobs sit on the baseline (influence only)
     }
     function knobs() { return [0, 1].map(function (i) { var h = handleVal(i); return map(h[0], h[1]); }); }
 
@@ -116,8 +116,9 @@
         v = clamp(v, -1.5, 2.5);
         if (i === 0) { b[0] = clamp(x, 0, 1); b[1] = v; } else { b[2] = clamp(x, 0, 1); b[3] = v; }
       } else {
-        var s = Math.max(0, v);
-        if (i === 0) { b[0] = clamp(x, 0.001, 1); b[1] = b[0] * s; } else { b[2] = clamp(x, 0, 0.999); b[3] = 1 - (1 - b[2]) * s; }
+        // speed view = pure ease: both keys stay at speed 0 (the curve starts and ends on the
+        // baseline); dragging sideways sets the influence
+        if (i === 0) { b[0] = clamp(x, 0.01, 1); b[1] = 0; } else { b[2] = clamp(x, 0, 0.99); b[3] = 1; }
       }
       if (mirror) {
         if (i === 0) { b[2] = 1 - b[0]; b[3] = 1 - b[1]; } else { b[0] = 1 - b[2]; b[1] = 1 - b[3]; }
@@ -148,11 +149,10 @@
           '<rect class="ge-key" x="' + (p0[0] - 3) + '" y="' + (p0[1] - 3) + '" width="6" height="6"/><rect class="ge-key" x="' + (p3[0] - 3) + '" y="' + (p3[1] - 3) + '" width="6" height="6"/>';
       } else {
         var sp = speedOf(), smp = speedSamples(b[0], b[1], b[2], b[3]), base = map(0, 0), avg = map(0, 1);
-        var so = map(0, sp[0]), si = map(1, sp[1]);
         svg += '<path class="sg-grid" d="M0 ' + base[1] + 'H' + W_ + '"/><path class="sg-avg" d="M0 ' + avg[1] + 'H' + W_ + '"/>';
         if (ghost) svg += '<path class="ge-ghost" d="' + pathOf(speedSamples(ghost[0], ghost[1], ghost[2], ghost[3]), map, range) + '"/>';
         svg += '<path class="ge-curve" d="' + pathOf(smp, map, range) + '"/>' +
-          '<path class="ge-handle" d="M' + so[0] + ' ' + so[1] + 'L' + k[0][0] + ' ' + k[0][1] + 'M' + si[0] + ' ' + si[1] + 'L' + k[1][0] + ' ' + k[1][1] + '"/>';
+          '<rect class="ge-key" x="' + (base[0] - 3) + '" y="' + (base[1] - 3) + '" width="6" height="6"/><rect class="ge-key" x="' + (map(1, 0)[0] - 3) + '" y="' + (base[1] - 3) + '" width="6" height="6"/>';
       }
       k.forEach(function (p, i) {
         var big = drag && drag.i === i || hover === i, ks = big ? 11 : 9;
@@ -164,6 +164,7 @@
       if (nums) {
         var vals = { oi: Math.round(b[0] * 100), os: fmt(s2[0]), ii: Math.round((1 - b[2]) * 100), is: fmt(s2[1]) };
         Object.keys(nums).forEach(function (k) { if (document.activeElement !== nums[k]) nums[k].value = vals[k]; });
+        nums.os.disabled = nums.is.disabled = d.view === 'speed';  // speed view: keys always at speed 0
       }
       if (bzInput && !typing) bzInput.value = b.map(fmt).join(', ');
       if (drag) {
@@ -214,7 +215,7 @@
       if (over) {
         var g = (range.hi - range.lo) * 0.03;
         if (d.view === 'value') { if (over > 0) range.hi = Math.min(2.7, range.hi + g); else range.lo = Math.max(-1.7, range.lo - g); }
-        else if (over > 0) range.hi = Math.min(14, range.hi + g);
+
         p = [p[0], clamp(p[1], 0, H_)];
       }
       var ptr = unmap(p[0], p[1]);
@@ -322,7 +323,12 @@
     [['value', 'Value'], ['speed', 'Speed']].forEach(function (v) {
       var t = el('button', 'seg-btn' + (d.view === v[0] ? ' on' : ''), v[1]);
       t.addEventListener('click', function () {
-        d.view = v[0]; range = null; ctx.save();
+        d.view = v[0]; range = null;
+        if (d.view === 'speed' && (Math.abs(d.bz[1]) > 1e-6 || Math.abs(d.bz[3] - 1) > 1e-6)) {
+          d.bz[0] = clamp(d.bz[0], 0.01, 1); d.bz[1] = 0; d.bz[2] = clamp(d.bz[2], 0, 0.99); d.bz[3] = 1;
+          if (d.auto) autoApply();
+        }
+        ctx.save();
         tabs.querySelectorAll('.seg-btn').forEach(function (x) { x.classList.remove('on'); }); t.classList.add('on'); draw();
       });
       tabs.appendChild(t);
