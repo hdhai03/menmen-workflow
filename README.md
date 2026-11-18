@@ -49,6 +49,9 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 - **Spot Blur**: draggable focus nulls; everything outside them is blurred by Compound Blur driven by an auto-built map comp (Max Blur, Spot Size, Feather, Blur Inside Spots on the controller).
 - **Audio to Precomps**: copies the selected audio layers into every nested precomp (time-offset, locked, named `♪ …`); precomps with time remapping/stretch or used more than once are skipped. Shift = remove all synced audio.
 
+### Quick Access
+The Quick Panel has a **Quick Access** area under the Graph Editor that fills itself with your **10 most used tools** (by run count, then most recent). Every run counts: clicks in any panel, search, favorites, widgets. Tiles reorder after you move the mouse away, so they never jump under the cursor. Right-click a tile: **Pin to this panel** / **Remove from Quick Access**; right-click the area: **Reset usage counts** / **Delete this area**. Add it to any user panel with Add New Item ▸ Quick Access. Tools already shown as inline widgets in that panel are left out.
+
 ### Main panel + Panel 1
 Opening either the main panel (**MenMen Workflow**) or **MenMen Panel 1** (Quick Panel) opens the other one too (Settings ▸ Panels to turn it off). The main panel has two modes, switched with the button next to ☰ (or ☰ ▸ Icons only): **icons + names**, or **icons only**, a thin column that saves workspace; hover an icon to see its name.
 

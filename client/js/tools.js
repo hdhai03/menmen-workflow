@@ -35,6 +35,7 @@
     'cat-scripts': '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M10.5 11l-2 2.5 2 2.5M14.5 11l2 2.5-2 2.5"/>',
     'cat-animation': '<path d="M3 18c4 0 5-12 9-12s5 8 9 8" /><circle cx="21" cy="14" r="1.8"/><path d="M3 21h4" opacity=".55"/>',
     // tool
+    quickAccess: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
     star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"/>',
     user: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 13h4M8 16h7"/>',
     cropComp: '<path d="M6 2v16h16"/><path d="M2 6h16v16"/>',
@@ -336,7 +337,8 @@
     { type: 'preset', name: 'Preset', icon: 'preset', desc: 'An .ffx file, applied to the selected layers' },
     { type: 'effect', name: 'Effect', icon: 'effect', desc: 'Effect name or matchName' },
     { type: 'command', name: 'Menu Command', icon: 'command', desc: 'AE menu command name or command ID' },
-    { type: 'divider', name: 'Divider', icon: 'divider', desc: 'A line separating groups' }
+    { type: 'divider', name: 'Divider', icon: 'divider', desc: 'A line separating groups' },
+    { type: 'quickAccess', name: 'Quick Access', icon: 'quickAccess', desc: 'Fills itself with your 10 most used tools' }
   ];
 
   // Script library (.jsx / .jsxbin / .ffx found by the host) -> tools in the "scripts" category.

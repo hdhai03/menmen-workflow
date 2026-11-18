@@ -13,7 +13,7 @@
   function quickItems() {
     var it = function (tool, w, h) { var o = { id: uid(), type: 'tool', tool: tool }; if (w) { o.w = w; o.h = h; } return o; };
     return [
-      it('easyKeyframes', 2, 2), it('easings', 2, 1), it('sequencer', 2, 1),
+      it('easyKeyframes', 2, 2), { id: uid(), type: 'quickAccess' }, it('easings', 2, 1), it('sequencer', 2, 1),
       it('moveAnchor', 2, 2), it('align', 2, 2), it('addNull'), it('clone'), it('cloneMirror'), it('loop'),
       it('elastic'), it('bounce'), it('fixKeysTime'), it('easingPresets'),
       it('extractShapes'), it('mergeShapes'), it('nullsToPoint'), it('selectPaths'),
@@ -43,6 +43,8 @@
       slots: { 'com.menmen.workflow.panel1': { kind: 'user', id: 'quick', view: 'layout' } },  // { extId: { kind, id, view: 'list'|'grid'|'layout' } }
       quickAdded: true,
       curves: [],        // saved Graph Editor curves [{ name, bz: [x1,y1,x2,y2] }]
+      usage: {},         // { toolId: { n: run count, t: last run } } - feeds Quick Access
+      qaAdded: true,
       main: { collapsedFav: false, iconsOnly: false, together: true }
     };
   }
@@ -53,6 +55,7 @@
     s.theme = Object.assign({}, d.theme, s.theme || {});
     ['favorites', 'upOrder'].forEach(function (k) { if (!Array.isArray(s[k])) s[k] = d[k]; });
     if (!Array.isArray(s.curves)) s.curves = [];
+    if (!s.usage || typeof s.usage !== 'object') s.usage = {};
     ['userPanels', 'hidden', 'params', 'slots', 'main'].forEach(function (k) { if (!s[k] || typeof s[k] !== 'object') s[k] = d[k]; });
     s.upOrder = s.upOrder.filter(function (id) { return s.userPanels[id]; });
     Object.keys(s.userPanels).forEach(function (id) { if (s.upOrder.indexOf(id) < 0) s.upOrder.push(id); });
@@ -62,6 +65,12 @@
       s.upOrder.unshift('quick');
       s.quickAdded = true;
     }
+    if (!s.qaAdded && s.userPanels.quick) {  // older settings: add Quick Access under the Graph Editor once
+      var qi = s.userPanels.quick.items, at = 0;
+      for (var i = 0; i < qi.length; i++) if (qi[i].type === 'tool' && qi[i].tool === 'easyKeyframes') { at = i + 1; break; }
+      if (!qi.some(function (x) { return x.type === 'quickAccess'; })) qi.splice(at, 0, { id: uid(), type: 'quickAccess' });
+    }
+    s.qaAdded = true;
     s.favorites = s.favorites.filter(function (id) { return window.Tools.get(id) || /^script:/.test(id); });
     return s;
   }
@@ -167,6 +176,20 @@
   };
 
   S.quickItems = quickItems;
+  // ----- usage (Quick Access) -----
+  S.track = function (id) {
+    if (!id || !window.Tools.get(id)) return;
+    var u = S.data.usage[id] || (S.data.usage[id] = { n: 0, t: 0 });
+    u.n++; u.t = Date.now();
+    S.save();
+  };
+  // Most used tools: run count, then most recent. exclude = { toolId: true }
+  S.topUsed = function (limit, exclude) {
+    return Object.keys(S.data.usage).filter(function (id) { return window.Tools.get(id) && !(exclude && exclude[id]) && S.data.usage[id].n > 0; })
+      .sort(function (a, b) { var x = S.data.usage[a], y = S.data.usage[b]; return (y.n - x.n) || (y.t - x.t); })
+      .slice(0, limit);
+  };
+  S.forget = function (id) { if (id) delete S.data.usage[id]; else S.data.usage = {}; S.save(); };
   S.reset = function () { S.data = defaults(); S.save(true); };
   S.importJSON = function (txt) { S.data = normalize(JSON.parse(txt)); S.save(true); };
   S.exportJSON = function () { return JSON.stringify(S.data, null, 2); };

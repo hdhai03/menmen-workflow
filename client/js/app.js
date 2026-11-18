@@ -51,6 +51,7 @@
     }, function (err) { done(); U.toast('Error: ' + err, false); });
   }
   function runTool(t, e) {
+    S.track(t.id); qaSoon();
     if (t.widget) return openWidget(t);
     if (t.params && t.params.length) return openParams(t, e);
     return exec(t.host || t.id, t.opts, e, t.name);
@@ -160,8 +161,95 @@
     hoverTip(b, tipTool(t));
     return b;
   }
-  function itemNode(it, grid) {
+  // ============ Quick Access (10 most used tools) ============
+  var QA_MAX = 10;
+  // Tools shown as inline widgets in the same panel are left out (they are already one click away).
+  function qaTools(u) {
+    var ex = {};
+    if (u) u.items.forEach(function (x) { if (x.type === 'tool') { var t = T.get(x.tool); if (t && t.widget && INLINE[t.widget]) ex[t.id] = true; } });
+    return S.topUsed(QA_MAX, ex).map(T.get);
+  }
+  function qaMenu(t, e, u) {
+    e.preventDefault(); e.stopPropagation();
+    var items = [{ header: t ? t.name : 'Quick Access' }];
+    if (t && u) items.push({ label: 'Pin to this panel', onClick: function () { u.items.push({ id: S.uid(), type: 'tool', tool: t.id }); S.save(); render(); } });
+    if (t) items.push({ label: 'Remove from Quick Access', onClick: function () { S.forget(t.id); render(); } });
+    items.push('-', { label: 'Reset usage counts', danger: true, onClick: function () { S.forget(); render(); } });
+    if (u) items.push({ label: 'Delete this area', danger: true, onClick: function () {
+      u.items = u.items.filter(function (x) { return x.type !== 'quickAccess'; }); S.save(); render(); } });
+    U.menu(e.clientX, e.clientY, items, { minWidth: 180 });
+  }
+  function qaHead(u) {
+    var h = el('div', 'qa-head', '<span class="qa-ico">' + T.iconSvg('quickAccess') + '</span><span class="qa-title">Quick Access</span>');
+    h.title = 'Your ' + QA_MAX + ' most used tools (right-click a tool to pin or remove it)';
+    h.addEventListener('contextmenu', function (e) { qaMenu(null, e, u); });
+    return h;
+  }
+  // Content of a Quick Access area. Layout view: square tiles; list / grid views: normal rows / tiles.
+  function qaContent(u, mode) {
+    var wrap = el('div', 'qa-in'), tools = qaTools(u);
+    wrap.appendChild(qaHead(u));
+    if (mode === 'layout') {
+      var g = el('div', 'qa-grid');
+      for (var i = 0; i < QA_MAX; i++) {
+        var t = tools[i];
+        if (!t) { g.appendChild(el('div', 'qa-slot')); continue; }
+        (function (t) {
+          var b = catStyle(el('button', 'qa-tile', '<span class="tile-ico">' + T.toolIcon(t) + '</span>'), t.cat);
+          b.addEventListener('click', function (e) { if (!st.edit) runTool(t, e); });
+          b.addEventListener('contextmenu', function (e) { qaMenu(t, e, u); });
+          hoverTip(b, function () { return tipTool(t) + '<span class="tip-mod muted">· used ' + ((S.data.usage[t.id] || {}).n || 0) + '×</span>'; });
+          g.appendChild(b);
+        })(t);
+      }
+      wrap.appendChild(g);
+    } else {
+      tools.forEach(function (t) {
+        var n = itemNode({ type: 'tool', tool: t.id }, mode === 'grid');
+        n.addEventListener('contextmenu', function (e) { qaMenu(t, e, u); });
+        wrap.appendChild(n);
+      });
+    }
+    if (!tools.length) wrap.appendChild(el('div', 'qa-empty', 'Run some tools – the ' + QA_MAX + ' you use most show up here.'));
+    return wrap;
+  }
+  function qaBox(cls, u, mode) {
+    var n = el('div', cls + ' qa-host');
+    n._u = u; n._mode = mode;
+    n.appendChild(qaContent(u, mode));
+    return n;
+  }
+  // Fit the Quick Access tiles to the panel's columns; the cell spans enough whole rows.
+  function fitQA(c, cols, cell, gap) {
+    c.style.gridColumn = '1 / -1';
+    var g = c.querySelector('.qa-grid'), h = c.querySelector('.qa-head'), e = c.querySelector('.qa-empty');
+    if (!g) return;
+    var per = cols >= 10 ? 10 : (cols >= 4 ? 5 : Math.max(1, cols)), inner = c.clientWidth - 8;  // 10 = 1x10 / 2x5, no ragged last row
+    var tile = Math.max(16, Math.floor((inner - gap * (per - 1)) / per));
+    g.style.gridTemplateColumns = 'repeat(' + per + ', ' + tile + 'px)';
+    g.style.gridAutoRows = tile + 'px';
+    var lines = Math.ceil(QA_MAX / per);
+    var want = 8 + (h ? h.offsetHeight + 3 : 0) + (e ? e.offsetHeight + 3 : 0) + lines * tile + (lines - 1) * gap;
+    c.style.gridRow = 'span ' + Math.max(1, Math.ceil((want + gap) / (cell + gap)));
+  }
+  // Re-order Quick Access after a run, but not while the pointer is over it (tiles would move under the cursor).
+  var qaTimer = null;
+  function qaSoon() {
+    clearTimeout(qaTimer);
+    qaTimer = setTimeout(function () {
+      var hosts = document.querySelectorAll('.qa-host');
+      for (var i = 0; i < hosts.length; i++) if (hosts[i].matches(':hover')) { hosts[i].addEventListener('mouseleave', qaSoon, { once: true }); return; }
+      for (var j = 0; j < hosts.length; j++) {
+        var h = hosts[j], old = h.querySelector('.qa-in');
+        h.replaceChild(qaContent(h._u, h._mode), old);
+        if (h.parentNode && h.parentNode._refit) h.parentNode._refit();
+      }
+    }, 150);
+  }
+
+  function itemNode(it, grid, u) {
     if (it.type === 'divider') return el('div', grid ? 'grid-divider' : 'list-divider');
+    if (it.type === 'quickAccess') return qaBox('qa-block' + (grid ? ' grid' : ''), u || null, grid ? 'grid' : 'list');
     var cat = itemCat(it), label = itemLabel(it);
     var n = el(grid ? 'button' : 'div', grid ? 'tile' : 'row-item');
     if (cat) catStyle(n, cat); else n.classList.add('custom');
@@ -224,7 +312,7 @@
   // Context handed to widgets: run a host tool, persist state, and the saved-curve library.
   function widgetCtx(t) {
     return {
-      run: function (id, o, e) { return exec(id, o, e, t.name); },
+      run: function (id, o, e) { S.track(t.id); qaSoon(); return exec(id, o, e, t.name); },
       save: function () { S.save(); },
       lib: {
         list: function () { return S.data.curves; },
@@ -300,7 +388,7 @@
         });
       S.data.upOrder.forEach(function (uid) {
         S.data.userPanels[uid].items.forEach(function (it) {
-          if (it.type === 'divider' || it.type === 'tool') return;
+          if (it.type === 'divider' || it.type === 'tool' || it.type === 'quickAccess') return;
           if (itemLabel(it).toLowerCase().indexOf(q) < 0) return;
           var n = itemNode(it, false);
           n.insertAdjacentHTML('beforeend', '<span class="ri-cat">' + esc(S.data.userPanels[uid].name) + '</span>');
@@ -382,7 +470,7 @@
     else {
       if (!u.items.length) list.appendChild(el('div', 'empty', 'No items yet. Click + to add scripts, expressions, effects…'));
       u.items.forEach(function (it) {
-        var n = itemNode(it, false);
+        var n = itemNode(it, false, u);
         n.addEventListener('contextmenu', function (e) { e.preventDefault(); itemMenu(sh.id, it, e); });
         list.appendChild(n);
       });
@@ -459,7 +547,7 @@
     var u = S.data.userPanels[upId], idx = u.items.indexOf(it);
     U.menu(e.clientX, e.clientY, [
       { header: itemLabel(it) },
-      { label: 'Edit…', disabled: it.type === 'divider', onClick: function () { itemForm(upId, it.type, it); } },
+      { label: 'Edit…', disabled: it.type === 'divider' || it.type === 'quickAccess', onClick: function () { itemForm(upId, it.type, it); } },
       { label: 'Move up', disabled: idx === 0, onClick: function () { u.items.splice(idx - 1, 0, u.items.splice(idx, 1)[0]); S.save(); render(); } },
       { label: 'Move down', disabled: idx === u.items.length - 1, onClick: function () { u.items.splice(idx + 1, 0, u.items.splice(idx, 1)[0]); S.save(); render(); } },
       { header: 'Size in Layout view' }, { node: sizeChips(it) },
@@ -482,7 +570,7 @@
     T.ITEM_TYPES.forEach(function (ty) {
       var b = el('button', 'type-row', '<span class="ri-ico">' + T.iconSvg(ty.icon) + '</span><span class="lib-text"><b>' + esc(ty.name) + '</b><small>' + esc(ty.desc) + '</small></span>');
       b.addEventListener('click', function () {
-        if (ty.type === 'divider') { S.data.userPanels[sel.value].items.push({ id: S.uid(), type: 'divider' }); S.save(); U.close(); render(); return; }
+        if (ty.type === 'divider' || ty.type === 'quickAccess') { S.data.userPanels[sel.value].items.push({ id: S.uid(), type: ty.type }); S.save(); U.close(); render(); return; }
         itemForm(sel.value, ty.type, null);
       });
       types.appendChild(b);
@@ -613,7 +701,7 @@
     } else {
       var u = S.data.userPanels[slot.id];
       u.items.forEach(function (it, idx) {
-        var n = itemNode(it, grid);
+        var n = itemNode(it, grid, u);
         n.addEventListener('contextmenu', function (e) { e.preventDefault(); itemMenu(u.id, it, e); });
         if (st.edit) {
           n.classList.add('editable'); n.draggable = true;
@@ -682,11 +770,13 @@
       grid.style.gridAutoRows = cell + 'px';
       Array.prototype.forEach.call(grid.children, function (c) {
         if (!c.dataset.w) return;
+        if (c.dataset.qa) return fitQA(c, cols, cell, gap);
         if (c.dataset.full) return fitFull(c, cols, cell, gap);
         c.style.gridColumn = 'span ' + Math.min(cols, Number(c.dataset.w));
       });
       grid.classList.toggle('q-narrow', cols < 2);
     };
+    grid._refit = apply;
     apply();
     requestAnimationFrame(apply);
     if (window.ResizeObserver) new ResizeObserver(apply).observe(grid);
@@ -709,7 +799,9 @@
       return dv;
     }
     var t = it.type === 'tool' ? T.get(it.tool) : null, sz = cellSize(it), n;
-    if (t && t.widget && INLINE[t.widget]) {
+    if (it.type === 'quickAccess') {
+      n = qaBox('q-cell q-qa', u || null, 'layout'); n.dataset.qa = 1;
+    } else if (t && t.widget && INLINE[t.widget]) {
       n = el('div', 'q-cell q-widget wq-' + t.widget);
       n.appendChild(W[INLINE[t.widget]](S.widgetData(t.id), widgetCtx(t)));
       var ex = svgBtn('q-expand', 'Open ' + t.name, ICONS.expand, function () { openWidget(t); });
@@ -724,7 +816,7 @@
         return '<b>' + esc(itemLabel(it)) + '</b><span class="tip-desc">' + esc(itemDesc(it)) + '</span>';
       });
     }
-    if (t) catStyle(n, t.cat); else n.classList.add('custom');
+    if (t) catStyle(n, t.cat); else if (it.type !== 'quickAccess') n.classList.add('custom');
     n.dataset.w = sz[0];
     if (t && t.widget && FULL_WIDTH[t.widget]) { n.dataset.full = 1; n.dataset.h = it.h && it.h > 2 ? it.h : 0; n.classList.add('q-full'); }
     n.style.gridColumn = 'span ' + sz[0];
