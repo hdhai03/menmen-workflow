@@ -68,236 +68,141 @@
   }
   function fmt(v) { return String(Math.round(v * 100) / 100); }
 
-  // Interaction (Motion-style):
-  //  - grab a handle (generous hit area) and it keeps its offset to the pointer: no jump on click
-  //  - click on empty graph = the nearest handle jumps to the pointer
-  //  - the graph only reacts inside its box: leaving it or releasing the button ends the drag
-  //  - Shift = lock to the dominant axis, Ctrl/Cmd = fine (1/5 speed), Alt or Link = mirror
-  //  - soft snapping to flat ease (0 / 1) and to the key level, view grows while dragging past the edge
-  //  - ghost of the previous curve + live readout while dragging, Auto = apply on release
-  //  - arrow keys nudge the active handle (Shift = x10), Tab switches handle, double-click resets
+  // Interaction: no handles - drag the curve itself.
+  //  - drag sideways  = move the peak (skew): Out influence grows, In shrinks (or the other way)
+  //  - drag up / down = stronger / softer ease (both influences together)
+  //  - Shift = one axis only, Ctrl/Cmd = fine, Alt or Link = keep it symmetric, double-click = reset
+  //  - the graph only works around its box (24 px margin); release applies when Auto is on
+  // Detail strip under the graph: [Out ›] [○ ◇ □] [‹ In], then a Strength slider with a big readout.
+  // The two number boxes can be dragged sideways (scrub) or clicked to type.
   function graphEditor(d, ctx) {
     initCurve(d);
     var root = el('div', 'w ge');
     var box = el('div', 'ge-graph'), svgHost = el('div', 'ge-svg'), tip = el('div', 'ge-tip');
     box.append(svgHost, tip);
     box.tabIndex = 0;
-    var W_ = 300, H_ = 180, PX = 14, PY = 12, range = null, drag = null, hover = null, ghost = null;
-    if (d.sel == null) d.sel = 0;
+    var W_ = 300, H_ = 180, PX = 14, PY = 12, range = null, drag = null, ghost = null;
 
-    // ---- coordinate systems ----
+    // ---- curve helpers: influences o (out) / i (in) in 0..1, speeds kept from the curve ----
     function speedOf(b) {
       b = b || d.bz;
       return [b[1] / Math.max(0.001, b[0]), (1 - b[3]) / Math.max(0.001, 1 - b[2])];
     }
+    function infl() { return [d.bz[0], 1 - d.bz[2]]; }
+    function setInfl(o, i) {
+      o = clamp(o, 0.01, 1); i = clamp(i, 0.01, 1);
+      if (d.link) i = o;
+      var sp = speedOf();
+      if (d.view === 'speed') sp = [0, 0];  // speed view: keys always at speed 0 (pure ease)
+      d.bz = [o, o * sp[0], 1 - i, 1 - i * sp[1]];
+    }
     function computeRange() {
       var b = d.bz;
-      if (d.view === 'value') {
-        return { lo: Math.min(-0.15, b[1] - 0.12, b[3] - 0.12), hi: Math.max(1.15, b[1] + 0.12, b[3] + 0.12) };
-      }
+      if (d.view === 'value') return { lo: Math.min(-0.15, b[1] - 0.12, b[3] - 0.12), hi: Math.max(1.15, b[1] + 0.12, b[3] + 0.12) };
       var sp = speedOf();
       return speedRange(speedSamples(b[0], b[1], b[2], b[3]), [sp[0], sp[1]]);
     }
     function map(x, v) { return [PX + x * (W_ - 2 * PX), H_ - PY - (v - range.lo) / (range.hi - range.lo) * (H_ - 2 * PY)]; }
-    function unmap(px, py) { return [(px - PX) / (W_ - 2 * PX), range.lo + (H_ - PY - py) / (H_ - 2 * PY) * (range.hi - range.lo)]; }
-    function pxPerV() { return (H_ - 2 * PY) / (range.hi - range.lo); }
-    // handle position in graph units: value view = (x, value), speed view = (x, speed)
-    function handleVal(i) {
-      var b = d.bz, sp = speedOf();
-      if (d.view === 'value') return i ? [b[2], b[3]] : [b[0], b[1]];
-      return i ? [b[2], 0] : [b[0], 0];  // speed view: knobs sit on the baseline (influence only)
-    }
-    function knobs() { return [0, 1].map(function (i) { var h = handleVal(i); return map(h[0], h[1]); }); }
-
-    // set handle i from graph units, then mirror if linked
-    function setHandle(i, x, v, mirror) {
-      var b = d.bz;
-      if (d.view === 'value') {
-        v = clamp(v, -1.5, 2.5);
-        if (i === 0) { b[0] = clamp(x, 0, 1); b[1] = v; } else { b[2] = clamp(x, 0, 1); b[3] = v; }
-      } else {
-        // speed view = pure ease: both keys stay at speed 0 (the curve starts and ends on the
-        // baseline); dragging sideways sets the influence
-        if (i === 0) { b[0] = clamp(x, 0.01, 1); b[1] = 0; } else { b[2] = clamp(x, 0, 0.99); b[3] = 1; }
-      }
-      if (mirror) {
-        if (i === 0) { b[2] = 1 - b[0]; b[3] = 1 - b[1]; } else { b[0] = 1 - b[2]; b[1] = 1 - b[3]; }
-      }
-    }
-
-    // ---- drawing ----
     function bezPath(b) {
       var p0 = map(0, 0), p3 = map(1, 1), c1 = map(b[0], b[1]), c2 = map(b[2], b[3]);
       return 'M' + p0[0] + ' ' + p0[1] + 'C' + c1[0] + ' ' + c1[1] + ' ' + c2[0] + ' ' + c2[1] + ' ' + p3[0] + ' ' + p3[1];
     }
+
+    // ---- drawing ----
     function draw() {
       var r = box.getBoundingClientRect();
       W_ = Math.max(80, Math.round(r.width) || 300); H_ = Math.max(50, Math.round(r.height) || 180);
       PX = W_ < 160 ? 8 : 14; PY = H_ < 100 ? 7 : 12;
-      if (!range || !drag) range = computeRange();
-      var b = d.bz, svg = '<svg width="' + W_ + '" height="' + H_ + '" viewBox="0 0 ' + W_ + ' ' + H_ + '">', k = knobs();
-      // grid: quarters in x
-      var gx = '';
+      range = computeRange();
+      var b = d.bz, svg = '<svg width="' + W_ + '" height="' + H_ + '" viewBox="0 0 ' + W_ + ' ' + H_ + '">', gx = '';
       for (var q = 1; q < 4; q++) { var gp = map(q / 4, 0)[0]; gx += 'M' + gp.toFixed(1) + ' 0V' + H_; }
       svg += '<path class="ge-gridl" d="' + gx + '"/>';
       if (d.view === 'value') {
-        var p0 = map(0, 0), p3 = map(1, 1), c1 = map(b[0], b[1]), c2 = map(b[2], b[3]);
+        var p0 = map(0, 0), p3 = map(1, 1);
         svg += '<rect class="ge-unit" x="' + p0[0] + '" y="' + p3[1] + '" width="' + (p3[0] - p0[0]) + '" height="' + (p0[1] - p3[1]) + '"/>';
         if (ghost) svg += '<path class="ge-ghost" d="' + bezPath(ghost) + '"/>';
-        svg += '<path class="ge-handle" d="M' + p0[0] + ' ' + p0[1] + 'L' + c1[0] + ' ' + c1[1] + 'M' + p3[0] + ' ' + p3[1] + 'L' + c2[0] + ' ' + c2[1] + '"/>' +
-          '<path class="ge-curve" d="' + bezPath(b) + '"/>' +
-          '<rect class="ge-key" x="' + (p0[0] - 3) + '" y="' + (p0[1] - 3) + '" width="6" height="6"/><rect class="ge-key" x="' + (p3[0] - 3) + '" y="' + (p3[1] - 3) + '" width="6" height="6"/>';
+        svg += '<path class="ge-curve" d="' + bezPath(b) + '"/>';
+        svg += '<rect class="ge-key" x="' + (p0[0] - 3) + '" y="' + (p0[1] - 3) + '" width="6" height="6"/><rect class="ge-key" x="' + (p3[0] - 3) + '" y="' + (p3[1] - 3) + '" width="6" height="6"/>';
       } else {
-        var sp = speedOf(), smp = speedSamples(b[0], b[1], b[2], b[3]), base = map(0, 0), avg = map(0, 1);
+        var base = map(0, 0), avg = map(0, 1), end = map(1, 0);
         svg += '<path class="sg-grid" d="M0 ' + base[1] + 'H' + W_ + '"/><path class="sg-avg" d="M0 ' + avg[1] + 'H' + W_ + '"/>';
         if (ghost) svg += '<path class="ge-ghost" d="' + pathOf(speedSamples(ghost[0], ghost[1], ghost[2], ghost[3]), map, range) + '"/>';
-        svg += '<path class="ge-curve" d="' + pathOf(smp, map, range) + '"/>' +
-          '<rect class="ge-key" x="' + (base[0] - 3) + '" y="' + (base[1] - 3) + '" width="6" height="6"/><rect class="ge-key" x="' + (map(1, 0)[0] - 3) + '" y="' + (base[1] - 3) + '" width="6" height="6"/>';
+        svg += '<path class="ge-curve" d="' + pathOf(speedSamples(b[0], b[1], b[2], b[3]), map, range) + '"/>';
+        svg += '<rect class="ge-key" x="' + (base[0] - 3) + '" y="' + (base[1] - 3) + '" width="6" height="6"/><rect class="ge-key" x="' + (end[0] - 3) + '" y="' + (end[1] - 3) + '" width="6" height="6"/>';
       }
-      k.forEach(function (p, i) {
-        var big = drag && drag.i === i || hover === i, ks = big ? 11 : 9;
-        svg += '<rect class="ge-knob' + (drag && drag.i === i ? ' on' : '') + (hover === i ? ' hov' : '') + (d.sel === i ? ' sel' : '') +
-          '" x="' + (p[0] - ks / 2) + '" y="' + (p[1] - ks / 2) + '" width="' + ks + '" height="' + ks + '"/>';
-      });
       svgHost.innerHTML = svg + '</svg>';
-      var s2 = speedOf();
-      if (nums) {
-        var vals = { oi: Math.round(b[0] * 100), os: fmt(s2[0]), ii: Math.round((1 - b[2]) * 100), is: fmt(s2[1]) };
-        Object.keys(nums).forEach(function (k) { if (document.activeElement !== nums[k]) nums[k].value = vals[k]; });
-        nums.os.disabled = nums.is.disabled = d.view === 'speed';  // speed view: keys always at speed 0
-      }
-      if (bzInput && !typing) bzInput.value = b.map(fmt).join(', ');
+      var f = infl();
       if (drag) {
-        var i = drag.i, kp = k[i];
-        tip.textContent = (i ? 'In ' + Math.round((1 - b[2]) * 100) : 'Out ' + Math.round(b[0] * 100)) + '%  ' + fmt(s2[i]) + '×' + (drag.fine ? '  fine' : '') + (drag.axis ? '  ' + drag.axis : '');
+        tip.textContent = 'Out ' + Math.round(f[0] * 100) + '%  ·  In ' + Math.round(f[1] * 100) + '%' + (drag.fine ? '  fine' : '');
         tip.className = 'ge-tip show';
-        var tw = tip.offsetWidth || 80;
-        tip.style.left = clamp(kp[0] + (i ? -tw - 10 : 10), 2, W_ - tw - 2) + 'px';
-        tip.style.top = clamp(kp[1] - 24, 2, H_ - 20) + 'px';
+        tip.style.left = Math.max(2, (W_ - (tip.offsetWidth || 120)) / 2) + 'px'; tip.style.top = '4px';
       } else tip.className = 'ge-tip';
+      paintStrip();
+      if (bzInput && !typing) bzInput.value = b.map(fmt).join(', ');
     }
 
-    // ---- interaction ----
-    function local(e) { var r = box.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
-    function nearest(p) {
-      var k = knobs(), d0 = Math.hypot(p[0] - k[0][0], p[1] - k[0][1]), d1 = Math.hypot(p[0] - k[1][0], p[1] - k[1][1]);
-      return { i: d0 <= d1 ? 0 : 1, dist: Math.min(d0, d1) };
-    }
-    var HIT = 14;
+    // ---- shape drag on the graph ----
+    var MARGIN = 24, docMove = null, docUp = null;
     function onDown(e) {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || drag) return;
       e.preventDefault();
-      try { box.focus({ preventScroll: true }); } catch (x) { /* keyboard nudging only */ }
-      var p = local(e), n = nearest(p);
+      try { box.focus({ preventScroll: true }); } catch (x) { /* keyboard only */ }
+      var f = infl();
+      drag = { x: e.clientX, y: e.clientY, o: f[0], i: f[1], moved: false, fine: false };
       ghost = d.bz.slice();
-      drag = { i: n.i, moved: false, fine: false, axis: null };
-      d.sel = n.i;
-      var ptr = unmap(p[0], p[1]);
-      // on the knob: keep the grab offset; on empty graph: the handle jumps to the pointer
-      drag.start = n.dist <= HIT ? handleVal(n.i) : ptr;
-      drag.ptr0 = ptr; drag.px0 = p;
-      if (n.dist > HIT) { setHandle(n.i, ptr[0], ptr[1], d.link || e.altKey); drag.moved = true; }
+      docMove = function (ev) {
+        var r = box.getBoundingClientRect();
+        if (ev.clientX < r.left - MARGIN || ev.clientX > r.right + MARGIN || ev.clientY < r.top - MARGIN || ev.clientY > r.bottom + MARGIN) return endDrag();
+        onMove(ev);
+      };
+      docUp = function () { endDrag(); };
+      document.addEventListener('mousemove', docMove, true);
+      document.addEventListener('mouseup', docUp, true);
+      document.documentElement.addEventListener('mouseleave', docUp);
       draw();
     }
     function onMove(e) {
-      var p = local(e);
-      if (!drag) {
-        var n = nearest(p), h = n.dist <= HIT ? n.i : null;
-        box.style.cursor = h != null ? 'grab' : 'crosshair';
-        if (h !== hover) { hover = h; draw(); }
-        return;
-      }
-      box.style.cursor = 'grabbing';
-      p = [clamp(p[0], 0, W_), p[1]];
       var fine = e.ctrlKey || e.metaKey;
-      // past the top / bottom edge: the view grows a little per move (no runaway), the pointer is clamped to it
-      var over = p[1] < 4 ? 1 : (p[1] > H_ - 4 ? -1 : 0);
-      if (over) {
-        var g = (range.hi - range.lo) * 0.03;
-        if (d.view === 'value') { if (over > 0) range.hi = Math.min(2.7, range.hi + g); else range.lo = Math.max(-1.7, range.lo - g); }
-
-        p = [p[0], clamp(p[1], 0, H_)];
+      if (fine !== drag.fine) {  // re-base so switching fine mode never jumps
+        var cur = infl(); drag.o = cur[0]; drag.i = cur[1]; drag.x = e.clientX; drag.y = e.clientY; drag.fine = fine;
       }
-      var ptr = unmap(p[0], p[1]);
-      if (fine !== drag.fine) {  // re-base so toggling fine mode never jumps
-        drag.start = handleVal(drag.i); drag.ptr0 = ptr; drag.px0 = p; drag.fine = fine;
-      }
-      var f = fine ? 0.2 : 1;
-      var x = drag.start[0] + (ptr[0] - drag.ptr0[0]) * f, v = drag.start[1] + (ptr[1] - drag.ptr0[1]) * f;
-      // Shift: lock the axis the pointer moved most along
-      drag.axis = null;
-      if (e.shiftKey) {
-        var dx = Math.abs(p[0] - drag.px0[0]), dy = Math.abs(p[1] - drag.px0[1]);
-        if (dx >= dy) { v = drag.start[1]; drag.axis = 'H'; } else { x = drag.start[0]; drag.axis = 'V'; }
-      }
-      // soft snap (not in fine mode): value view -> 0 and 1, speed view -> 0 and the average speed
-      if (!fine) {
-        var tol = 5 / pxPerV(), tx = 4 / (W_ - 2 * PX);
-        [0, 1].forEach(function (s) { if (Math.abs(v - s) < tol) v = s; });
-        [0, 1 / 3, 2 / 3, 1].forEach(function (s) { if (Math.abs(x - s) < tx) x = s; });
-      }
-      setHandle(drag.i, x, v, d.link || e.altKey);
+      var k = fine ? 0.2 : 1, gw = Math.max(60, W_ - 2 * PX), gh = Math.max(40, H_ - 2 * PY);
+      var dx = (e.clientX - drag.x) / gw * 0.8 * k, dy = -(e.clientY - drag.y) / gh * 0.5 * k;  // a full-height drag = +-50 % strength
+      if (e.shiftKey) { if (Math.abs(dx) * gw >= Math.abs(dy) * gh) dy = 0; else dx = 0; }
+      if (e.altKey || d.link) dx = 0;  // symmetric: strength only
+      setInfl(drag.o + dx + dy, drag.i - dx + dy);
       drag.moved = true;
       draw();
     }
-    function onUp(e) {
-      if (!drag) return;
-      var moved = drag.moved;
-      drag = null; ghost = null; box.style.cursor = 'grab';
-      draw(); ctx.save();
-      if (moved && d.auto) autoApply();
-    }
-    // Drag: mouse events on the document while the button is down (what drags reliably in AE's
-    // embedded Chromium - its e.buttons is not trustworthy). The graph only works around its box:
-    // moving more than 24 px away from it, leaving the panel or losing focus ends the drag, so a
-    // release outside the panel (AE never sends that mouseup) can't leave a drag running.
-    var MARGIN = 24, docMove = null, docUp = null;
-    function endDrag(e) {
+    function endDrag() {
       if (docMove) { document.removeEventListener('mousemove', docMove, true); document.removeEventListener('mouseup', docUp, true); }
       document.documentElement.removeEventListener('mouseleave', docUp);
       docMove = docUp = null;
-      onUp(e || {});
-    }
-    box.addEventListener('mousedown', function (e) {
-      if (e.button !== 0 || drag) return;
-      onDown(e);
       if (!drag) return;
-      docMove = function (ev) {
-        var r = box.getBoundingClientRect();
-        if (ev.clientX < r.left - MARGIN || ev.clientX > r.right + MARGIN || ev.clientY < r.top - MARGIN || ev.clientY > r.bottom + MARGIN) return endDrag(ev);
-        onMove(ev);
-      };
-      docUp = function (ev) { endDrag(ev); };
-      document.addEventListener('mousemove', docMove, true);
-      document.addEventListener('mouseup', docUp, true);
-      document.documentElement.addEventListener('mouseleave', docUp);  // pointer left the panel
-    });
-    box.addEventListener('mousemove', function (e) { if (!drag) onMove(e); });
-    box.addEventListener('mouseleave', function () { if (!drag && hover != null) { hover = null; draw(); } });
-    window.addEventListener('blur', function () { if (drag) endDrag({}); });
-    box.addEventListener('dblclick', function () { d.bz = [0.333, 0, 0.667, 1]; draw(); ctx.save(); });
+      var moved = drag.moved;
+      drag = null; ghost = null;
+      draw(); ctx.save();
+      if (moved && d.auto) autoApply();
+    }
+    box.addEventListener('mousedown', onDown);
+    window.addEventListener('blur', function () { if (drag) endDrag(); });
+    box.addEventListener('dblclick', function () { d.bz = [0.333, 0, 0.667, 1]; if (d.view === 'speed') setInfl(0.333, 0.333); draw(); ctx.save(); if (d.auto) autoApply(); });
     box.addEventListener('keydown', function (e) {
-      var k = e.key;
-      if (k === 'Tab') { e.preventDefault(); d.sel = 1 - d.sel; draw(); return; }
-      var step = e.shiftKey ? 0.1 : 0.01, h = handleVal(d.sel), x = h[0], v = h[1];
-      if (d.view === 'speed') step *= Math.max(1, range.hi - range.lo) / 2;
-      if (k === 'ArrowLeft') x -= e.shiftKey ? 0.1 : 0.01;
-      else if (k === 'ArrowRight') x += e.shiftKey ? 0.1 : 0.01;
-      else if (k === 'ArrowUp') v += step;
-      else if (k === 'ArrowDown') v -= step;
-      else if (k === 'Enter') { apply('both', e); return; }
+      var f = infl(), s = e.shiftKey ? 0.1 : 0.01;
+      if (e.key === 'ArrowLeft') setInfl(f[0] - s, f[1] + s);
+      else if (e.key === 'ArrowRight') setInfl(f[0] + s, f[1] - s);
+      else if (e.key === 'ArrowUp') setInfl(f[0] + s, f[1] + s);
+      else if (e.key === 'ArrowDown') setInfl(f[0] - s, f[1] - s);
+      else if (e.key === 'Enter') { apply('both', e); return; }
       else return;
       e.preventDefault(); e.stopPropagation();
-      setHandle(d.sel, x, v, d.link || e.altKey);
-      range = null; draw(); ctx.save();
+      draw(); ctx.save();
       if (d.auto) { clearTimeout(autoT); autoT = setTimeout(autoApply, 350); }
     });
-    box.title = 'Drag a handle (or click the graph). Shift = lock axis, Ctrl/Cmd = fine, Alt = mirror, double-click = reset. Arrows nudge, Tab switches handle, Enter applies.';
+    box.title = 'Drag the curve: sideways = move the peak, up/down = stronger/softer ease. Shift = one axis, Ctrl = fine, Alt = symmetric, double-click = reset. Arrow keys work too.';
 
-    function setCurve(bz) { d.bz = bz.slice(); range = null; draw(); ctx.save(); if (d.auto) autoApply(); }
     function apply(side, e) { return ctx.run('easingPreset', { bezier: d.bz, side: side, alt: false, shift: false }, e); }
-    // Auto: applied quietly on every release - a small note in the graph instead of a toast,
-    // and no error popup when no keyframes are selected.
+    // Auto: applied quietly - a small note in the graph, no popup when no keyframes are selected
     var status = el('div', 'ge-status'), statusT = null, autoT = null;
     box.appendChild(status);
     function note(msg, ok) {
@@ -307,27 +212,28 @@
     function autoApply() {
       clearTimeout(autoT);
       autoT = setTimeout(function () {
-        var q = ctx.query || ctx.run;
-        q('easingPreset', { bezier: d.bz.slice(), side: 'both', alt: false, shift: false }).then(function (r) {
+        (ctx.query || ctx.run)('easingPreset', { bezier: d.bz.slice(), side: 'both', alt: false, shift: false }).then(function (r) {
           if (!r) return;
           if (r.ok) note('Applied', true);
           else note(/select|keyframe/i.test(r.msg) ? 'Select keyframes to apply' : r.msg, false);
         });
       }, 60);
     }
+    function setCurve(bz) {
+      d.bz = bz.slice();
+      if (d.view === 'speed') { var f = infl(); setInfl(f[0], f[1]); }
+      draw(); ctx.save(); if (d.auto) autoApply();
+    }
 
     // ---- toolbar ----
-    var nums = null, bzInput = null, typing = false;
+    var bzInput = null, typing = false;
     var bar = el('div', 'ge-bar');
     var tabs = el('div', 'seg ge-tabs');
     [['value', 'Value'], ['speed', 'Speed']].forEach(function (v) {
       var t = el('button', 'seg-btn' + (d.view === v[0] ? ' on' : ''), v[1]);
       t.addEventListener('click', function () {
-        d.view = v[0]; range = null;
-        if (d.view === 'speed' && (Math.abs(d.bz[1]) > 1e-6 || Math.abs(d.bz[3] - 1) > 1e-6)) {
-          d.bz[0] = clamp(d.bz[0], 0.01, 1); d.bz[1] = 0; d.bz[2] = clamp(d.bz[2], 0, 0.99); d.bz[3] = 1;
-          if (d.auto) autoApply();
-        }
+        d.view = v[0];
+        if (d.view === 'speed' && (Math.abs(d.bz[1]) > 1e-6 || Math.abs(d.bz[3] - 1) > 1e-6)) { var f = infl(); setInfl(f[0], f[1]); if (d.auto) autoApply(); }
         ctx.save();
         tabs.querySelectorAll('.seg-btn').forEach(function (x) { x.classList.remove('on'); }); t.classList.add('on'); draw();
       });
@@ -339,42 +245,103 @@
       b.addEventListener('click', function () { d[key] = !d[key]; b.classList.toggle('on', !!d[key]); if (d[key] && onOn) onOn(); ctx.save(); });
       return b;
     };
-    var link = tool('Link', 'link', 'Mirror the two handles (symmetric curve)', function () { d.bz[2] = 1 - d.bz[0]; d.bz[3] = 1 - d.bz[1]; draw(); });
-    var auto = tool('Auto', 'auto', 'On: the curve is applied to the selected keys as soon as you release a handle or pick a preset (no need to click Apply). Off: only Apply / In / Out apply.');
+    var link = tool('Link', 'link', 'Keep Out and In equal (symmetric curve)', function () { var f = infl(); setInfl(f[0], f[0]); draw(); if (d.auto) autoApply(); });
+    var auto = tool('Auto', 'auto', 'On: applied to the selected keys as soon as you release, pick a preset or change a value. Off: use ○ / ◇ / □ to apply.');
     var rd = el('button', 'w-btn ge-tool', 'Read');
     rd.title = 'Read the curve from the selected keyframes';
     rd.addEventListener('click', function (e) {
       ctx.run('readEase', {}, e).then(function (r) {
         if (!r || !r.ok) return;
         var v = String(r.msg).split(',').map(Number);
-        if (v.length === 4 && v.every(function (x) { return !isNaN(x); })) { d.bz = v; range = null; draw(); ctx.save(); }
+        if (v.length === 4 && v.every(function (x) { return !isNaN(x); })) { d.bz = v; draw(); ctx.save(); }
       });
     });
     bar.append(tabs, el('span', 'spacer'), link, auto, rd);
     root.append(bar, box);
 
-    var info = el('div', 'ge-info');
-    // Out / In: influence % and speed (x average speed) of the two keys - type to set them
-    var read = el('div', 'ge-nums');
-    nums = {};
-    [['oi', 'Out', '%', 'Outgoing influence %'], ['os', '', '×', 'Outgoing speed (× average speed; 0 = ease)'],
-     ['ii', 'In', '%', 'Incoming influence %'], ['is', '', '×', 'Incoming speed (× average speed; 0 = ease)']].forEach(function (f) {
-      var wrap = el('label', 'ge-num', (f[1] ? '<b>' + f[1] + '</b>' : ''));
-      var inp = el('input', 'input'); inp.type = 'number'; inp.step = f[2] === '%' ? 1 : 0.1; inp.min = 0; if (f[2] === '%') inp.max = 100;
-      inp.title = f[3];
-      wrap.appendChild(inp); wrap.appendChild(el('span', 'ge-unit-l', f[2]));
-      inp.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') inp.blur(); });
-      inp.addEventListener('change', function () {
-        var oi = clamp(Number(nums.oi.value) || 0, 0.1, 100) / 100, ii = clamp(Number(nums.ii.value) || 0, 0.1, 100) / 100;
-        var os = Math.max(0, Number(nums.os.value) || 0), is = Math.max(0, Number(nums.is.value) || 0);
-        d.bz = [oi, oi * os, 1 - ii, 1 - ii * is];
-        if (d.link) { d.bz[2] = 1 - d.bz[0]; d.bz[3] = 1 - d.bz[1]; }
-        range = null; draw(); ctx.save();
-        if (d.auto) autoApply();
+    // ---- detail strip: [Out ›] [○ ◇ □] [‹ In] + strength slider with a big readout ----
+    var strip = el('div', 'ge-strip');
+    function scrubBox(cls, label, arrow, side) {
+      var wrap = el('div', 'ge-sb ' + cls);
+      var inp = el('input', 'ge-sb-val'); inp.type = 'text'; inp.spellcheck = false;
+      var arr = el('button', 'ge-sb-arr', arrow);
+      arr.title = (side === 'o' ? 'Out' : 'In') + ' influence +1 (Shift +10, Alt −)';
+      inp.title = (side === 'o' ? 'Out' : 'In') + ' influence % – drag sideways to scrub, click to type';
+      if (side === 'o') wrap.append(inp, arr); else wrap.append(arr, inp);
+      var get = function () { return Math.round(infl()[side === 'o' ? 0 : 1] * 100); };
+      var set = function (v) {
+        var f = infl(), n = clamp(v, 1, 100) / 100;
+        if (side === 'o') setInfl(n, d.link ? n : f[1]); else setInfl(d.link ? n : f[0], n);
+        draw(); ctx.save();
+      };
+      arr.addEventListener('click', function (e) { stop(e); set(get() + (e.altKey ? -1 : 1) * (e.shiftKey ? 10 : 1)); if (d.auto) autoApply(); });
+      // scrub: drag sideways on the number (1 % per 2 px, Shift x5); a click without moving types
+      inp.addEventListener('mousedown', function (e) {
+        if (document.activeElement === inp) return;
+        e.preventDefault();
+        var x0 = e.clientX, v0 = get(), moved = false;
+        var mv = function (ev) {
+          var dv = Math.round((ev.clientX - x0) / 2) * (ev.shiftKey ? 5 : 1);
+          if (Math.abs(ev.clientX - x0) > 2) moved = true;
+          if (moved) { set(v0 + dv); big.textContent = pad3(get()); }
+        };
+        var up = function () {
+          document.removeEventListener('mousemove', mv, true); document.removeEventListener('mouseup', up, true);
+          if (!moved) { inp.focus(); inp.select(); } else if (d.auto) autoApply();
+        };
+        document.addEventListener('mousemove', mv, true); document.addEventListener('mouseup', up, true);
       });
-      nums[f[0]] = inp;
-      read.appendChild(wrap);
+      inp.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') inp.blur(); if (e.key === 'Escape') { inp.value = get(); inp.blur(); } });
+      inp.addEventListener('change', function () { var v = parseFloat(inp.value); if (!isNaN(v)) { set(v); if (d.auto) autoApply(); } else inp.value = get(); });
+      wrap.inp = inp;
+      return wrap;
+    }
+    var outBox = scrubBox('ge-sb-out', 'Out', '<svg viewBox="0 0 8 12"><path d="M2 2l4 4-4 4"/></svg>', 'o');
+    var inBox = scrubBox('ge-sb-in', 'In', '<svg viewBox="0 0 8 12"><path d="M6 2L2 6l4 4"/></svg>', 'i');
+    var modes = el('div', 'ge-modes');
+    [['ease', '<circle cx="8" cy="8" r="4.5"/>', 'Ease: apply this curve (Alt: In side only, Shift: Out side only)'],
+     ['linear', '<path d="M8 3l5 5-5 5-5-5z"/>', 'Linear keyframes'],
+     ['hold', '<rect x="3.5" y="3.5" width="9" height="9"/>', 'Hold keyframes']].forEach(function (m) {
+      var b = el('button', 'ge-mode' + (m[0] === (d.mode || 'ease') ? ' on' : ''), '<svg viewBox="0 0 16 16">' + m[1] + '</svg>');
+      b.title = m[2];
+      b.addEventListener('click', function (e) {
+        stop(e);
+        d.mode = m[0]; ctx.save();
+        modes.querySelectorAll('.ge-mode').forEach(function (x) { x.classList.toggle('on', x === b); });
+        if (m[0] === 'ease') apply(e.altKey ? 'in' : (e.shiftKey ? 'out' : 'both'), e);
+        else ctx.run('easyKeyframes', { mode: m[0] }, e);
+      });
+      modes.appendChild(b);
     });
+    strip.append(outBox, modes, inBox);
+    // strength: average influence; dragging scales both and keeps the skew
+    var sl = el('div', 'ge-strength');
+    var track = el('div', 'ge-track', '<i></i>'), big = el('div', 'ge-big');
+    track.title = 'Ease strength (average influence) – drag';
+    big.title = 'Ease strength %';
+    sl.append(track, big);
+    function pad3(v) { return ('00' + Math.round(v)).slice(-3); }
+    track.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      var r = track.getBoundingClientRect(), f0 = infl(), s0 = (f0[0] + f0[1]) / 2;
+      var mv = function (ev) {
+        var s = clamp((ev.clientX - r.left) / r.width, 0.01, 1), k = s / Math.max(0.001, s0);
+        setInfl(f0[0] * k, f0[1] * k); draw();
+      };
+      var up = function () { document.removeEventListener('mousemove', mv, true); document.removeEventListener('mouseup', up, true); ctx.save(); if (d.auto) autoApply(); };
+      document.addEventListener('mousemove', mv, true); document.addEventListener('mouseup', up, true);
+      mv(e);
+    });
+    function paintStrip() {
+      var f = infl(), o = Math.round(f[0] * 100), i = Math.round(f[1] * 100), s = (o + i) / 2;
+      if (document.activeElement !== outBox.inp) outBox.inp.value = o;
+      if (document.activeElement !== inBox.inp) inBox.inp.value = i;
+      track.firstChild.style.width = Math.min(100, s) + '%';
+      big.textContent = pad3(s);
+    }
+    root.append(strip, sl);
+
+    // ---- cubic-bezier text + presets ----
     bzInput = el('input', 'input ge-bz'); bzInput.spellcheck = false; bzInput.title = 'cubic-bezier(x1, y1, x2, y2) - edit or paste, then press Enter';
     bzInput.addEventListener('input', function () { typing = true; });
     bzInput.addEventListener('blur', function () { typing = false; draw(); });
@@ -385,16 +352,13 @@
       var v = bzInput.value.replace(/cubic-bezier|[()]/g, '').split(/[\s,]+/).filter(Boolean).map(Number);
       if (v.length === 4 && v.every(function (x) { return !isNaN(x); })) { v[0] = clamp(v[0], 0, 1); v[2] = clamp(v[2], 0, 1); setCurve(v); bzInput.blur(); }
     });
-    info.append(read, bzInput);
-    root.appendChild(info);
-
-    // presets: built-in + saved curves (click = load, double-click = load & apply, right-click saved = delete)
+    root.appendChild(bzInput);
     var pres = el('div', 'ge-presets');
     var fillPresets = function () {
       pres.innerHTML = '';
       var add = function (name, bz, idx) {
         var b = el('button', 'ge-pre' + (idx != null ? ' user' : ''), valueThumb(bz));
-        b.title = name + (idx != null ? ' (right-click to delete)' : '') + ' - click to load, double-click to apply';
+        b.title = name + (idx != null ? ' (right-click to delete)' : '') + ' - click to load' + (d.auto ? ' and apply' : ', double-click to apply');
         b.addEventListener('click', function () { setCurve(bz); });
         b.addEventListener('dblclick', function (e) { if (!d.auto) apply('both', e); });
         if (idx != null) b.addEventListener('contextmenu', function (e) { e.preventDefault(); ctx.lib.remove(idx); fillPresets(); });
@@ -408,21 +372,6 @@
       pres.appendChild(sv);
     };
     if (ctx.lib) { fillPresets(); root.appendChild(pres); }
-
-    // ---- apply buttons ----
-    var btns = el('div', 'w-btns ge-btns');
-    [['apply', 'Apply', 'Apply the curve to the selected keys'], ['in', 'In', 'Incoming side only'], ['out', 'Out', 'Outgoing side only'],
-     ['linear', 'Linear', 'Linear'], ['hold', 'Hold', 'Hold']].forEach(function (b) {
-      var x = el('button', 'w-btn' + (b[0] === 'apply' ? ' w-primary' : ''), b[1]);
-      x.title = b[2];
-      x.addEventListener('click', function (e) {
-        stop(e);
-        if (b[0] === 'linear' || b[0] === 'hold') return ctx.run('easyKeyframes', { mode: b[0] }, e);
-        apply(b[0] === 'apply' ? 'both' : b[0], e);
-      });
-      btns.appendChild(x);
-    });
-    root.appendChild(btns);
 
     draw();
     requestAnimationFrame(draw);

@@ -79,17 +79,12 @@ The Quick Panel has a **Quick Access** area under the Graph Editor that fills it
 Opening either the main panel (**MenMen Workflow**) or **MenMen Tools** opens the other one too (Settings ▸ Panels to turn it off). The main panel has two modes, switched with the button next to ☰ (or ☰ ▸ Icons only): **icons + names**, or **icons only**, a thin column that saves workspace; hover an icon to see its name. The content always follows the panel frame: drag the panel edge narrow once (down to ~40 px) and After Effects keeps that width in your workspace. Extensions cannot resize a docked panel themselves.
 
 ### Graph Editor
-Easing ▸ **Graph Editor** edits one curve between two keyframes, inspired by the graph editors of Motion-style toolkits:
-- **Value graph** (default): a cubic-bezier curve with two handles you drag freely; pull a handle outside the box for overshoot. **Speed graph**: AE-style speed curve where both keys always sit on the baseline (speed 0 = pure ease) and there are no handle bars: the two knobs on the baseline are dragged sideways to set the influence, and the curve reshapes (switching to Speed turns the curve into a pure ease).
-- Dragging works like Motion 4: grab a handle anywhere near it (it keeps its offset, no jump), or click the empty graph to move the nearest handle there. The graph only works around its own box: releasing the button, moving more than 24 px away from it or leaving the panel ends the drag. Hold a handle at the top/bottom edge and the view grows step by step for overshoot. A dashed ghost shows the curve before the drag, and a live readout shows influence and speed.
-- **Shift** = lock to the axis you move along, **Ctrl/Cmd** = fine (1/5 speed), **Alt** or **Link** = mirrored handles, double-click = reset. Handles snap softly to flat ease (0 / 1) and to 1/3, 2/3.
-- Keyboard: click the graph, then arrows nudge the active handle (Shift = ×10), Tab switches handle, Enter applies.
-- **Out / In number fields**: influence % and speed (× the average speed, 0 = full ease) of the two keys; type a value and press Enter (applied right away when Auto is on).
-- **Auto** (on by default): releasing a handle, picking a preset or nudging with the arrows applies the curve to the selected keys right away, no need to click Apply. A small "Applied" note shows in the graph (no popup; "Select keyframes to apply" if none are selected). Turn Auto off to apply only with Apply / In / Out.
-- Type or paste `cubic-bezier(x1, y1, x2, y2)`; **Read** loads the curve from the selected keyframes.
-- Built-in curves plus your own (**+** saves, right-click deletes); click a curve to load it, double-click to load and apply.
-- **Apply** / **In** / **Out** / **Linear** / **Hold**. Applies to each pair of selected keys, or to both sides of a single selected key.
-- The full editor also sits at the top of the Quick Panel, spanning the panel width.
+Easing ▸ **Graph Editor** (also full width at the top of MenMen Tools) edits one ease between two keyframes. There are no handles to grab: **drag the curve itself**.
+- **Drag sideways** to move the speed peak (Out influence grows while In shrinks, or the other way); **drag up / down** for a stronger / softer ease. Shift = one axis only, Ctrl/Cmd = fine, Alt or **Link** = symmetric, double-click = reset; arrow keys work too. The graph only reacts around its own box.
+- **Speed** view: AE-style speed curve with both keys on the baseline (speed 0, pure ease). **Value** view: the same ease as a value curve (keeps any overshoot loaded from a preset or typed bezier).
+- Detail strip: **[Out ›]** and **[‹ In]** influence boxes (drag sideways to scrub, click to type, arrows +1 / Shift +10 / Alt −), **○ ◇ □** = apply Ease (Alt: In side only, Shift: Out side only) / Linear / Hold, and a **strength** slider (average influence, keeps the skew) with a big readout.
+- **Auto** (on by default): every release, typed value, scrub or preset is applied to the selected keys at once; a small "Applied" note shows in the graph (no popup; "Select keyframes to apply" if none are selected).
+- Type or paste `cubic-bezier(x1, y1, x2, y2)`; **Read** loads the curve from the selected keyframes; built-in and saved curves (**+** saves, right-click deletes).
 
 ### Metronome
 One `Metronome` null drives the beat tools (BPM, Beats per Bar, Start Time, Mode, Beats/Frames per Step, Step, Random Order):
