@@ -58,6 +58,9 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 - **Split** row: the first box shows **By: Line / Word / Char** (pick with the three buttons); select a point text layer and click **Split** to get one layer per line / word / character, each exactly where it was (anchor centered; Alt = anchor on the baseline). The original is hidden. Paragraph (box) text must be converted to point text first.
 - Easings copy/paste, Offset Layers, anchor grid and one-click tools.
 
+### AE native look
+Settings ▸ Appearance ▸ **AE native look**: every icon becomes AE's neutral gray, no category colors and no colored button backgrounds (selection = a lighter gray, like AE). Surfaces are stepped from AE's own panel color, the font is AE's UI font and highlights use AE's highlight color, so the panels blend in with the rest of After Effects (light and dark brightness both work).
+
 ### Quick Access
 The Quick Panel has a **Quick Access** area under the Graph Editor that fills itself with your **10 most used tools** (by run count, then most recent). Every run counts: clicks in any panel, search, favorites, widgets. Tiles reorder after you move the mouse away, so they never jump under the cursor. Right-click a tile: **Pin to this panel** / **Remove from Quick Access**; right-click the area: **Reset usage counts** / **Delete this area**. Add it to any user panel with Add New Item ▸ Quick Access. Tools already shown as inline widgets in that panel are left out.
 

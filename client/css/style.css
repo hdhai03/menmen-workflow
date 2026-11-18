@@ -33,7 +33,7 @@ body.light {
 html, body { margin: 0; height: 100%; }
 body {
   background: var(--bg); color: var(--text);
-  font: var(--fs)/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font: var(--fs)/1.35 var(--font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
   overflow: hidden; user-select: none; -webkit-font-smoothing: antialiased;
 }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; text-align: left; }
@@ -549,3 +549,31 @@ body.icons-only .m-row { justify-content: center; padding: 0; }
 .w-split.narrow .wr-by { min-width: 0; padding: 0 5px; }
 .w-split.narrow .wr-by .wr-to-k, .w-split.narrow .wr-go > span { display: none; }
 .wr-by .wr-to-k { color: var(--muted); margin-right: 4px; font-weight: 400; }
+
+/* ---------- AE native look (Settings > Appearance): no colors, follows the AE theme ----------
+   Category tints are inline custom properties, so they are overridden with !important. */
+body.native, body.native * { --cat: var(--icon-c) !important; --cat-rgb: var(--icon-rgb) !important; }
+body.native { --icon-c: #a7a7a7; --icon-rgb: 167, 167, 167; }
+body.native.light { --icon-c: #4b4b4b; --icon-rgb: 75, 75, 75; }
+/* icons: one neutral gray, never a filled background */
+body.native .mr-ico, body.native .ri-ico, body.native .tile-ico, body.native .sh-ico, body.native .chip-ico,
+body.native .qa-ico .ico, body.native .w-row svg, body.native .wc-ico, body.native .w-add svg { color: var(--icon-c) !important; }
+body.native .mr-ico, body.native .ri-ico, body.native .tile-ico, body.native .sh-ico { background: none !important; }
+body.native .mr-ico::after, body.native .ri-ico::after, body.native .tile-ico::after { display: none; }
+body.native .m-tools .mr-ico, body.native .m-tools .mr-name { color: var(--text); }
+/* buttons: AE-style gray, selection = lighter gray (no tinted fills) */
+body.native .w-btn.w-primary, body.native .w-btn.w-primary:hover { background: var(--surface-3); border-color: var(--line-2); color: var(--text); filter: none; }
+body.native .w-btn:hover, body.native .tile:hover, body.native .q-tile:hover, body.native .qa-tile:hover, body.native .chip:hover { border-color: var(--line-2); }
+body.native .row-item:active, body.native .q-tile:active, body.native .qa-tile:active { background: var(--surface-3); }
+body.native .row-item.sel { background: var(--surface-3); }
+body.native .icon-btn.on, body.native .ge-tool.on, body.native .wr-opt.on, body.native .wr-to.on, body.native .size-chip.on {
+  background: var(--surface-3); border-color: var(--line-2); color: var(--text);
+}
+body.native .wr-to, body.native .wr-by, body.native .wd-purge, body.native .m-view.on { color: var(--text); }
+body.native .w-dot.center::after { background: var(--text); }
+body.native .w-dot:hover { background: var(--surface-3); }
+body.native .wd-dot, body.native .wd-track i { background: var(--icon-c) !important; }
+body.native .w-disk.full .wd-dot, body.native .w-disk.full .wd-track i { background: var(--danger) !important; }
+body.native .ge-tip { background: var(--surface-3); }
+body.native .m-search:focus-within { box-shadow: none; }
+body.native .w-btn.w-accent, body.native .ge-save:hover, body.native .tile.add:hover, body.native .q-add:hover, body.native .row-item.add:hover, body.native .m-row.ghost:hover .mr-name, body.native .m-row.ghost:hover .mr-ico { color: var(--text); border-color: var(--line-2); }

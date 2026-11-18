@@ -26,7 +26,7 @@
   function defaults() {
     return {
       version: 2,
-      theme: { style: 'color', iconSize: 'm', tooltips: true, followHost: true, accent: '#4f8cff' },
+      theme: { style: 'color', iconSize: 'm', tooltips: true, followHost: true, native: false, accent: '#4f8cff' },
       favorites: ['clone', 'easyKeyframes', 'addNull', 'moveAnchor', 'sequencer'],
       userPanels: {
         quick: { id: 'quick', name: TOOLS_NAME, items: quickItems(), fixed: true },

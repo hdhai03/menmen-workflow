@@ -28,6 +28,33 @@
       r.setProperty('--bg', 'rgb(' + [c.red, c.green, c.blue].map(Math.round).join(',') + ')');
       b.classList.toggle('light', (0.299 * c.red + 0.587 * c.green + 0.114 * c.blue) / 255 > 0.55);
     } else { r.removeProperty('--bg'); b.classList.remove('light'); }
+    nativeLook(t, env);
+  }
+  // AE native look: neutral surfaces stepped from AE's panel color, AE's UI font and highlight color.
+  var NATIVE_VARS = ['--surface', '--surface-2', '--surface-3', '--line', '--line-2', '--text', '--muted', '--font'];
+  function nativeLook(t, env) {
+    var r = document.documentElement.style, b = document.body, skin = env && env.appSkinInfo;
+    b.classList.toggle('native', !!t.native);
+    if (!t.native) { NATIVE_VARS.forEach(function (k) { r.removeProperty(k); }); return; }
+    var c = skin && t.followHost ? skin.panelBackgroundColor.color : { red: 35, green: 35, blue: 35 };  // AE default dark gray
+    var base = [c.red, c.green, c.blue].map(Math.round), lum = (0.299 * base[0] + 0.587 * base[1] + 0.114 * base[2]) / 255, light = lum > 0.55;
+    var step = function (n) { return 'rgb(' + base.map(function (v) { return Math.max(0, Math.min(255, v + (light ? -n : n))); }).join(',') + ')'; };
+    if (!(skin && t.followHost)) r.setProperty('--bg', step(0));
+    r.setProperty('--surface', step(9));
+    r.setProperty('--surface-2', step(16));
+    r.setProperty('--surface-3', step(26));
+    r.setProperty('--line', light ? 'rgba(0,0,0,.1)' : 'rgba(255,255,255,.06)');
+    r.setProperty('--line-2', light ? 'rgba(0,0,0,.18)' : 'rgba(255,255,255,.11)');
+    r.setProperty('--text', light ? '#262626' : '#c8c8c8');      // AE label grays
+    r.setProperty('--muted', light ? '#5a5a5a' : '#8e8e8e');
+    b.classList.toggle('light', light);
+    if (skin && skin.baseFontFamily) r.setProperty('--font', '"' + skin.baseFontFamily + '", ' + 'system-ui, sans-serif'); else r.removeProperty('--font');
+    var hl = skin && skin.systemHighlightColor;  // AE / OS selection color
+    if (hl && t.followHost) {
+      var h = [hl.red, hl.green, hl.blue].map(Math.round);
+      r.setProperty('--accent', 'rgb(' + h.join(',') + ')');
+      r.setProperty('--accent-rgb', h.join(','));
+    }
   }
   function catStyle(node, catId) {
     var c = T.cat(catId); if (!c) return node;
@@ -998,6 +1025,7 @@
       seg('Icon size', th.iconSize, [['s', 'Small'], ['m', 'Medium'], ['l', 'Large']], function (v) { th.iconSize = v; S.save(); render(); }),
       toggle('Show tooltips / help bar', 'tooltips'),
       toggle('Match After Effects background', 'followHost'),
+      toggle('AE native look (gray icons, no colored backgrounds)', 'native'),
       accent,
       el('div', 'sec', 'Panels'),
       mainToggle('Open the main panel and Panel 1 together', 'together'),
