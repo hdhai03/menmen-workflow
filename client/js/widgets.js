@@ -70,7 +70,7 @@
   // Interaction (Motion-style):
   //  - grab a handle (generous hit area) and it keeps its offset to the pointer: no jump on click
   //  - click on empty graph = the nearest handle jumps to the pointer
-  //  - pointer capture: the drag keeps going outside the graph / panel
+  //  - mouse events on the document: the drag keeps going outside the graph / panel
   //  - Shift = lock to the dominant axis, Ctrl/Cmd = fine (1/5 speed), Alt or Link = mirror
   //  - soft snapping to flat ease (0 / 1) and to the key level, view grows while dragging past the edge
   //  - ghost of the previous curve + live readout while dragging, Auto = apply on release
@@ -181,16 +181,16 @@
     var HIT = 14;
     function onDown(e) {
       if (e.button !== 0) return;
-      e.preventDefault(); box.focus();
+      e.preventDefault();
+      try { box.focus({ preventScroll: true }); } catch (x) { /* keyboard nudging only */ }
       var p = local(e), n = nearest(p);
       ghost = d.bz.slice();
-      drag = { i: n.i, id: e.pointerId, moved: false, fine: false, axis: null };
+      drag = { i: n.i, moved: false, fine: false, axis: null };
       d.sel = n.i;
       var ptr = unmap(p[0], p[1]);
       // on the knob: keep the grab offset; on empty graph: the handle jumps to the pointer
       drag.start = n.dist <= HIT ? handleVal(n.i) : ptr;
       drag.ptr0 = ptr; drag.px0 = p;
-      if (box.setPointerCapture) try { box.setPointerCapture(e.pointerId); } catch (x) {}
       if (n.dist > HIT) { setHandle(n.i, ptr[0], ptr[1], d.link || e.altKey); drag.moved = true; }
       draw();
     }
@@ -202,7 +202,6 @@
         if (h !== hover) { hover = h; draw(); }
         return;
       }
-      if (e.pointerId !== drag.id) return;
       box.style.cursor = 'grabbing';
       var fine = e.ctrlKey || e.metaKey;
       // past the top / bottom edge: the view grows a little per move (no runaway), the pointer is clamped to it
@@ -236,29 +235,30 @@
       draw();
     }
     function onUp(e) {
-      if (!drag || (e.pointerId != null && e.pointerId !== drag.id)) return;
+      if (!drag) return;
       var moved = drag.moved;
       drag = null; ghost = null; box.style.cursor = 'grab';
       draw(); ctx.save();
       if (moved && d.auto) apply('both', e);
     }
-    if (window.PointerEvent) {
-      box.addEventListener('pointerdown', onDown);
-      box.addEventListener('pointermove', onMove);
-      box.addEventListener('pointerup', onUp);
-      box.addEventListener('pointercancel', onUp);
-      box.addEventListener('lostpointercapture', function (e) { if (drag) onUp(e); });
-    } else {  // very old CEP: mouse events on the document
-      box.addEventListener('mousedown', function (e) {
-        onDown(e);
-        var mv = function (ev) { onMove(ev); }, up = function (ev) {
-          document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); onUp(ev);
-        };
-        document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
-      });
-      box.addEventListener('mousemove', function (e) { if (!drag) onMove(e); });
-    }
-    box.addEventListener('pointerleave', function () { if (!drag && hover != null) { hover = null; draw(); } });
+    // Mouse events on the document (not pointer capture): this is what drags reliably inside
+    // After Effects' embedded Chromium (CEP). The drag keeps going outside the graph and the panel.
+    box.addEventListener('mousedown', function (e) {
+      if (e.button !== 0 || drag) return;
+      onDown(e);
+      if (!drag) return;
+      var mv = function (ev) { onMove(ev); };
+      var up = function (ev) {
+        document.removeEventListener('mousemove', mv, true); document.removeEventListener('mouseup', up, true);
+        window.removeEventListener('blur', up);
+        onUp(ev || {});
+      };
+      document.addEventListener('mousemove', mv, true);
+      document.addEventListener('mouseup', up, true);
+      window.addEventListener('blur', up);  // panel lost focus mid-drag: finish cleanly
+    });
+    box.addEventListener('mousemove', function (e) { if (!drag) onMove(e); });
+    box.addEventListener('mouseleave', function () { if (!drag && hover != null) { hover = null; draw(); } });
     box.addEventListener('dblclick', function () { d.bz = [0.333, 0, 0.667, 1]; draw(); ctx.save(); });
     box.addEventListener('keydown', function (e) {
       var k = e.key;
