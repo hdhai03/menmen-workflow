@@ -72,7 +72,9 @@
   //  - drag sideways  = move the peak (skew): Out influence grows, In shrinks (or the other way)
   //  - drag up / down = stronger / softer ease (both influences together)
   //  - Shift = one axis only, Ctrl/Cmd = fine, Alt or Link = keep it symmetric, double-click = reset
-  //  - the graph only works around its box (24 px margin); release applies when Auto is on
+  //  - once started, the drag continues anywhere in the panel; it ends on release, when the pointer
+  //    leaves the panel or the panel loses focus (so a release outside AE's panel can't leave it stuck);
+  //    release applies when Auto is on
   // Detail strip under the graph: [Out ›] [○ ◇ □] [‹ In], then a Strength slider with a big readout.
   // The two number boxes can be dragged sideways (scrub) or clicked to type.
   function graphEditor(d, ctx) {
@@ -142,7 +144,7 @@
     }
 
     // ---- shape drag on the graph ----
-    var MARGIN = 24, docMove = null, docUp = null;
+    var docMove = null, docUp = null;
     function onDown(e) {
       if (e.button !== 0 || drag) return;
       e.preventDefault();
@@ -150,11 +152,8 @@
       var f = infl();
       drag = { x: e.clientX, y: e.clientY, o: f[0], i: f[1], moved: false, fine: false };
       ghost = d.bz.slice();
-      docMove = function (ev) {
-        var r = box.getBoundingClientRect();
-        if (ev.clientX < r.left - MARGIN || ev.clientX > r.right + MARGIN || ev.clientY < r.top - MARGIN || ev.clientY > r.bottom + MARGIN) return endDrag();
-        onMove(ev);
-      };
+      document.body.classList.add('ge-dragging');
+      docMove = function (ev) { onMove(ev); };  // anywhere in the panel
       docUp = function () { endDrag(); };
       document.addEventListener('mousemove', docMove, true);
       document.addEventListener('mouseup', docUp, true);
@@ -167,7 +166,8 @@
         var cur = infl(); drag.o = cur[0]; drag.i = cur[1]; drag.x = e.clientX; drag.y = e.clientY; drag.fine = fine;
       }
       var k = fine ? 0.2 : 1, gw = Math.max(60, W_ - 2 * PX), gh = Math.max(40, H_ - 2 * PY);
-      var dx = (e.clientX - drag.x) / gw * 0.8 * k, dy = -(e.clientY - drag.y) / gh * 0.5 * k;  // a full-height drag = +-50 % strength
+      // sensitive like Motion: ~60 % of the graph width sweeps the peak end to end, ~80 % of its height the strength
+      var dx = (e.clientX - drag.x) / gw * 1.6 * k, dy = -(e.clientY - drag.y) / gh * 1.25 * k;
       if (e.shiftKey) { if (Math.abs(dx) * gw >= Math.abs(dy) * gh) dy = 0; else dx = 0; }
       if (e.altKey || d.link) dx = 0;  // symmetric: strength only
       setInfl(drag.o + dx + dy, drag.i - dx + dy);
@@ -178,6 +178,7 @@
       if (docMove) { document.removeEventListener('mousemove', docMove, true); document.removeEventListener('mouseup', docUp, true); }
       document.documentElement.removeEventListener('mouseleave', docUp);
       docMove = docUp = null;
+      document.body.classList.remove('ge-dragging');
       if (!drag) return;
       var moved = drag.moved;
       drag = null; ghost = null;

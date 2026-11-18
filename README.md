@@ -80,7 +80,7 @@ Opening either the main panel (**MenMen Workflow**) or **MenMen Tools** opens th
 
 ### Graph Editor
 Easing ▸ **Graph Editor** (also full width at the top of MenMen Tools) edits one ease between two keyframes. There are no handles to grab: **drag the curve itself**.
-- **Drag sideways** to move the speed peak (Out influence grows while In shrinks, or the other way); **drag up / down** for a stronger / softer ease. Shift = one axis only, Ctrl/Cmd = fine, Alt or **Link** = symmetric, double-click = reset; arrow keys work too. The graph only reacts around its own box.
+- **Drag sideways** to move the speed peak (Out influence grows while In shrinks, or the other way); **drag up / down** for a stronger / softer ease. Shift = one axis only, Ctrl/Cmd = fine, Alt or **Link** = symmetric, double-click = reset; arrow keys work too. Once started, the drag continues anywhere in the panel (it ends on release, or when the pointer leaves the panel), and it is fast: about 60 % of the graph width sweeps the peak from end to end.
 - **Speed** view: AE-style speed curve with both keys on the baseline (speed 0, pure ease). **Value** view: the same ease as a value curve (keeps any overshoot loaded from a preset or typed bezier).
 - Detail strip: **[Out ›]** and **[‹ In]** influence boxes (drag sideways to scrub, click to type, arrows +1 / Shift +10 / Alt −), **○ ◇ □** = apply Ease (Alt: In side only, Shift: Out side only) / Linear / Hold, and a **strength** slider (average influence, keeps the skew) with a big readout.
 - **Auto** (on by default): every release, typed value, scrub or preset is applied to the selected keys at once; a small "Applied" note shows in the graph (no popup; "Select keyframes to apply" if none are selected).
