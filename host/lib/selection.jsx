@@ -85,14 +85,14 @@
         for (var i = 0; i < s.length; i++) {
             if (o.alt) set[s[i].index] = true;
             var p = s[i].parent;
-            while (p) { set[p.index] = true; p = p.parent; }
+            var g = 0; while (p && g++ < 2000) { set[p.index] = true; p = p.parent; }
         }
         return selectWhere(function (L) { return !!set[L.index]; }, "parent layer");
     };
     // The whole parent tree (parents + children) of the selected layers
     T.selectHierarchy = function () {
         var c = MMW.comp(), s = MMW.selLayers(c), roots = {};
-        for (var i = 0; i < s.length; i++) { var r = s[i]; while (r.parent) r = r.parent; roots[r.index] = true; }
+        for (var i = 0; i < s.length; i++) { var r = s[i], g2 = 0; while (r.parent && g2++ < 2000) r = r.parent; roots[r.index] = true; }
         return selectWhere(function (L) { return roots[L.index] || isDescendant(L, roots); });
     };
 

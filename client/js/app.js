@@ -1066,7 +1066,7 @@
   }
   function about() {
     var box = el('div', 'about');
-    box.innerHTML = '<h3>MenMen Workflow</h3><p class="muted">v0.2.0 · ' + T.list.length + ' tools · 12 categories</p>' +
+    box.innerHTML = '<h3>MenMen Workflow</h3><p class="muted">v0.3.0 · ' + T.list.length + ' tools · ' + T.CATS.length + ' categories</p>' +
       '<p>The main panel holds every tool; MenMen Tools is Panel 1; dock categories or user panels to MenMen Panel 2–4.</p><p class="muted small" id="hostInfo">Checking host…</p>';
     U.dialog('About', box, [{ label: 'Close', primary: true }]);
     B.run('hostInfo').then(function (r) { var n = document.getElementById('hostInfo'); if (n) n.textContent = r.msg; });
@@ -1161,7 +1161,7 @@
   window.addEventListener('resize', checkOrientation);
 
   S.load();
-  S.onExternalChange(render);
+  S.onExternalChange(function (onlyUsage) { if (onlyUsage) qaSoon(); else render(); });
   if (B.inCEP) B.on('com.adobe.csxs.events.ThemeColorChanged', applyTheme);
   checkOrientation();
   render();

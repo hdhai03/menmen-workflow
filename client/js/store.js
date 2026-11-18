@@ -131,8 +131,16 @@
     };
     if (immediate) go(); else timer = setTimeout(go, 200);
   };
+  // Another panel saved. fn(onlyUsage): onlyUsage = nothing but run counts changed, so the panel
+  // can refresh Quick Access instead of rebuilding everything (graph, widgets, disk meter...).
+  var snap = function () { var u = S.data.usage; S.data.usage = null; var j = JSON.stringify(S.data); S.data.usage = u; return j; };
   S.onExternalChange = function (fn) {
-    B.on(SYNC, function (d) { if (!d || d.from !== B.extId) { S.load(); fn(); } });
+    B.on(SYNC, function (d) {
+      if (d && d.from === B.extId) return;
+      var before = snap();
+      S.load();
+      fn(snap() === before);
+    });
   };
 
   // ----- favorites -----

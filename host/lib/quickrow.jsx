@@ -215,13 +215,13 @@
             // advance (width incl. spaces) of a string, measured on a left-justified temp copy
             var tmp = src.duplicate(), cache = {};
             tmp.enabled = false;
+            setText(tmp, "|", ParagraphJustification.LEFT_JUSTIFY);  // reference glyph, measured once
+            var r0 = tmp.sourceRectAtTime(c.time, false), bar = r0.left + r0.width;
             var adv = function (s) {
                 if (cache[s] !== undefined) return cache[s];
                 setText(tmp, s + "|", ParagraphJustification.LEFT_JUSTIFY);
                 var r1 = tmp.sourceRectAtTime(c.time, false);
-                setText(tmp, "|", ParagraphJustification.LEFT_JUSTIFY);
-                var r0 = tmp.sourceRectAtTime(c.time, false);
-                return (cache[s] = (r1.left + r1.width) - (r0.left + r0.width));
+                return (cache[s] = (r1.left + r1.width) - bar);
             };
             var lineStart = function (li) {
                 if (locs && locs.length >= (li + 1) * 4) return [locs[li * 4], locs[li * 4 + 1]];
