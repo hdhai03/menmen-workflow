@@ -71,7 +71,7 @@ body.theme-solid .custom .ri-ico, body.theme-solid .custom .tile-ico { backgroun
 .m-head { display: flex; align-items: center; gap: 7px; padding: 7px 6px 5px 9px; flex: none; }
 .logo {
   width: 18px; height: 18px; border-radius: 0; display: grid; place-items: center; font-weight: 800; font-size: 11px; color: #fff;
-  background: linear-gradient(135deg, var(--accent), #c47dff); flex: none;
+  background: var(--accent); flex: none;
 }
 .brand { font-weight: 700; letter-spacing: .2px; flex: 1; }
 .m-search {
@@ -269,7 +269,7 @@ select.input { padding: 0 6px; }
 .about { text-align: center; padding: 4px 4px 0; }
 .about h3 { margin: 8px 0 2px; font-size: 15px; }
 .about p { margin: 6px 0; }
-.about-logo { width: 46px; height: 46px; margin: 4px auto 0; border-radius: 0; display: grid; place-items: center; font-weight: 800; font-size: 22px; color: #fff; background: linear-gradient(135deg, var(--accent), #c47dff); }
+.about-logo { width: 46px; height: 46px; margin: 4px auto 0; border-radius: 0; display: grid; place-items: center; font-weight: 800; font-size: 22px; color: #fff; background: var(--accent); }
 
 /* ---------- widgets (shown in dialogs) ---------- */
 .widget-host { display: flex; flex-direction: column; }
