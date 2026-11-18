@@ -58,6 +58,17 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 - **Split** row: the first box shows **By: Line / Word / Char** (pick with the three buttons); select a point text layer and click **Split** to get one layer per line / word / character, each exactly where it was (anchor centered; Alt = anchor on the baseline). The original is hidden. Paragraph (box) text must be converted to point text first.
 - Easings copy/paste, Offset Layers, anchor grid and one-click tools.
 
+### Export PNG / GIF
+- **Export PNG** (View ▸ Export PNG, also in MenMen Tools): saves the frame shown in the viewer at comp resolution; asks where to save (Alt = reveal the folder).
+- **Export GIF** (View ▸ Export GIF): renders the work area (or whole comp) and encodes it in the panel with an encoder tuned for small files:
+  - one global palette from **Xiaolin Wu's color quantizer** (sampled across all frames);
+  - **inter-frame delta**: pixels that did not change (within *Tolerance*) become transparent, so LZW compresses them to almost nothing;
+  - every frame is **cropped** to the area that changed; identical frames are **merged** into a longer delay;
+  - optional serpentine **Floyd-Steinberg dithering** (smoother gradients, bigger file);
+  - exact timing (centisecond delays with carry), looping via NETSCAPE2.0.
+  - Presets: **High** (800 px, 30 fps, 256 colors, dither), **Balanced** (640 px, 25 fps, 128 colors, light dither), **Small** (480 px, 15 fps, 64 colors), **Tiny** (320 px, 12 fps, 32 colors); every field can be changed (custom).
+  - On a test animation the delta encoding is 10-38x smaller than writing full frames, and matches or beats ffmpeg's palettegen/paletteuse (diff mode) at the same settings.
+
 ### AE native look
 Settings ▸ Appearance ▸ **AE native look**: every icon becomes AE's neutral gray, no category colors and no colored button backgrounds (selection = a lighter gray, like AE). Surfaces are stepped from AE's own panel color, the font is AE's UI font and highlights use AE's highlight color, so the panels blend in with the rest of After Effects (light and dark brightness both work).
 

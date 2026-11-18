@@ -106,6 +106,18 @@
       var r = fs.showOpenDialogEx(false, false, title, null, exts || []);
       return r.err === 0 && r.data && r.data.length ? r.data[0] : null;
     },
+    // binary files as base64 (PNG frames in, GIF out)
+    readBase64: function (path) {
+      if (!fs) return null;
+      var r = fs.readFile(path, window.cep.encoding.Base64);
+      return r.err === 0 ? r.data : null;
+    },
+    writeBase64: function (path, b64) {
+      if (!fs) return false;
+      fs.makedir(path.replace(/[\\/][^\\/]*$/, ''));
+      return fs.writeFile(path, b64, window.cep.encoding.Base64).err === 0;
+    },
+    remove: function (path) { if (fs) fs.deleteFile(path); },
     saveDialog: function (title, name, exts) {
       if (!fs) return null;
       var r = fs.showSaveDialogEx(title, null, exts || [], name);

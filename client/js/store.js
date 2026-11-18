@@ -19,7 +19,7 @@
       it('easings', 2, 1), it('sequencer', 2, 1), it('moveAnchor', 2, 2), it('addNull'), it('clone'), it('cloneMirror'), it('loop'),
       it('elastic'), it('bounce'), it('fixKeysTime'), it('easingPresets'),
       it('extractShapes'), it('mergeShapes'), it('nullsToPoint'), it('selectPaths'),
-      it('cropComp'), it('preCompose'), it('unPreComp'), it('positionTrace')
+      it('cropComp'), it('preCompose'), it('unPreComp'), it('positionTrace'), it('exportPng'), it('exportGif')
     ];
   }
 
@@ -49,6 +49,7 @@
       qaAdded: true,
       rowsAdded: true,
       splitAdded: true,
+      exportAdded: true,
       main: { collapsedFav: false, iconsOnly: false, together: true }
     };
   }
@@ -94,6 +95,12 @@
       }
     }
     s.splitAdded = true;
+    if (!s.exportAdded) {  // Export PNG / GIF tiles came later: append them once
+      ['exportPng', 'exportGif'].forEach(function (t) {
+        if (!tp.items.some(function (x) { return x.tool === t; })) tp.items.push({ id: uid(), type: 'tool', tool: t });
+      });
+    }
+    s.exportAdded = true;
     if (!s.qaAdded && s.userPanels.quick) {  // older settings: add Quick Access under the Graph Editor once
       var qi = s.userPanels.quick.items, at = 0;
       for (var i = 0; i < qi.length; i++) if (qi[i].type === 'tool' && qi[i].tool === 'easyKeyframes') { at = i + 1; break; }

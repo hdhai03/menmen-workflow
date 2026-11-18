@@ -79,6 +79,7 @@
   }
   function runTool(t, e) {
     S.track(t.id); qaSoon();
+    if (t.client) return W[t.client](widgetCtx(t), e);  // tools that start in the panel (e.g. a save dialog)
     if (t.widget) return openWidget(t);
     if (t.params && t.params.length) return openParams(t, e);
     return exec(t.host || t.id, t.opts, e, t.name);

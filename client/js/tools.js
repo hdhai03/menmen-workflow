@@ -103,6 +103,8 @@
     divider: '<path d="M3 12h18"/>',
     metronome: '<path d="M8 21h8l-3-17h-2z"/><path d="M12 15l6-9"/><circle cx="18" cy="6" r="1.5"/>',
     splitText: '<path d="M4 6V5h7v1M7.5 5v10M6 15h3"/><path d="M14 9h6M17 9v8M15.5 17h3" opacity=".7"/>',
+    exportPng: '<rect x="3" y="4" width="18" height="16"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 9"/>',
+    exportGif: '<rect x="3" y="5" width="18" height="14"/><path d="M8.5 10.5h-2v3h2v-1.2M11.5 10.5v3M14.5 13.5v-3h2.5M14.5 12h2"/>',
     addRow: '<rect x="4" y="4" width="16" height="16"/><path d="M12 8v8M8 12h8"/>',
     diskCache: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
     alignIco: '<path d="M4 3v18"/><rect x="7" y="6" width="12" height="4"/><rect x="7" y="14" width="8" height="4"/>',
@@ -254,6 +256,8 @@
     { id: 'soloViewer', name: 'Solo Layers (Viewer)', cat: 'view', icon: 'eye', desc: 'Toggles Solo on the selected layers.', mods: { alt: 'Unsolo all layers' } },
     { id: 'toggleRulers', name: 'Show / Hide Rulers', cat: 'view', icon: 'align', desc: 'Toggles rulers.' },
     { id: 'toggleGrid', name: 'Show / Hide Grid', cat: 'view', icon: 'grid', desc: 'Toggles the grid.' },
+    { id: 'exportPng', name: 'Export PNG', cat: 'view', icon: 'exportPng', client: 'exportPngRun', desc: 'Saves the frame shown in the comp viewer as a PNG at comp resolution (asks where to save).', mods: { alt: 'Reveal the folder afterwards' } },
+    { id: 'exportGif', name: 'Export GIF', cat: 'view', icon: 'exportGif', widget: 'gifExport', desc: 'Exports the work area (or whole comp) as an optimized GIF: High / Balanced / Small / Tiny presets or custom width, FPS, colors, dither and tolerance.' },
     { id: 'saveScreenshot', name: 'Save Screenshot', cat: 'view', icon: 'camera', desc: 'Saves the current frame as PNG.' },
 
     // ---------------- Expression ----------------

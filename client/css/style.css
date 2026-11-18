@@ -581,3 +581,24 @@ body.icons-only .m-head { align-items: center; padding-left: 0; padding-right: 0
 .ge-status.ok { color: var(--ok); }
 .ge-status.warn { color: #f5a524; }
 body.native .ge-status.ok { color: var(--text); }
+
+/* ---------- Export GIF dialog ---------- */
+.gx { flex-direction: column; gap: 8px; min-width: 0; }
+.gx-presets .seg-btn { padding: 4px 6px; }
+.gx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+.gx-f { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.gx-f > span { color: var(--muted); font-size: calc(var(--fs) - 1.5px); }
+.gx-f .input { height: 24px; padding: 0 6px; min-width: 0; }
+.gx-f input[type=checkbox] { align-self: flex-start; margin: 4px 0 0; }
+.gx-est { min-height: 15px; }
+.gx-bar { height: 4px; background: var(--surface-3); position: relative; overflow: hidden; }
+.gx-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--accent); transition: width .15s; }
+.gx-status { min-height: 15px; color: var(--muted); }
+.gx-go { padding: 7px; }
+.gx-result { display: flex; flex-direction: column; gap: 4px; }
+.gx-ok { color: var(--ok); font-weight: 600; }
+.gx-path { word-break: break-all; }
+.gx-dl { color: var(--accent); }
+body.native .gx-ok { color: var(--text); }
+body.native .gx-bar i { background: var(--icon-c); }
+@media (max-width: 260px) { .gx-grid { grid-template-columns: 1fr; } }
