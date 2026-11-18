@@ -107,6 +107,11 @@
       if (!qi.some(function (x) { return x.type === 'quickAccess'; })) qi.splice(at, 0, { id: uid(), type: 'quickAccess' });
     }
     s.qaAdded = true;
+    var REMOVED = { saveScreenshot: 1 };  // tools that no longer exist (Save Screenshot -> Export PNG)
+    Object.keys(s.userPanels).forEach(function (id) {
+      s.userPanels[id].items = (s.userPanels[id].items || []).filter(function (x) { return !(x.type === 'tool' && REMOVED[x.tool]); });
+    });
+    Object.keys(REMOVED).forEach(function (k) { delete s.usage[k]; });
     s.favorites = s.favorites.filter(function (id) { return window.Tools.get(id) || /^script:/.test(id); });
     return s;
   }

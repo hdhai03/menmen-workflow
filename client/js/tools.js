@@ -258,7 +258,6 @@
     { id: 'toggleGrid', name: 'Show / Hide Grid', cat: 'view', icon: 'grid', desc: 'Toggles the grid.' },
     { id: 'exportPng', name: 'Export PNG', cat: 'view', icon: 'exportPng', client: 'exportPngRun', desc: 'Saves the frame shown in the comp viewer as a PNG at comp resolution (asks where to save).', mods: { alt: 'Reveal the folder afterwards' } },
     { id: 'exportGif', name: 'Export GIF', cat: 'view', icon: 'exportGif', widget: 'gifExport', desc: 'Exports the work area (or whole comp) as an optimized GIF: High / Balanced / Small / Tiny presets or custom width, FPS, colors, dither and tolerance.' },
-    { id: 'saveScreenshot', name: 'Save Screenshot', cat: 'view', icon: 'camera', desc: 'Saves the current frame as PNG.' },
 
     // ---------------- Expression ----------------
     { id: 'customExpression', name: 'Expression Editor', cat: 'expression', host: 'applyExpression', icon: 'cat-expression', desc: 'Write and apply an expression to the selected properties.',

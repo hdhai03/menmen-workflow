@@ -38,7 +38,7 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 | Composition (13) | Auto Crop, Crop Comp to Layer, Trash Disabled, Auto Trim, Pre-Compose, Decompose, Duplicate Comps, Batch Comp Settings, Audio to Precomps, Spot Blur, Black/Gray/White BG |
 | Project (6) | Project Cleanup, Organize Project, Folder Structure, Reveal Project Folder, Reveal Layer Source, Proxy Manager |
 | Guides (11) | Guides Around / Center / Edge / Anchor, Grid System, Clear, Copy, Paste, Show/Hide, Lock, Snap |
-| View (6) | Zoom 100% / 50%, Solo (Viewer), Rulers, Grid, Save Screenshot |
+| View (7) | Zoom 100% / 50%, Solo (Viewer), Rulers, Grid, Export PNG, Export GIF |
 | Expression (7) | Expression Editor, Enable / Disable / Remove, Remove Broken, Bake, Find & Replace |
 | Shapes (15) | Separate Shapes, Merge, Null Controllers for Points, Shapes from Vector, Remove Artboards, Mask → Shape, Cap/Join Round/Miter/Bevel, Toggle Fill/Stroke, Reverse Path, Reset Shape Transforms, Rectangle / Circle Wizard, Trim Paths Controller |
 | Text (5) | Find & Replace Text, Lorem Ipsum, Typewriter, Number Counter, Text Box Generator |

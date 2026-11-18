@@ -68,17 +68,6 @@
     };
 
     // Saves the current frame as PNG (next to the project file, or on the Desktop).
-    T.saveScreenshot = function () {
-        var c = MMW.comp();
-        var base = app.project.file ? app.project.file.parent : Folder.desktop;
-        var f = new Folder(base.fsName + "/MenMen Screenshots");
-        if (!f.exists) f.create();
-        var frame = Math.round(c.time / c.frameDuration);
-        var file = new File(f.fsName + "/" + c.name.replace(/[\\\/:*?"<>|]/g, "_") + "_f" + frame + ".png");
-        c.saveFrameToPng(c.time, file);
-        return "Saved " + file.fsName;
-    };
-
     // ================= Project =================
     T.projectCleanup = function (o) {
         var before = app.project.numItems;
