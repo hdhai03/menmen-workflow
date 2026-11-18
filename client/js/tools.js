@@ -14,7 +14,8 @@
     { id: 'expression',  name: 'Expression',  color: '#c9e64a' },
     { id: 'shapes',      name: 'Shapes',      color: '#35d0b5' },
     { id: 'text',        name: 'Text',        color: '#5b9dff' },
-    { id: 'animation',   name: 'Animation',   color: '#ffd166' }
+    { id: 'animation',   name: 'Animation',   color: '#ffd166' },
+    { id: 'scripts',     name: 'Scripts',     color: '#9aa4b2' }
   ];
 
   // 24x24 line icons (stroke = currentColor)
@@ -31,6 +32,7 @@
     'cat-expression': '<path d="M9 4c-3 0-3 3-3 5s-2 3-3 3c1 0 3 1 3 3s0 5 3 5M15 4c3 0 3 3 3 5s2 3 3 3c-1 0-3 1-3 3s0 5-3 5"/>',
     'cat-shapes': '<circle cx="7.5" cy="7.5" r="4"/><rect x="13" y="13" width="8" height="8" rx="1"/><path d="M17 3l4 7h-8z"/><path d="M3 21l4-7 4 7z" opacity=".55"/>',
     'cat-text': '<path d="M4 6V4h16v2M12 4v16M9 20h6"/>',
+    'cat-scripts': '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M10.5 11l-2 2.5 2 2.5M14.5 11l2 2.5-2 2.5"/>',
     'cat-animation': '<path d="M3 18c4 0 5-12 9-12s5 8 9 8" /><circle cx="21" cy="14" r="1.8"/><path d="M3 21h4" opacity=".55"/>',
     // tool
     star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"/>',
@@ -302,7 +304,23 @@
     { type: 'divider', name: 'Divider', icon: 'divider', desc: 'A line separating groups' }
   ];
 
+  // Script library (.jsx / .jsxbin / .ffx found by the host) -> tools in the "scripts" category.
+  function prettyName(file) { return file.replace(/\.(jsx|jsxbin|ffx)$/i, '').replace(/_/g, ' ').trim(); }
+  function registerScripts(list) {
+    for (var i = TOOLS.length - 1; i >= 0; i--) if (TOOLS[i].cat === 'scripts') { delete byId[TOOLS[i].id]; TOOLS.splice(i, 1); }
+    byCat.scripts = [];
+    (list || []).forEach(function (f) {
+      var isFfx = /\.ffx$/i.test(f.name);
+      var t = { id: 'script:' + f.name, name: prettyName(f.name), cat: 'scripts', host: 'runFile', opts: { path: f.path },
+        icon: isFfx ? 'preset' : 'script', file: f.name, src: f.src,
+        desc: (isFfx ? 'Preset' : 'Script') + ' · ' + f.name + (f.src === 'user' ? ' (your Scripts folder)' : ' (bundled library)') };
+      if (byId[t.id]) return;
+      TOOLS.push(t); byId[t.id] = t; byCat.scripts.push(t);
+    });
+  }
+
   window.Tools = {
+    registerScripts: registerScripts,
     CATS: CATS,
     cat: function (id) { return catById[id]; },
     list: TOOLS,

@@ -40,7 +40,8 @@
     ['userPanels', 'hidden', 'params', 'slots', 'main'].forEach(function (k) { if (!s[k] || typeof s[k] !== 'object') s[k] = d[k]; });
     s.upOrder = s.upOrder.filter(function (id) { return s.userPanels[id]; });
     Object.keys(s.userPanels).forEach(function (id) { if (s.upOrder.indexOf(id) < 0) s.upOrder.push(id); });
-    s.favorites = s.favorites.filter(function (id) { return window.Tools.get(id); });
+    // script:* favorites are registered later, once the host has listed the script library
+    s.favorites = s.favorites.filter(function (id) { return window.Tools.get(id) || /^script:/.test(id); });
     return s;
   }
 

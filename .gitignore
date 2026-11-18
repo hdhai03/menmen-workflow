@@ -4,3 +4,7 @@ node_modules/
 dist/
 *.zxp
 *.p12
+
+# Third-party scripts in the library are kept out of the public repo
+library/*
+!library/README.md

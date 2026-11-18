@@ -118,6 +118,8 @@
     plus: '<path d="M8 3v10M3 8h10"/>', search: '<circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/>',
     eyeOff: '<path d="M2 8s2.2-4 6-4 6 4 6 4-2.2 4-6 4-6-4-6-4z"/><path d="M3 13L13 3"/>',
     gear: '<circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/>',
+    refresh: '<path d="M13 8a5 5 0 1 1-1.5-3.6"/><path d="M13 2.5v3h-3"/>',
+    folder: '<path d="M2 4.5h4l1.5 1.5H14v7H2z"/>',
     star: '<path d="M8 1.8l1.8 3.8 4.1.5-3 2.8.8 4.1L8 11l-3.7 2 .8-4.1-3-2.8 4.1-.5z"/>'
   };
 
@@ -339,11 +341,15 @@
     head.insertAdjacentHTML('beforeend', '<span class="sh-ico">' + T.iconSvg(c ? 'cat-' + c.id : 'user') + '</span><span class="sh-title">' + esc(c ? c.name : u.name) + '</span>');
     head.appendChild(el('span', 'spacer'));
     if (u) head.appendChild(svgBtn('', 'Add item', ICONS.plus, function () { addItemDialog(sh.id); }));
+    if (c && c.id === 'scripts') scriptButtons().forEach(function (b) { head.appendChild(b); });
     head.appendChild(svgBtn('', 'Dock as panel', ICONS.dock, function () { dock(sh.kind, sh.id); }));
     head.appendChild(svgBtn('', 'Close', ICONS.close, closeSheet));
     sheet.appendChild(head);
     var list = el('div', 'sh-body');
-    if (c) T.inCat(c.id).forEach(function (t) { list.appendChild(toolRow(t, { star: true })); });
+    if (c) {
+      T.inCat(c.id).forEach(function (t) { list.appendChild(toolRow(t, { star: true })); });
+      if (c.id === 'scripts' && !T.inCat(c.id).length) list.appendChild(scriptsEmpty());
+    }
     else {
       if (!u.items.length) list.appendChild(el('div', 'empty', 'No items yet. Click + to add scripts, expressions, effects…'));
       u.items.forEach(function (it) {
@@ -363,6 +369,8 @@
       { label: 'Settings…', onClick: openSettings },
       { label: 'New user panel…', onClick: newUserPanel },
       { label: 'Add New Item…', onClick: function () { addItemDialog(null); } },
+      { label: 'Open Scripts folder', onClick: function (e) { exec('openScriptsFolder', { root: B.extPath }, e, 'Scripts'); } },
+      { label: 'Refresh Scripts', onClick: function () { loadLibrary(true); } },
       '-',
       { header: 'Sub panels' }
     ].concat(S.SLOTS.map(function (ext, i) {
@@ -534,6 +542,7 @@
       head.appendChild(svgBtn('', view === 'list' ? 'Grid view' : 'List view', view === 'list' ? ICONS.grid : ICONS.list, function () {
         slot.view = view === 'list' ? 'grid' : 'list'; S.save(); render();
       }));
+      if (slot.kind === 'category' && slot.id === 'scripts') scriptButtons().forEach(function (b) { head.appendChild(b); });
       if (slot.kind === 'user') head.appendChild(svgBtn(st.edit ? 'on' : '', 'Edit (drag to reorder)', ICONS.edit, function () { st.edit = !st.edit; render(); }));
       else head.appendChild(svgBtn(st.edit ? 'on' : '', 'Hide / show tools', ICONS.eyeOff, function () { st.edit = !st.edit; render(); }));
     }
@@ -558,6 +567,7 @@
         if (grid && !st.edit) box.appendChild(toolTile(t));
         else box.appendChild(toolRow(t, { star: !st.edit, hideToggle: st.edit, hidden: hidden }));
       });
+      if (slot.id === 'scripts' && !tools.length) body.appendChild(scriptsEmpty());
       if (hiddenCount && !st.edit) {
         var un = el('button', 'unhide', st.showHidden ? 'Hide ' + hiddenCount + ' tool(s) again' : 'Unhide all (' + hiddenCount + ' hidden)');
         un.addEventListener('click', function () { st.showHidden = !st.showHidden; render(); });
@@ -704,12 +714,42 @@
     B.run('hostInfo').then(function (r) { var n = document.getElementById('hostInfo'); if (n) n.textContent = r.msg; });
   }
 
+  // ============ script library ============
+  var DEMO_SCRIPTS = [
+    { name: 'Area.Sense 1.5.jsx', path: 'library/Area.Sense 1.5.jsx', src: 'bundled' },
+    { name: 'spot.Blur.jsx', path: 'library/spot.Blur.jsx', src: 'bundled' },
+    { name: 'Universal Audio.jsxbin', path: 'library/Universal Audio.jsxbin', src: 'bundled' }
+  ];
+  function loadLibrary(notify) {
+    if (!B.inCEP) { T.registerScripts(DEMO_SCRIPTS); render(); return; }
+    B.run('listLibrary', { root: B.extPath }).then(function (r) {
+      if (!r.ok) return U.toast('Could not list scripts: ' + r.msg, false);
+      var list = [];
+      try { list = JSON.parse(r.msg || '[]'); } catch (e) { return U.toast('Could not read the script list', false); }
+      T.registerScripts(list);
+      render();
+      if (notify) U.toast(list.length + ' script(s) found', true);
+    });
+  }
+  function scriptButtons() {
+    return [
+      svgBtn('', 'Refresh scripts', ICONS.refresh, function () { loadLibrary(true); }),
+      svgBtn('', 'Open your Scripts folder (Alt: bundled library folder)', ICONS.folder, function (e) {
+        exec('openScriptsFolder', { root: B.extPath }, e, 'Scripts');
+      })
+    ];
+  }
+  function scriptsEmpty() {
+    return el('div', 'empty', 'No scripts yet. Put .jsx, .jsxbin or .ffx files in Documents/MenMen Workflow/Scripts (folder icon above), then click Refresh.');
+  }
+
   // ============ host & init ============
   function loadHost() {
     return B.loadHost().then(function (r) {
       st.hostOk = r.ok; st.hostMsg = r.msg;
       if (!r.ok) U.toast('Could not load host: ' + r.msg, false);
       setTip();
+      if (r.ok) loadLibrary();
     });
   }
   function render() {

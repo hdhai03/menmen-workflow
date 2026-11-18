@@ -8,7 +8,7 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 - **MenMen Workflow** (main panel, `Window ▸ Extensions ▸ MenMen Workflow`) is a compact vertical bar with:
   - a **tool search** field (↑ ↓ to move, Enter to run, Esc to clear),
   - a **Favorites** strip (click ☆ next to a tool to pin it),
-  - **12 tool categories**: click a category to open its tool menu,
+  - **12 tool categories** plus **Scripts** (your own script library): click a category to open its tool menu,
   - **User panels** (your own panels) and **Add New Item**.
   - When the panel is short and wide, it switches to a horizontal icon-only bar.
 - **Dock**: in the menu of a category or user panel, click the Dock icon to open it in **MenMen Panel 1–4** (sub panels that dock like any AE panel).
@@ -40,6 +40,9 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 | Shapes (15) | Separate Shapes, Merge, Null Controllers for Points, Shapes from Vector, Remove Artboards, Mask → Shape, Cap/Join Round/Miter/Bevel, Toggle Fill/Stroke, Reverse Path, Reset Shape Transforms, Rectangle / Circle Wizard, Trim Paths Controller |
 | Text (5) | Find & Replace Text, Lorem Ipsum, Typewriter, Number Counter, Text Box Generator |
 | Animation (9) | Overshoot, Bounce, Wiggle, Spin, Auto Fader, Blinker, Stop Motion, Bend / Limb Rig, Position Trace |
+
+### Script library
+Every `.jsx`, `.jsxbin` and `.ffx` file in `library/` (inside the extension) or in `Documents/MenMen Workflow/Scripts` appears in the **Scripts** category. Scripts can be favorited, searched, docked and added to user panels like built-in tools; `.ffx` presets are applied to the selected layers. Use the folder and refresh icons in the Scripts header after adding files. Files in `library/` are git-ignored so third-party scripts are not published with this repo.
 
 Expression-driven tools add sliders so you can tweak them later (Wiggle Freq/Amp, Spin, Fade, Counter…). Hold **Alt / Shift / Ctrl** while clicking for alternate modes; the small A/S/C letters next to a tool name show which modes it has.
 
@@ -77,6 +80,7 @@ host/                  ExtendScript (ES3)
   main.jsx             MMW.load() loads the modules
   lib/core.jsx         MMW.run (undo group + "OK|"/"ERR|"), keyframe/expression helpers
   lib/*.jsx            tools by category
+library/               your script library (git-ignored, see library/README.md)
 scripts/               dev install scripts
 ```
 
