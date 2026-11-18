@@ -1,4 +1,4 @@
-/* ui.js - các thành phần UI dùng chung: popover menu, modal dialog, toast. */
+/* ui.js - shared UI pieces: popover menu, modal dialog, toast. */
 (function () {
   var overlay = document.getElementById('overlay');
 
@@ -18,7 +18,7 @@
   overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) closeAll(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(); });
 
-  // Menu nổi: items = [{label, hint, danger, disabled, onClick} | '-' | {header}]
+  // Popover menu: items = [{label, hint, danger, disabled, onClick} | '-' | {header}]
   function menu(x, y, items, opts) {
     closeAll();
     overlay.className = 'show clear';
@@ -42,7 +42,7 @@
     return m;
   }
 
-  // Hộp thoại: body là HTMLElement, buttons = [{label, primary, danger, onClick -> false để giữ mở}]
+  // Dialog: body is an HTMLElement, buttons = [{label, primary, danger, onClick -> return false to keep open}]
   function dialog(title, body, buttons) {
     closeAll();
     overlay.className = 'show';
@@ -75,7 +75,7 @@
     lab.appendChild(inp); wrap.appendChild(lab);
     var ok = function () { var v = inp.value.trim(); if (v) onOk(v); };
     inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { ok(); closeAll(); } });
-    dialog(title, wrap, [{ label: 'Hủy' }, { label: 'OK', primary: true, onClick: ok }]);
+    dialog(title, wrap, [{ label: 'Cancel' }, { label: 'OK', primary: true, onClick: ok }]);
   }
 
   var toastEl = document.getElementById('toast'), toastTimer = null;

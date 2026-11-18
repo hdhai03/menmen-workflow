@@ -1,5 +1,5 @@
-/* widgets.js - các tool có giao diện riêng bên trong ô lưới.
- * Mỗi widget: function(data, ctx) -> HTMLElement. data = object lưu trạng thái (được lưu lại), ctx.run(hostId, opts, event), ctx.save() */
+/* widgets.js - tools with their own UI (shown in a dialog).
+ * Each widget: function(data, ctx) -> HTMLElement. data = persisted state object, ctx.run(hostId, opts, event), ctx.save() */
 (function () {
   function el(tag, cls, html) {
     var e = document.createElement(tag);
@@ -42,7 +42,7 @@
     var btns = el('div', 'w-btns');
     [['ease', 'Ease'], ['in', 'In'], ['out', 'Out'], ['linear', 'Lin'], ['hold', 'Hold']].forEach(function (b) {
       var x = el('button', 'w-btn', b[1]);
-      x.title = { ease: 'Ease cả 2 phía', in: 'Chỉ ease vào', out: 'Chỉ ease ra', linear: 'Linear', hold: 'Hold' }[b[0]];
+      x.title = { ease: 'Ease both sides', in: 'Ease in only', out: 'Ease out only', linear: 'Linear', hold: 'Hold' }[b[0]];
       x.addEventListener('click', function (e) {
         stop(e);
         ctx.run('easyKeyframes', { mode: b[0], inInf: d.inInf, outInf: d.outInf }, e);
@@ -73,11 +73,11 @@
     if (!d.order) d.order = 'down';
     var root = el('div', 'w w-row w-seq');
     var num = el('input', 'w-num'); num.type = 'number'; num.min = 0; num.step = 1; num.value = d.step;
-    num.title = 'Số frame giữa các phần tử';
+    num.title = 'Frames between items';
     num.addEventListener('click', stop);
     num.addEventListener('change', function () { d.step = Math.max(0, Number(num.value) || 0); ctx.save(); });
     var seg = el('div', 'w-seg');
-    [['down', '↓', 'Từ trên xuống'], ['up', '↑', 'Từ dưới lên'], ['random', '⤨', 'Ngẫu nhiên']].forEach(function (o) {
+    [['down', '↓', 'Top to bottom'], ['up', '↑', 'Bottom to top'], ['random', '⤨', 'Random']].forEach(function (o) {
       var b = el('button', 'w-segbtn' + (d.order === o[0] ? ' on' : ''), o[1]);
       b.title = o[2];
       b.addEventListener('click', function (e) {
@@ -102,7 +102,7 @@
       for (var x = 0; x < 3; x++) {
         (function (fx, fy) {
           var b = el('button', 'w-dot' + (fx === 0.5 && fy === 0.5 ? ' center' : ''));
-          b.title = 'Anchor → ' + ['trái', 'giữa', 'phải'][fx * 2] + ' / ' + ['trên', 'giữa', 'dưới'][fy * 2];
+          b.title = 'Anchor → ' + ['left', 'center', 'right'][fx * 2] + ' / ' + ['top', 'middle', 'bottom'][fy * 2];
           b.addEventListener('click', function (e) { stop(e); ctx.run('moveAnchor', { x: fx, y: fy }, e); });
           root.appendChild(b);
         })(x / 2, y / 2);

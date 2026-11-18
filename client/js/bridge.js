@@ -1,5 +1,5 @@
-/* bridge.js - giao tiếp với After Effects qua CEP (không cần CSInterface.js).
- * Khi mở index.html bằng trình duyệt thường, bridge chạy ở chế độ mock để xem trước giao diện. */
+/* bridge.js - talks to After Effects through CEP (no CSInterface.js needed).
+ * When index.html is opened in a normal browser, the bridge runs in mock mode to preview the UI. */
 (function () {
   var cep = window.__adobe_cep__;
   var B = { inCEP: !!cep };
@@ -10,7 +10,7 @@
   B.isMain = /\.main$/.test(B.extId);
   B.panelNo = B.isMain ? '' : B.extId.replace(/^.*panel/, '');
 
-  // Mở (hoặc đưa lên trước) một panel phụ.
+  // Opens (or brings to front) a sub panel.
   B.openPanel = function (extId) {
     if (cep && cep.requestOpenExtension) { cep.requestOpenExtension(extId, ''); return true; }
     return false;
@@ -29,17 +29,17 @@
       if (!cep) {
         console.log('[mock evalScript]', script);
         setTimeout(function () { var m = /MMW\.run\("(\w+)"/.exec(script);
-        resolve('OK|(xem trước) đã gọi ' + (m ? m[1] : 'host')); }, 60);
+        resolve('OK|(preview) called ' + (m ? m[1] : 'host')); }, 60);
         return;
       }
       cep.evalScript(script, function (r) { resolve(r); });
     });
   };
 
-  // Kết quả từ host luôn có dạng "OK|msg" hoặc "ERR|msg".
+  // Host results always look like "OK|msg" or "ERR|msg".
   B.parse = function (r) {
     r = String(r == null ? '' : r);
-    if (r === 'EvalScript error.') return { ok: false, msg: 'Lỗi ExtendScript (host chưa được nạp?)' };
+    if (r === 'EvalScript error.') return { ok: false, msg: 'ExtendScript error (host not loaded?)' };
     var i = r.indexOf('|');
     if (i < 0) return { ok: true, msg: r };
     return { ok: r.slice(0, i) === 'OK', msg: r.slice(i + 1) };
@@ -58,7 +58,7 @@
     return B.evalScript(s).then(B.parse);
   };
 
-  // ----- events giữa các panel -----
+  // ----- events between panels -----
   B.on = function (type, fn) {
     if (cep) {
       cep.addEventListener(type, function (e) {

@@ -1,5 +1,5 @@
 // MenMen Workflow - ExtendScript entry point (ES3).
-// Panel gọi MMW.load(<đường dẫn extension>) khi khởi động để nạp các module trong host/lib.
+// Panels call MMW.load(<extension path>) on startup to load the modules in host/lib.
 
 var MMW = (typeof MMW !== "undefined") ? MMW : {};
 MMW.tools = MMW.tools || {};
@@ -25,7 +25,7 @@ MMW.load = function (root) {
     var errs = [];
     for (var i = 0; i < files.length; i++) {
         var f = new File(root + "/host/lib/" + files[i]);
-        if (!f.exists) { errs.push(files[i] + ": không tìm thấy file"); continue; }
+        if (!f.exists) { errs.push(files[i] + ": file not found"); continue; }
         try { $.evalFile(f); } catch (e) { errs.push(files[i] + ": " + e.message + " (line " + e.line + ")"); }
     }
     return errs.length ? "ERR|" + errs.join("; ") : "OK|" + MMW.VERSION;

@@ -6,14 +6,14 @@
     function shapeLayers(c) {
         var out = [], L = MMW.selLayers(c);
         for (var i = 0; i < L.length; i++) if (L[i] instanceof ShapeLayer) out.push(L[i]);
-        if (!out.length) MMW.fail("Hãy chọn shape layer.");
+        if (!out.length) MMW.fail("Select shape layers.");
         return out;
     }
 
     // ---------------- Extract Shapes ----------------
-    // Click: tách mỗi group cấp 1 thành một layer riêng và xóa layer gốc
-    //        (nếu đang chọn vài group thì chỉ tách các group đó và xóa chúng khỏi layer gốc).
-    // Alt: giữ nguyên layer gốc / group gốc.
+    // Click: split each top-level group into its own layer and delete the source layer
+    //        (if some groups are selected, only those are extracted and removed from the source).
+    // Alt: keep the source layer / groups.
     T.extractShapes = function (o) {
         var c = MMW.comp(), layers = shapeLayers(c), made = 0;
         for (var i = 0; i < layers.length; i++) {
@@ -23,7 +23,7 @@
             if (!partial) for (g = 1; g <= contents.numProperties; g++) picked.push(g);
             if (picked.length < 1) continue;
 
-            // duplicate() đặt bản sao ngay trên layer gốc -> duyệt từ group trên cùng để giữ thứ tự xếp lớp.
+            // duplicate() places the copy right above the source -> iterate from the top group to keep stacking order.
             for (var p = 0; p < picked.length; p++) {
                 var keep = picked[p];
                 var d = L.duplicate();
@@ -40,16 +40,16 @@
                 }
             }
         }
-        return "Đã tách " + made + " shape layer.";
+        return "Created " + made + " shape layer(s).";
     };
 
     // ---------------- Merge Shapes ----------------
-    // Gộp các shape layer đang chọn vào layer trên cùng (mỗi layer nguồn thành một group).
-    // Click: xóa layer nguồn. Alt: giữ layer nguồn (tắt hiển thị).
-    // Lưu ý: transform của layer nguồn được quy đổi tĩnh tại thời điểm hiện tại (2D).
+    // Merges the selected shape layers into the top one (each source layer becomes a group).
+    // Click: delete source layers. Alt: keep them (hidden).
+    // Note: source transforms are converted statically at the current time (2D).
     T.mergeShapes = function (o) {
         var c = MMW.comp(), layers = MMW.sortByIndex(shapeLayers(c));
-        if (layers.length < 2) MMW.fail("Hãy chọn ít nhất 2 shape layer.");
+        if (layers.length < 2) MMW.fail("Select at least 2 shape layers.");
         var target = layers[0], h = MMW.helper(c), merged = 0;
         for (var i = 1; i < layers.length; i++) {
             var S = layers[i];
@@ -59,7 +59,7 @@
             var gi = grp.propertyIndex;
             MMW.copyGroup(S, [ROOT], target, [ROOT, gi, "ADBE Vectors Group"]);
 
-            // Quy đổi transform của layer nguồn về không gian của layer đích.
+            // Convert the source layer transform into the target layer's space.
             var expr = "var S=thisComp.layer(" + S.index + "),D=thisComp.layer(" + target.index + ");" +
                 "var p=D.fromComp(S.toComp(S.anchorPoint));[p[0],p[1],0]";
             var pos = h.evalAt(expr, c.time, 1);
@@ -76,11 +76,11 @@
         for (var k = layers.length - 1; k >= 1; k--) {
             if (o.alt) layers[k].enabled = false; else layers[k].remove();
         }
-        return "Đã gộp " + merged + " layer vào \"" + target.name + "\".";
+        return "Merged " + merged + " layer(s) into \"" + target.name + "\".";
     };
 
     // ---------------- Selector ----------------
-    // Click: chọn mọi Path. Alt: chọn mọi Fill. Shift: chọn mọi Stroke. (trên shape layer đang chọn)
+    // Click: select all Paths. Alt: all Fills. Shift: all Strokes. (in the selected shape layers)
     T.selector = function (o) {
         var c = MMW.comp(), layers = shapeLayers(c), n = 0;
         var want = o.alt ? "ADBE Vector Graphic - Fill" : (o.shift ? "ADBE Vector Graphic - Stroke" : "ADBE Vector Shape");
@@ -92,13 +92,13 @@
             }
         }
         for (var i = 0; i < layers.length; i++) walk(layers[i].property(ROOT));
-        return "Đã chọn " + n + (o.alt ? " fill" : (o.shift ? " stroke" : " path")) + ".";
+        return "Selected " + n + (o.alt ? " fill(s)" : (o.shift ? " stroke(s)" : " path(s)")) + ".";
     };
 
     // ---------------- Nulls To Point ----------------
-    // Chọn một property Path (shape) hoặc Mask Path.
-    // Click: tạo null bám theo từng điểm của path. Alt: tạo null và điểm path đi theo null.
-    // Lưu ý: với path nằm trong group có transform khác mặc định, vị trí có thể lệch.
+    // Select a Path (shape) or Mask Path property.
+    // Click: nulls follow each path point. Alt: path points follow the nulls.
+    // Note: paths inside groups with non-default transforms may be offset.
     T.nullsToPoint = function (o) {
         var c = MMW.comp(), sel = MMW.selProps(c), target = null, layer = null;
         for (var i = 0; i < sel.length && !target; i++) {
@@ -115,11 +115,11 @@
                 }
             }
         }
-        if (!target) MMW.fail("Hãy chọn một Path (shape) hoặc Mask Path.");
+        if (!target) MMW.fail("Select a shape Path or a Mask Path.");
         var ref = MMW.exprRef(target);
         var shape = target.valueAtTime(c.time, false);
         var count = shape.vertices.length;
-        if (!count) MMW.fail("Path không có điểm nào.");
+        if (!count) MMW.fail("The path has no points.");
         var base = layer.name, nulls = [], h = MMW.helper(c);
 
         for (var v = 0; v < count; v++) {
@@ -144,11 +144,11 @@
                 "for(var i=0;i<ns.length;i++){var n=thisComp.layer(ns[i]);pts.push(fromComp(n.toComp(n.anchorPoint)));}\n" +
                 "createPath(pts, thisProperty.inTangents(), thisProperty.outTangents(), thisProperty.isClosed());";
         }
-        return "Đã tạo " + count + " null" + (o.alt ? " (path đi theo null)." : " (null bám theo path).");
+        return "Created " + count + " null(s)" + (o.alt ? " (path follows nulls)." : " (nulls follow path).");
     };
 
     // ---------------- Shapes From Vector ----------------
-    // Click: Create Shapes from Vector Layer. Alt: xóa layer nguồn. Shift: thêm bước xóa artboard.
+    // Click: Create Shapes from Vector Layer. Alt: delete the source layer. Shift: also remove artboards.
     T.shapesFromVector = function (o) {
         var c = MMW.comp(), layers = MMW.selLayers(c), made = [];
         var cmd = app.findMenuCommandId("Create Shapes from Vector Layer");
@@ -164,15 +164,15 @@
             for (var f = 1; f <= c.numLayers; f++) if (!before[c.layer(f).id]) { made.push(c.layer(f)); break; }
             if (o.alt) L.remove();
         }
-        if (!made.length) MMW.fail("Hãy chọn layer vector (Illustrator/PDF/EPS).");
+        if (!made.length) MMW.fail("Select vector layers (Illustrator/PDF/EPS).");
         var removed = 0;
         if (o.shift) for (var m = 0; m < made.length; m++) removed += removeArtboardGroups(made[m]);
         for (var z = 0; z < made.length; z++) made[z].selected = true;
-        return "Đã tạo " + made.length + " shape layer" + (o.shift ? ", xóa " + removed + " artboard" : "") + ".";
+        return "Created " + made.length + " shape layer(s)" + (o.shift ? ", removed " + removed + " artboard(s)" : "") + ".";
     };
 
     // ---------------- Remove Artboards ----------------
-    // Xóa các group có tên chứa "Artboard" (cách Illustrator đặt tên) trong shape layer đang chọn.
+    // Removes groups whose name contains "Artboard" (Illustrator naming) in the selected shape layers.
     function removeArtboardGroups(L) {
         var root = L.property(ROOT), n = 0;
         for (var g = root.numProperties; g >= 1; g--) {
@@ -183,6 +183,6 @@
     T.removeArtboards = function (o) {
         var c = MMW.comp(), layers = shapeLayers(c), n = 0;
         for (var i = 0; i < layers.length; i++) n += removeArtboardGroups(layers[i]);
-        return "Đã xóa " + n + " artboard group.";
+        return "Removed " + n + " artboard group(s).";
     };
 })();

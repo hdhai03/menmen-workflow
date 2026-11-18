@@ -1,12 +1,12 @@
-// core.jsx - helpers dùng chung cho mọi tool (ES3, ExtendScript).
+// core.jsx - helpers shared by all tools (ES3, ExtendScript).
 MMW.VERSION = "0.1.0";
 
 MMW.fail = function (msg) { throw new Error(msg); };
 
-// Chạy một tool trong undo group, trả về "OK|msg" hoặc "ERR|msg" cho panel.
+// Runs a tool inside an undo group and returns "OK|msg" or "ERR|msg" to the panel.
 MMW.run = function (id, opts) {
     var fn = MMW.tools[id];
-    if (!fn) return "ERR|Không tìm thấy tool: " + id;
+    if (!fn) return "ERR|Tool not found: " + id;
     opts = opts || {};
     app.beginUndoGroup("MenMen: " + id);
     try {
@@ -21,14 +21,14 @@ MMW.run = function (id, opts) {
 
 MMW.comp = function () {
     var c = app.project.activeItem;
-    if (!(c && c instanceof CompItem)) MMW.fail("Hãy mở (active) một composition.");
+    if (!(c && c instanceof CompItem)) MMW.fail("Open (activate) a composition first.");
     return c;
 };
 
 MMW.selLayers = function (c, min) {
     var s = c.selectedLayers, out = [];
     min = min || 1;
-    if (s.length < min) MMW.fail("Hãy chọn ít nhất " + min + " layer.");
+    if (s.length < min) MMW.fail("Select at least " + min + " layer(s).");
     for (var i = 0; i < s.length; i++) out.push(s[i]);
     return out;
 };
@@ -49,7 +49,7 @@ MMW.quote = function (s) {
 
 MMW.isProp = function (p) { return p && p.propertyType === PropertyType.PROPERTY; };
 
-// Thuộc tính (Property, không phải group) đang được chọn trên các layer đã chọn.
+// Selected Properties (not groups) on the selected layers.
 MMW.selProps = function (c) {
     var out = [], L = c.selectedLayers;
     for (var i = 0; i < L.length; i++) {
@@ -61,7 +61,7 @@ MMW.selProps = function (c) {
     return out;
 };
 
-// Các property có keyframe đang chọn: [{layer, prop, keys:[index...]}]
+// Properties with selected keyframes: [{layer, prop, keys:[index...]}]
 MMW.keyProps = function (c, need) {
     var out = [], all = MMW.selProps(c);
     for (var i = 0; i < all.length; i++) {
@@ -73,11 +73,11 @@ MMW.keyProps = function (c, need) {
             out.push({ layer: all[i].layer, prop: p, keys: ks });
         }
     }
-    if (need !== false && !out.length) MMW.fail("Hãy chọn keyframe.");
+    if (need !== false && !out.length) MMW.fail("Select some keyframes.");
     return out;
 };
 
-// ---- Đọc / ghi toàn bộ dữ liệu của một keyframe ----
+// ---- Read / write all data of a keyframe ----
 MMW.readKey = function (p, k) {
     var d = { t: p.keyTime(k), v: p.keyValue(k), inI: p.keyInInterpolationType(k), outI: p.keyOutInterpolationType(k) };
     try { d.inE = p.keyInTemporalEase(k); d.outE = p.keyOutTemporalEase(k); } catch (e1) {}
@@ -112,7 +112,7 @@ MMW.writeKey = function (p, d, t, opt) {
     return k;
 };
 
-// Chuyển mảng KeyframeEase cho khớp số chiều của property đích.
+// Adapts a KeyframeEase array to the target property's dimensions.
 MMW.fitEase = function (p, k, ease) {
     var n = 1;
     try { n = p.keyInTemporalEase(k).length; } catch (e) {}
@@ -124,7 +124,7 @@ MMW.fitEase = function (p, k, ease) {
     return out;
 };
 
-// Di chuyển các key (index) tới thời gian mới: fnTime(dataKey, i) => time
+// Moves keys (indices) to new times: fnTime(keyData, i) => time
 MMW.moveKeys = function (p, keys, fnTime) {
     var data = [], i;
     for (i = 0; i < keys.length; i++) data.push(MMW.readKey(p, keys[i]));
@@ -141,7 +141,7 @@ MMW.addVec = function (a, b) {
     return r;
 };
 
-// Cộng một offset vào property (mọi keyframe hoặc giá trị tĩnh).
+// Adds an offset to a property (all keyframes or the static value).
 MMW.offsetProp = function (p, delta) {
     if (p.numKeys > 0) {
         for (var k = 1; k <= p.numKeys; k++) p.setValueAtKey(k, MMW.addVec(p.keyValue(k), delta));
@@ -150,7 +150,7 @@ MMW.offsetProp = function (p, delta) {
     }
 };
 
-// Duyệt đệ quy mọi Property bên trong một group/layer.
+// Recursively walks every Property inside a group/layer.
 MMW.walkProps = function (group, fn) {
     for (var i = 1; i <= group.numProperties; i++) {
         var p = group.property(i);
@@ -167,7 +167,7 @@ MMW.removeLayerAndSource = function (layer) {
     try { if (src && src.usedIn && src.usedIn.length === 0) src.remove(); } catch (e2) {}
 };
 
-// Layer phụ để "hỏi" AE giá trị của một expression (toComp, sourceRectAtTime...).
+// Helper layer used to ask AE for the value of an expression (toComp, sourceRectAtTime...).
 MMW.helper = function (comp) {
     var h = comp.layers.addNull();
     h.name = "__mmw_helper__";
@@ -186,7 +186,7 @@ MMW.helper = function (comp) {
     };
 };
 
-// Chuỗi expression tham chiếu tới property (dùng index/matchName để không phụ thuộc ngôn ngữ).
+// Expression reference to a property (uses index/matchName so it is language independent).
 MMW.exprRef = function (prop) {
     var chain = [], p = prop;
     while (p.parentProperty) { chain.unshift(p); p = p.parentProperty; }
@@ -200,14 +200,14 @@ MMW.exprRef = function (prop) {
     return s;
 };
 
-// Lấy property theo "đường dẫn" chỉ số từ layer: [i1, i2, ...]. Luôn resolve lại để tránh object invalid.
+// Gets a property by an index path from the layer: [i1, i2, ...]. Always re-resolved to avoid invalid objects.
 MMW.resolve = function (layer, path) {
     var p = layer;
     for (var i = 0; i < path.length; i++) p = p.property(path[i]);
     return p;
 };
 
-// Copy giá trị / keyframe / expression của một Property sang Property khác.
+// Copies value / keyframes / expression from one Property to another.
 MMW.copyPropValue = function (sp, dp) {
     try {
         if (sp.propertyValueType === PropertyValueType.NO_VALUE) return;
@@ -220,7 +220,7 @@ MMW.copyPropValue = function (sp, dp) {
     try { if (sp.canSetExpression && sp.expression !== "") { dp.expression = sp.expression; dp.expressionEnabled = sp.expressionEnabled; } } catch (e2) {}
 };
 
-// Copy đệ quy nội dung shape giữa 2 layer theo đường dẫn chỉ số.
+// Recursively copies shape contents between 2 layers using index paths.
 MMW.copyGroup = function (srcLayer, srcPath, dstLayer, dstPath) {
     var src = MMW.resolve(srcLayer, srcPath);
     var n = src.numProperties;

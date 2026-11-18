@@ -1,4 +1,4 @@
-// keyframes.jsx - căn, dời, đảo, dọn keyframe; easing presets
+// keyframes.jsx - align, offset, reverse, clean keyframes; easing presets
 (function () {
     var T = MMW.tools;
 
@@ -21,39 +21,39 @@
         return n;
     }
 
-    // Đưa nhóm key tới playhead. Alt: căn từng property riêng (key đầu của mỗi property về playhead).
+    // Moves the selected keys to the playhead. Alt: align each property separately (its first key to the playhead).
     T.alignKeysToTime = function (o) {
         var c = MMW.comp(), list = MMW.keyProps(c), b = bounds(list);
         var n = shiftAll(list, function (it) { return c.time - (o.alt ? it.prop.keyTime(it.keys[0]) : b.first); });
-        return "Đã dời " + n + " keyframe tới playhead.";
+        return "Moved " + n + " keyframe(s) to the playhead.";
     };
-    // Key đầu tiên về In point của layer. Alt: key cuối về Out point.
+    // First key to the layer In point. Alt: last key to the Out point.
     T.alignKeysToInOut = function (o) {
         var c = MMW.comp(), list = MMW.keyProps(c);
         var n = shiftAll(list, function (it) {
             return o.alt ? it.layer.outPoint - c.frameDuration - it.prop.keyTime(it.keys[it.keys.length - 1])
                          : it.layer.inPoint - it.prop.keyTime(it.keys[0]);
         });
-        return "Đã căn " + n + " keyframe về " + (o.alt ? "Out" : "In") + " point.";
+        return "Aligned " + n + " keyframe(s) to the " + (o.alt ? "Out" : "In") + " point.";
     };
-    // Click: căn trái (key đầu thẳng hàng). Alt: căn phải (key cuối thẳng hàng).
+    // Click: left align (first keys line up). Alt: right align (last keys line up).
     T.alignKeysLeftRight = function (o) {
         var c = MMW.comp(), list = MMW.keyProps(c), b = bounds(list);
         var n = shiftAll(list, function (it) {
             return o.alt ? b.last - it.prop.keyTime(it.keys[it.keys.length - 1]) : b.first - it.prop.keyTime(it.keys[0]);
         });
-        return "Đã căn " + (o.alt ? "phải " : "trái ") + n + " keyframe.";
+        return (o.alt ? "Right" : "Left") + "-aligned " + n + " keyframe(s).";
     };
 
-    // o.frames: số frame (âm = lùi). Alt: lùi.
+    // o.frames: number of frames (negative = earlier). Alt: earlier.
     T.offsetKeys = function (o) {
         var c = MMW.comp(), list = MMW.keyProps(c), f = Number(o.frames) || 0;
         if (o.alt) f = -f;
         var n = shiftAll(list, function () { return f * c.frameDuration; });
-        return "Đã dời " + n + " keyframe " + f + " frame.";
+        return "Offset " + n + " keyframe(s) by " + f + " frame(s).";
     };
 
-    // Đảo ngược thời gian của key đang chọn (giữ nguyên khoảng).
+    // Time-reverses the selected keys (within the same range).
     T.timeReverseKeys = function () {
         var c = MMW.comp(), list = MMW.keyProps(c), n = 0;
         for (var i = 0; i < list.length; i++) {
@@ -72,7 +72,7 @@
             }
             n += ks.length;
         }
-        return "Đã đảo " + n + " keyframe.";
+        return "Reversed " + n + " keyframe(s).";
     };
 
     function same(a, b) {
@@ -83,10 +83,10 @@
         if (typeof a === "number") return Math.abs(a - b) < 1e-6;
         try { return a.toString() === b.toString(); } catch (e) { return false; }
     }
-    // Xóa key thừa: key có giá trị trùng cả key trước lẫn key sau (trên property đang chọn).
+    // Removes redundant keys: keys whose value equals both neighbours (on the selected properties).
     T.cleanKeyframes = function (o) {
         var c = MMW.comp(), props = MMW.selProps(c), n = 0;
-        if (!props.length) MMW.fail("Hãy chọn property có keyframe.");
+        if (!props.length) MMW.fail("Select properties with keyframes.");
         for (var i = 0; i < props.length; i++) {
             var p = props[i].prop;
             if (p.numKeys < 3 || p.propertyValueType === PropertyValueType.SHAPE) continue;
@@ -94,11 +94,11 @@
                 if (same(p.keyValue(k), p.keyValue(k - 1)) && same(p.keyValue(k), p.keyValue(k + 1))) { p.removeKey(k); n++; }
             }
         }
-        return "Đã xóa " + n + " keyframe thừa.";
+        return "Removed " + n + " redundant keyframe(s).";
     };
 
     // ---------------- Easing ----------------
-    // Đảo easing: easing ra của key A <-> easing vào của key B (với từng cặp key liên tiếp đang chọn).
+    // Reverses easing: outgoing ease of key A <-> incoming ease of key B (for each selected key pair).
     T.reverseKeyEasing = function () {
         var c = MMW.comp(), list = MMW.keyProps(c), n = 0;
         for (var i = 0; i < list.length; i++) {
@@ -121,10 +121,10 @@
                 n++;
             }
         }
-        return "Đã đảo easing cho " + n + " đoạn.";
+        return "Reversed easing on " + n + " segment(s).";
     };
 
-    // Cubic-bezier (x1,y1,x2,y2) của các easing kinh điển.
+    // Cubic-bezier (x1,y1,x2,y2) of the classic easings.
     var CURVES = {
         sineIn: [0.12, 0, 0.39, 0], sineOut: [0.61, 1, 0.88, 1], sineInOut: [0.37, 0, 0.63, 1],
         quadIn: [0.11, 0, 0.5, 0], quadOut: [0.5, 1, 0.89, 1], quadInOut: [0.45, 0, 0.55, 1],
@@ -137,10 +137,10 @@
     };
     MMW.EASE_CURVES = CURVES;
 
-    // o.curve: tên trong CURVES, hoặc o.bezier = [x1,y1,x2,y2]. Áp cho từng cặp key liên tiếp đang chọn.
+    // o.curve: a CURVES name, or o.bezier = [x1,y1,x2,y2]. Applied to each selected key pair.
     T.easingPreset = function (o) {
         var bz = o.bezier || CURVES[o.curve];
-        if (!bz) MMW.fail("Không có easing: " + o.curve);
+        if (!bz) MMW.fail("Unknown easing: " + o.curve);
         var x1 = Math.max(0.001, bz[0]), y1 = bz[1], x2 = Math.min(0.999, bz[2]), y2 = bz[3];
         var s1 = y1 / x1, s2 = (1 - y2) / (1 - x2);
         var inf1 = Math.max(0.1, Math.min(100, x1 * 100)), inf2 = Math.max(0.1, Math.min(100, (1 - x2) * 100));
@@ -159,7 +159,7 @@
                     if (dims === 1 && va instanceof Array) {
                         var sum = 0;
                         for (var q = 0; q < va.length; q++) sum += (vb[q] - va[q]) * (vb[q] - va[q]);
-                        avg = Math.sqrt(sum) / dt;               // spatial: tốc độ theo đường đi
+                        avg = Math.sqrt(sum) / dt;               // spatial: speed along the path
                     } else {
                         avg = ((va instanceof Array) ? (vb[d] - va[d]) : (vb - va)) / dt;
                     }
@@ -173,7 +173,7 @@
                 n++;
             }
         }
-        if (!n) MMW.fail("Hãy chọn ít nhất 2 keyframe liên tiếp trên cùng property.");
-        return "Easing " + (o.curve || "custom") + " → " + n + " đoạn.";
+        if (!n) MMW.fail("Select at least 2 consecutive keyframes on the same property.");
+        return "Easing " + (o.curve || "custom") + " → " + n + " segment(s).";
     };
 })();

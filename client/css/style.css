@@ -1,4 +1,4 @@
-/* MenMen Workflow - giao diện main panel + panel phụ */
+/* MenMen Workflow - main panel + sub panel UI */
 :root {
   --bg: #232323;
   --surface: #2b2b2e;
@@ -44,7 +44,7 @@ input, textarea, select { font: inherit; color: inherit; }
 .muted { color: var(--muted); }
 .small { font-size: calc(var(--fs) - 1.5px); word-break: break-word; }
 
-/* ---------- icon màu theo theme ---------- */
+/* ---------- icon colors per theme ---------- */
 .ico { width: var(--ico); height: var(--ico); }
 .ico16 { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
 .mr-ico, .ri-ico, .tile-ico, .sh-ico, .chip-ico { color: var(--cat, var(--muted)); display: grid; place-items: center; flex: none; position: relative; }
@@ -53,7 +53,7 @@ body.theme-solid .mr-ico, body.theme-solid .ri-ico, body.theme-solid .tile-ico, 
   background: var(--cat, #6b6b75); color: #fff; border-radius: 5px; padding: 3px;
 }
 body.theme-solid .custom .ri-ico, body.theme-solid .custom .tile-ico { background: #6b6b75; }
-/* góc tam giác nhỏ báo hiệu mở menu */
+/* small corner triangle hinting that a menu opens */
 .m-row:not(.user):not(.ghost) .mr-ico::after {
   content: ""; position: absolute; right: -3px; bottom: -2px; width: 0; height: 0;
   border-left: 4px solid transparent; border-bottom: 4px solid var(--cat, var(--muted)); opacity: .9;
@@ -102,7 +102,7 @@ body.theme-solid .custom .ri-ico, body.theme-solid .custom .tile-ico { backgroun
 .ri-cat { color: var(--muted); font-size: calc(var(--fs) - 2px); white-space: nowrap; }
 .row-item.sel { background: rgba(var(--accent-rgb), .18); }
 
-/* horizontal (main panel thấp & rộng) */
+/* horizontal (short & wide main panel) */
 body.horizontal .main { flex-direction: row; align-items: center; }
 body.horizontal .m-head .brand, body.horizontal .helptip, body.horizontal .m-search { display: none; }
 body.horizontal .m-body { display: flex; align-items: center; overflow-x: auto; overflow-y: hidden; height: 100%; padding: 0 4px; }
@@ -112,7 +112,7 @@ body.horizontal .m-row { width: auto; padding: 0 6px; }
 body.horizontal .mr-name, body.horizontal .mr-count { display: none; }
 body.horizontal .sep { width: 1px; height: 60%; margin: 0 4px; }
 
-/* ---------- sheet (menu của nhóm) ---------- */
+/* ---------- sheet (category menu) ---------- */
 .sheet { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; z-index: 5; animation: sheetIn .14s ease-out; }
 @keyframes sheetIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
 .sh-head, .p-head {
@@ -123,7 +123,7 @@ body.horizontal .sep { width: 1px; height: 60%; margin: 0 4px; }
 .sh-title { font-weight: 700; margin-left: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sh-body, .p-body { flex: 1; overflow-y: auto; padding: 4px 5px 8px; }
 
-/* hàng tool */
+/* tool rows */
 .row-list { display: flex; flex-direction: column; }
 .row-item { display: flex; align-items: center; gap: 9px; min-height: var(--row); padding: 0 4px 0 7px; border-radius: 6px; cursor: pointer; position: relative; }
 .row-item:hover { background: var(--surface-2); }
@@ -143,7 +143,7 @@ body.horizontal .sep { width: 1px; height: 60%; margin: 0 4px; }
 .row-item.add, .row-item.add .ri-ico { color: var(--muted); }
 .row-item.add:hover, .row-item.add:hover .ri-ico { color: var(--accent); }
 
-/* tile (lưới / favorites) */
+/* tiles (grid / favorites) */
 .tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--tile) + 32px), 1fr)); gap: 3px; }
 .tile {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 7px 3px 5px;
@@ -159,7 +159,7 @@ body.horizontal .sep { width: 1px; height: 60%; margin: 0 4px; }
 .tile.add:hover { color: var(--accent); border-color: var(--accent); }
 .grid-divider { grid-column: 1 / -1; height: 1px; background: var(--line-2); margin: 3px 2px; }
 
-/* edit mode của panel phụ */
+/* sub panel edit mode */
 .editable { cursor: grab; outline: 1px dashed var(--line-2); outline-offset: -1px; }
 .dragging { opacity: .35; }
 .drop { box-shadow: inset 0 2px 0 var(--accent); }
@@ -169,7 +169,7 @@ body.horizontal .sep { width: 1px; height: 60%; margin: 0 4px; }
 .unhide { display: block; margin: 6px auto 0; padding: 4px 10px; border-radius: 12px; background: var(--surface-2); color: var(--muted); font-size: calc(var(--fs) - 1px); }
 .unhide:hover { color: var(--text); }
 
-/* ---------- panel phụ ---------- */
+/* ---------- sub panels ---------- */
 .sub { display: flex; flex-direction: column; height: 100%; }
 .p-title { display: flex; align-items: center; gap: 7px; height: 24px; padding: 0 7px 0 5px; border-radius: 6px; min-width: 0; font-weight: 700; }
 .p-title:hover { background: var(--surface-2); }
@@ -272,7 +272,7 @@ select.input { padding: 0 6px; }
 .about p { margin: 6px 0; }
 .about-logo { width: 46px; height: 46px; margin: 4px auto 0; border-radius: 12px; display: grid; place-items: center; font-weight: 800; font-size: 22px; color: #fff; background: linear-gradient(135deg, var(--accent), #c47dff); }
 
-/* ---------- widgets (mở trong dialog) ---------- */
+/* ---------- widgets (shown in dialogs) ---------- */
 .widget-host { display: flex; flex-direction: column; }
 .w { display: flex; gap: 6px; }
 .w-row { align-items: stretch; min-height: 30px; }

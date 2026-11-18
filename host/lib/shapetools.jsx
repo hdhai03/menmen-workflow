@@ -6,7 +6,7 @@
     function shapeLayers(c) {
         var out = [], s = MMW.selLayers(c);
         for (var i = 0; i < s.length; i++) if (s[i] instanceof ShapeLayer) out.push(s[i]);
-        if (!out.length) MMW.fail("Hãy chọn shape layer.");
+        if (!out.length) MMW.fail("Select shape layers.");
         return out;
     }
     function walkMatch(group, matchName, fn) {
@@ -27,16 +27,16 @@
                 n++;
             });
         }
-        return "Đã đổi cap/join cho " + n + " stroke.";
+        return "Updated cap/join on " + n + " stroke(s).";
     };
-    // Click: bật/tắt Fill. Alt: bật/tắt Stroke.
+    // Click: toggle Fills. Alt: toggle Strokes.
     T.toggleFillStroke = function (o) {
         var c = MMW.comp(), list = shapeLayers(c), n = 0;
         var mn = o.alt ? "ADBE Vector Graphic - Stroke" : "ADBE Vector Graphic - Fill";
         for (var i = 0; i < list.length; i++) walkMatch(list[i].property(ROOT), mn, function (p) { p.enabled = !p.enabled; n++; });
-        return "Đã bật/tắt " + n + (o.alt ? " stroke." : " fill.");
+        return "Toggled " + n + (o.alt ? " stroke(s)." : " fill(s).");
     };
-    // Đảo hướng path (dùng thuộc tính Shape Direction của mỗi path).
+    // Reverses path direction (via each path's Shape Direction property).
     T.reversePathDirection = function () {
         var c = MMW.comp(), list = shapeLayers(c), n = 0;
         var kinds = ["ADBE Vector Shape - Group", "ADBE Vector Shape - Rect", "ADBE Vector Shape - Ellipse", "ADBE Vector Shape - Star"];
@@ -48,9 +48,9 @@
                 });
             }
         }
-        return "Đã đảo hướng " + n + " path.";
+        return "Reversed " + n + " path(s).";
     };
-    // Reset transform của mọi group trong shape layer (xóa keyframe).
+    // Resets the transform of every group in the shape layers (removes keyframes).
     T.resetShapeTransforms = function () {
         var c = MMW.comp(), list = shapeLayers(c), n = 0;
         var defs = [["ADBE Vector Anchor", [0, 0]], ["ADBE Vector Position", [0, 0]], ["ADBE Vector Scale", [100, 100]],
@@ -66,7 +66,7 @@
                 n++;
             });
         }
-        return "Đã reset " + n + " transform group.";
+        return "Reset " + n + " transform group(s).";
     };
 
     function newShape(c, name, kind, size, color, round) {
@@ -91,16 +91,16 @@
     T.rectangleWizard = function (o) {
         var c = MMW.comp();
         newShape(c, "Rectangle", "ADBE Vector Shape - Rect", [Number(o.width) || 400, Number(o.height) || 240], o.color, Number(o.round) || 0);
-        return "Đã tạo hình chữ nhật.";
+        return "Rectangle created.";
     };
-    // o.size: đường kính
+    // o.size: diameter
     T.circleWizard = function (o) {
         var c = MMW.comp(), d = Number(o.size) || 300;
         newShape(c, "Circle", "ADBE Vector Shape - Ellipse", [d, d], o.color);
-        return "Đã tạo hình tròn " + d + "px.";
+        return "Created a " + d + "px circle.";
     };
 
-    // Thêm Trim Paths + slider Start / End / Offset trên layer.
+    // Adds Trim Paths + Start / End / Offset controls on the layer.
     T.trimPathsController = function () {
         var c = MMW.comp(), list = shapeLayers(c);
         for (var i = 0; i < list.length; i++) {
@@ -119,7 +119,7 @@
         return "Trim Paths controller → " + list.length + " layer.";
     };
 
-    // Chuyển mask thành shape layer (giữ transform & keyframe của mask). Alt: xóa mask gốc.
+    // Converts masks into a shape layer (keeps transforms & mask keyframes). Alt: delete the original masks.
     T.maskToShape = function (o) {
         var c = MMW.comp(), s = MMW.selLayers(c), made = 0;
         for (var i = 0; i < s.length; i++) {
@@ -146,7 +146,7 @@
             if (o.alt) for (var r = masks.numProperties; r >= 1; r--) masks.property(r).remove();
             made++;
         }
-        if (!made) MMW.fail("Hãy chọn layer có mask.");
-        return "Đã chuyển mask của " + made + " layer thành shape.";
+        if (!made) MMW.fail("Select layers with masks.");
+        return "Converted the masks of " + made + " layer(s) into shapes.";
     };
 })();

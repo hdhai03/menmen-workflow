@@ -1,8 +1,8 @@
-// expression.jsx - bật/tắt/xóa/bake/tìm-thay expression + animation dựng bằng expression
+// expression.jsx - enable/disable/remove/bake/find-replace expressions + expression-driven animation
 (function () {
     var T = MMW.tools;
 
-    // Property có expression: đang chọn → layer đang chọn → (Alt) cả comp
+    // Properties with expressions: selected → selected layers → (Alt) whole comp
     function exprTargets(c, o, includeEmpty) {
         var out = [], i, sel = MMW.selProps(c);
         for (i = 0; i < sel.length; i++) if (sel[i].prop.canSetExpression && (includeEmpty || sel[i].prop.expression !== "")) out.push(sel[i].prop);
@@ -13,24 +13,24 @@
             if (!o.alt && !L.selected) continue;
             MMW.walkProps(L, function (p) { if (p.canSetExpression && p.expression !== "") out.push(p); });
         }
-        if (!out.length) MMW.fail("Không có expression nào (chọn property/layer, hoặc giữ Alt để áp cho cả comp).");
+        if (!out.length) MMW.fail("No expressions found (select properties/layers, or hold Alt for the whole comp).");
         return out;
     }
 
     T.enableExpressions = function (o) {
         var c = MMW.comp(), ps = exprTargets(c, o);
         for (var i = 0; i < ps.length; i++) ps[i].expressionEnabled = true;
-        return "Đã bật " + ps.length + " expression.";
+        return "Enabled " + ps.length + " expression(s).";
     };
     T.disableExpressions = function (o) {
         var c = MMW.comp(), ps = exprTargets(c, o);
         for (var i = 0; i < ps.length; i++) ps[i].expressionEnabled = false;
-        return "Đã tắt " + ps.length + " expression.";
+        return "Disabled " + ps.length + " expression(s).";
     };
     T.removeExpressions = function (o) {
         var c = MMW.comp(), ps = exprTargets(c, o);
         for (var i = 0; i < ps.length; i++) ps[i].expression = "";
-        return "Đã xóa " + ps.length + " expression.";
+        return "Removed " + ps.length + " expression(s).";
     };
     T.removeExpressionErrors = function (o) {
         var c = MMW.comp(), ps = exprTargets(c, { alt: true }), n = 0;
@@ -39,9 +39,9 @@
             try { err = ps[i].expressionError; } catch (e) {}
             if (err) { ps[i].expression = ""; n++; }
         }
-        return "Đã xóa " + n + " expression bị lỗi.";
+        return "Removed " + n + " broken expression(s).";
     };
-    // Bake expression thành keyframe (mỗi frame trong khoảng In–Out của layer).
+    // Bakes expressions into keyframes (every frame between the layer In–Out).
     T.bakeExpressions = function (o) {
         var c = MMW.comp(), ps = exprTargets(c, o), fd = c.frameDuration, n = 0;
         for (var i = 0; i < ps.length; i++) {
@@ -56,11 +56,11 @@
             p.setValuesAtTimes(times, vals);
             n++;
         }
-        return "Đã bake " + n + " expression thành keyframe.";
+        return "Baked " + n + " expression(s) into keyframes.";
     };
-    // o.find, o.replace — trong layer đang chọn, hoặc cả comp nếu không chọn layer / giữ Alt
+    // o.find, o.replace — in the selected layers, or the whole comp if none selected / Alt held
     T.findReplaceExpressions = function (o) {
-        if (!o.find) MMW.fail("Nhập chuỗi cần tìm.");
+        if (!o.find) MMW.fail("Enter the text to find.");
         var c = MMW.comp(), all = o.alt || !c.selectedLayers.length, n = 0;
         for (var i = 1; i <= c.numLayers; i++) {
             if (!all && !c.layer(i).selected) continue;
@@ -70,10 +70,10 @@
                 n++;
             });
         }
-        return "Đã thay trong " + n + " expression.";
+        return "Replaced in " + n + " expression(s).";
     };
 
-    // ---------- Animation bằng expression (có control để chỉnh sau) ----------
+    // ---------- Expression-driven animation (with controls to tweak later) ----------
     function ensureSlider(L, name, val) {
         var fx = L.property("ADBE Effect Parade"), ex = fx.property(name);
         if (ex) return ex;
@@ -83,10 +83,10 @@
     }
     function q(s) { return MMW.quote(s); }
 
-    // Wiggle cho property đang chọn với slider Freq/Amp riêng cho mỗi property.
+    // Wiggle on the selected properties with Freq/Amp sliders per property.
     T.wiggleProperty = function (o) {
         var c = MMW.comp(), sel = MMW.selProps(c), n = 0;
-        if (!sel.length) MMW.fail("Hãy chọn property (Position, Rotation, Scale...).");
+        if (!sel.length) MMW.fail("Select properties (Position, Rotation, Scale...).");
         for (var i = 0; i < sel.length; i++) {
             var p = sel[i].prop, L = sel[i].layer;
             if (!p.canSetExpression) continue;
@@ -98,7 +98,7 @@
         }
         return "Wiggle → " + n + " property.";
     };
-    // Xoay liên tục (độ/giây) trên layer đang chọn.
+    // Continuous rotation (degrees/second) on the selected layers.
     T.spin = function (o) {
         var c = MMW.comp(), s = MMW.selLayers(c);
         for (var i = 0; i < s.length; i++) {
@@ -107,7 +107,7 @@
         }
         return "Spin → " + s.length + " layer.";
     };
-    // Fade in/out tự động theo In/Out point.
+    // Automatic fade in/out based on the In/Out points.
     T.autoFader = function (o) {
         var c = MMW.comp(), s = MMW.selLayers(c);
         for (var i = 0; i < s.length; i++) {
@@ -119,7 +119,7 @@
         }
         return "Auto fade → " + s.length + " layer.";
     };
-    // Nhấp nháy opacity.
+    // Opacity blink/flicker.
     T.blinker = function (o) {
         var c = MMW.comp(), s = MMW.selLayers(c);
         for (var i = 0; i < s.length; i++) {
@@ -131,7 +131,7 @@
         }
         return "Blinker → " + s.length + " layer.";
     };
-    // Giật hình kiểu stop-motion (posterizeTime) cho property đang chọn, hoặc mọi property có keyframe của layer.
+    // Stop-motion stepping (posterizeTime) on the selected properties, or every keyframed transform property.
     T.stopMotion = function (o) {
         var c = MMW.comp(), sel = MMW.selProps(c), list = [], i;
         for (i = 0; i < sel.length; i++) if (sel[i].prop.canSetExpression) list.push(sel[i]);
@@ -141,7 +141,7 @@
                 MMW.walkProps(L.transform, function (p) { if (p.numKeys > 0 && p.canSetExpression) list.push({ layer: L, prop: p }); });
             })(s[i]);
         }
-        if (!list.length) MMW.fail("Hãy chọn property hoặc layer có keyframe.");
+        if (!list.length) MMW.fail("Select properties or layers with keyframes.");
         for (i = 0; i < list.length; i++) {
             ensureSlider(list[i].layer, "Stop Motion FPS", Number(o.fps) || 12);
             var old = list[i].prop.expression;

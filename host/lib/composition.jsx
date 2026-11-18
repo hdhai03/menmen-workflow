@@ -3,7 +3,7 @@
     var T = MMW.tools;
 
     // ---------------- Crop Comp ----------------
-    // Crop các precomp đang chọn về đúng vùng nội dung nhìn thấy (giao với khung comp).
+    // Crops the selected precomps to their visible content (intersected with the comp frame).
     T.cropComp = function (o) {
         var c = MMW.comp();
         var layers = MMW.selLayers(c);
@@ -15,7 +15,7 @@
             var r = cropInner(L.source);
             if (r) { done++; msgs.push(L.source.name + " → " + r); }
         }
-        if (!done) MMW.fail("Không có precomp nào cần crop (hãy chọn layer precomp).");
+        if (!done) MMW.fail("No precomp needs cropping (select precomp layers).");
         return msgs.join(", ");
     };
 
@@ -63,7 +63,7 @@
         sc.width = w;
         sc.height = hgt;
 
-        // Bù anchor cho mọi layer dùng comp này để hình không bị xê dịch.
+        // Compensate the anchor of every layer using this comp so nothing visually shifts.
         var used = sc.usedIn;
         for (var u = 0; u < used.length; u++) {
             for (var li = 1; li <= used[u].numLayers; li++) {
@@ -78,7 +78,7 @@
         return w + "×" + hgt;
     }
 
-    // Dời toàn bộ layer trong comp bằng một null tạm (giữ nguyên hiệu ứng parent hiện có).
+    // Shifts all layers in the comp via a temporary null (keeps existing parenting).
     function shiftLayers(comp, dx, dy) {
         var n = comp.layers.addNull();
         n.transform.anchorPoint.setValue([0, 0]);
@@ -98,13 +98,13 @@
     MMW.shiftLayers = shiftLayers;
 
     // ---------------- Comp Duplicator ----------------
-    // Nhân bản comp cùng toàn bộ comp lồng bên trong, cập nhật expression comp("...").
-    // Alt: đưa tất cả bản sao vào một folder mới.
+    // Duplicates a comp with all nested comps and updates comp("...") expressions.
+    // Alt: put all copies into a new folder.
     T.compDuplicator = function (o) {
         var roots = [], sel = app.project.selection, i;
         for (i = 0; i < sel.length; i++) if (sel[i] instanceof CompItem) roots.push(sel[i]);
         if (!roots.length && app.project.activeItem instanceof CompItem) roots.push(app.project.activeItem);
-        if (!roots.length) MMW.fail("Hãy chọn comp trong Project panel hoặc mở một comp.");
+        if (!roots.length) MMW.fail("Select comps in the Project panel or open a comp.");
 
         var map = {}, renames = [], dups = [];
         var folder = null;
@@ -133,7 +133,7 @@
         }
         for (i = 0; i < roots.length; i++) dup(roots[i]);
 
-        // Cập nhật comp("tên cũ") -> comp("tên mới") trong các comp vừa nhân bản.
+        // Update comp("old name") -> comp("new name") in the duplicated comps.
         var fixed = 0;
         for (i = 0; i < dups.length; i++) {
             for (var l = 1; l <= dups[i].numLayers; l++) {
@@ -148,12 +148,12 @@
                 });
             }
         }
-        return "Đã nhân bản " + dups.length + " comp, cập nhật " + fixed + " expression.";
+        return "Duplicated " + dups.length + " comp(s), updated " + fixed + " expression(s).";
     };
 
     // ---------------- UnPreComp ----------------
-    // Bung layer trong precomp ra comp hiện tại. Transform của precomp được giữ bằng một null cha.
-    // Alt: giữ lại layer precomp (tắt đi) thay vì xóa.
+    // Moves the layers of a precomp into the current comp. The precomp transform is kept with a parent null.
+    // Alt: keep the precomp layer (disabled) instead of deleting it.
     T.unPreComp = function (o) {
         var c = MMW.comp();
         var layers = MMW.selLayers(c), count = 0, warn = "";
@@ -161,7 +161,7 @@
             var L = layers[i];
             if (!(L.source instanceof CompItem)) continue;
             var sc = L.source;
-            if (L.timeRemapEnabled) warn = " (bỏ qua Time Remap)";
+            if (L.timeRemapEnabled) warn = " (Time Remap ignored)";
 
             var nul = MMW.newNull(c, MMW.uniqueLayerName(c, "UnPreComp - " + L.name));
             nul.threeDLayer = L.threeDLayer;
@@ -188,7 +188,7 @@
                 copies[m].moveBefore(L);
                 copies[m].startTime += L.startTime;
             }
-            // Khôi phục quan hệ parent bên trong, layer gốc thì gắn vào null.
+            // Restore inner parenting; top-level layers get parented to the null.
             for (var q = 0; q < copies.length; q++) {
                 var orig = sc.layer(q + 1);
                 if (orig.parent) copies[q].setParentWithJump(copies[orig.parent.index - 1]);
@@ -197,7 +197,7 @@
             if (o.alt) { L.enabled = false; L.shy = true; } else L.remove();
             count++;
         }
-        if (!count) MMW.fail("Hãy chọn layer precomp.");
-        return "Đã bung " + count + " precomp" + warn + ".";
+        if (!count) MMW.fail("Select precomp layers.");
+        return "Decomposed " + count + " precomp(s)" + warn + ".";
     };
 })();

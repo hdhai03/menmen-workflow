@@ -1,6 +1,6 @@
 /* app.js - MenMen Workflow UI.
- *  - Main panel (com.menmen.workflow.main): search, favorites, 12 nhóm tool, user panels, thêm item.
- *  - Panel phụ (panel1..4): hiển thị 1 nhóm tool hoặc 1 user panel đã "Dock" từ main panel. */
+ *  - Main panel (com.menmen.workflow.main): search, favorites, 12 tool categories, user panels, add items.
+ *  - Sub panels (panel1..4): show one category or one user panel docked from the main panel. */
 (function () {
   var B = window.Bridge, S = window.Store, T = window.Tools, W = window.Widgets, U = window.UI;
   var el = U.el, esc = U.esc;
@@ -36,11 +36,11 @@
     return node;
   }
 
-  // ============ chạy tool / item ============
+  // ============ run tools / items ============
   function mods(e) { return e ? { alt: !!e.altKey, shift: !!e.shiftKey, ctrl: !!(e.ctrlKey || e.metaKey) } : {}; }
   function exec(hostId, opts, e, label) {
     return B.run(hostId, Object.assign(mods(e), opts || {})).then(function (r) {
-      U.toast((label ? label + ': ' : '') + (r.msg || (r.ok ? 'Xong' : 'Lỗi')), r.ok);
+      U.toast((label ? label + ': ' : '') + (r.msg || (r.ok ? 'Done' : 'Error')), r.ok);
       return r;
     });
   }
@@ -52,7 +52,7 @@
   function runItem(it, e) {
     var label = itemLabel(it);
     switch (it.type) {
-      case 'tool': { var t = T.get(it.tool); return t ? runTool(t, e) : U.toast('Tool không tồn tại: ' + it.tool, false); }
+      case 'tool': { var t = T.get(it.tool); return t ? runTool(t, e) : U.toast('Tool does not exist: ' + it.tool, false); }
       case 'expression': return exec('applyExpression', { code: it.code }, e, label);
       case 'scriptlet': return exec('runScriptlet', { code: it.code }, e, label);
       case 'script': case 'preset': return exec('runFile', { path: it.path }, e, label);
@@ -79,8 +79,8 @@
   }
   function itemDesc(it) {
     if (it.type === 'tool') { var t = T.get(it.tool); return t ? t.desc : ''; }
-    return { expression: 'Áp expression lên property đang chọn', scriptlet: 'Chạy đoạn ExtendScript', script: it.path,
-      preset: it.path, effect: 'Áp effect cho layer đang chọn', command: 'Chạy lệnh menu: ' + it.command }[it.type] || '';
+    return { expression: 'Applies the expression to the selected properties', scriptlet: 'Runs an ExtendScript snippet', script: it.path,
+      preset: it.path, effect: 'Applies the effect to the selected layers', command: 'Runs the menu command: ' + it.command }[it.type] || '';
   }
 
   // ============ tooltip / helptip ============
@@ -88,21 +88,21 @@
   function tipTool(t) {
     var h = '<b>' + esc(t.name) + '</b><span class="tip-desc">' + esc(t.desc) + '</span>';
     if (t.mods) Object.keys(t.mods).forEach(function (k) { h += '<span class="tip-mod"><kbd>' + MOD[k] + '</kbd>' + esc(t.mods[k]) + '</span>'; });
-    if (t.params) h += '<span class="tip-mod muted">· mở form tham số</span>';
+    if (t.params) h += '<span class="tip-mod muted">· opens a parameter form</span>';
     return h;
   }
   function setTip(html) { if ($tip) $tip.innerHTML = html || defaultTip(); }
   function defaultTip() {
-    if (!st.hostOk && B.inCEP) return '<span class="tip-err">Host chưa nạp: ' + esc(st.hostMsg) + '</span>';
-    if (!B.inCEP) return '<span class="tip-desc">Chế độ xem trước (ngoài After Effects) – tool chỉ được giả lập</span>';
-    return '<span class="tip-desc">Rê chuột lên tool để xem hướng dẫn · Alt / Shift / Ctrl + click để đổi chế độ</span>';
+    if (!st.hostOk && B.inCEP) return '<span class="tip-err">Host not loaded: ' + esc(st.hostMsg) + '</span>';
+    if (!B.inCEP) return '<span class="tip-desc">Preview mode (outside After Effects) – tools are simulated</span>';
+    return '<span class="tip-desc">Hover a tool for help · Alt / Shift / Ctrl + click for alternate modes</span>';
   }
   function hoverTip(node, html) {
     node.addEventListener('mouseenter', function () { setTip(typeof html === 'function' ? html() : html); });
     node.addEventListener('mouseleave', function () { setTip(); });
   }
 
-  // ============ khối dựng dùng chung ============
+  // ============ shared building blocks ============
   function svgBtn(cls, title, path, onClick) {
     var b = el('button', 'icon-btn ' + (cls || ''), '<svg viewBox="0 0 16 16">' + path + '</svg>');
     b.title = title;
@@ -121,7 +121,7 @@
     star: '<path d="M8 1.8l1.8 3.8 4.1.5-3 2.8.8 4.1L8 11l-3.7 2 .8-4.1-3-2.8 4.1-.5z"/>'
   };
 
-  // Hàng tool dạng list: icon + tên + chấm phím bổ trợ + nút phụ (sao / ẩn)
+  // List row: icon + name + modifier badges + extra buttons (star / hide)
   function toolRow(t, extra) {
     extra = extra || {};
     var row = catStyle(el('div', 'row-item' + (extra.hidden ? ' is-hidden' : '')), t.cat);
@@ -130,12 +130,12 @@
       (t.params || t.widget ? '<span class="ri-more">…</span>' : '');
     if (extra.star) {
       var fav = S.isFav(t.id);
-      row.appendChild(svgBtn('ri-act star' + (fav ? ' on' : ''), fav ? 'Bỏ khỏi favorites' : 'Thêm vào favorites', ICONS.star, function () {
+      row.appendChild(svgBtn('ri-act star' + (fav ? ' on' : ''), fav ? 'Remove from favorites' : 'Add to favorites', ICONS.star, function () {
         S.toggleFav(t.id); render();
       }));
     }
     if (extra.hideToggle) {
-      row.appendChild(svgBtn('ri-act hide' + (extra.hidden ? ' on' : ''), extra.hidden ? 'Hiện lại' : 'Ẩn khỏi panel', ICONS.eyeOff, function () {
+      row.appendChild(svgBtn('ri-act hide' + (extra.hidden ? ' on' : ''), extra.hidden ? 'Unhide' : 'Hide from panel', ICONS.eyeOff, function () {
         S.toggleHidden(t.cat, t.id); render();
       }));
     }
@@ -188,7 +188,7 @@
     });
     if (t.mods) {
       var hint = el('div', 'muted small');
-      hint.innerHTML = Object.keys(t.mods).map(function (k) { return '<kbd>' + MOD[k] + '</kbd> ' + esc(t.mods[k]); }).join(' · ') + ' (giữ phím khi bấm Chạy)';
+      hint.innerHTML = Object.keys(t.mods).map(function (k) { return '<kbd>' + MOD[k] + '</kbd> ' + esc(t.mods[k]); }).join(' · ') + ' (hold the key while clicking Run)';
       form.appendChild(hint);
     }
     function collect() {
@@ -206,7 +206,7 @@
     form.addEventListener('keydown', function (ev) {
       if (ev.key === 'Enter' && ev.target.tagName !== 'TEXTAREA') { ev.preventDefault(); go(ev); U.close(); }
     });
-    var dlg = U.dialog(t.name, form, [{ label: 'Hủy' }, { label: 'Chạy', primary: true, onClick: function () { go(lastClick); } }]);
+    var dlg = U.dialog(t.name, form, [{ label: 'Cancel' }, { label: 'Run', primary: true, onClick: function () { go(lastClick); } }]);
     catStyle(dlg, t.cat).classList.add('tool-dialog');
     var lastClick = null;
     dlg.querySelector('.btn.primary').addEventListener('mousedown', function (ev) { lastClick = { altKey: ev.altKey, shiftKey: ev.shiftKey, ctrlKey: ev.ctrlKey, metaKey: ev.metaKey }; });
@@ -232,7 +232,7 @@
     root.appendChild(head);
     // search
     var sw = el('label', 'm-search', '<svg viewBox="0 0 16 16">' + ICONS.search + '</svg>');
-    var inp = el('input'); inp.placeholder = 'Tìm tool…'; inp.value = st.query; inp.spellcheck = false;
+    var inp = el('input'); inp.placeholder = 'Search tools…'; inp.value = st.query; inp.spellcheck = false;
     sw.appendChild(inp);
     root.appendChild(sw);
     var body = el('div', 'm-body');
@@ -278,7 +278,7 @@
           res.appendChild(n);
         });
       });
-      if (!res.children.length) res.appendChild(el('div', 'empty', 'Không tìm thấy “' + esc(st.query) + '”'));
+      if (!res.children.length) res.appendChild(el('div', 'empty', 'No results for “' + esc(st.query) + '”'));
       body.appendChild(res);
       markSel(res.querySelectorAll('.row-item'));
       return;
@@ -288,7 +288,7 @@
     var fav = el('section', 'm-fav');
     var favs = S.data.favorites.map(T.get).filter(Boolean);
     if (favs.length) favs.forEach(function (t) { fav.appendChild(toolTile(t, true)); });
-    else fav.appendChild(el('div', 'fav-empty', '☆ Bấm ngôi sao cạnh tool để ghim vào đây'));
+    else fav.appendChild(el('div', 'fav-empty', '☆ Click the star next to a tool to pin it here'));
     body.appendChild(fav);
 
     // categories
@@ -297,7 +297,7 @@
       var r = catStyle(el('button', 'm-row'), c.id);
       r.innerHTML = '<span class="mr-ico">' + T.iconSvg('cat-' + c.id) + '</span><span class="mr-name">' + esc(c.name) + '</span><span class="mr-count">' + T.inCat(c.id).length + '</span>';
       r.addEventListener('click', function () { openSheet({ kind: 'category', id: c.id }); });
-      hoverTip(r, '<b>' + esc(c.name) + '</b><span class="tip-desc">' + T.inCat(c.id).length + ' tool · bấm để mở, bấm Dock để ghim thành panel</span>');
+      hoverTip(r, '<b>' + esc(c.name) + '</b><span class="tip-desc">' + T.inCat(c.id).length + ' tools · click to open, Dock to pin as a panel</span>');
       cats.appendChild(r);
     });
     body.appendChild(cats);
@@ -311,10 +311,10 @@
       r.innerHTML = '<span class="mr-ico">' + T.iconSvg('user') + '<i>' + (idx + 1) + '</i></span><span class="mr-name">' + esc(u.name) + '</span><span class="mr-count">' + u.items.filter(function (x) { return x.type !== 'divider'; }).length + '</span>';
       r.addEventListener('click', function () { openSheet({ kind: 'user', id: id }); });
       r.addEventListener('contextmenu', function (e) { e.preventDefault(); userPanelMenu(id, e); });
-      hoverTip(r, '<b>' + esc(u.name) + '</b><span class="tip-desc">User panel · chuột phải để đổi tên / xóa</span>');
+      hoverTip(r, '<b>' + esc(u.name) + '</b><span class="tip-desc">User panel · right-click to rename / delete</span>');
       users.appendChild(r);
     });
-    var addUp = el('button', 'm-row ghost', '<span class="mr-ico"><svg viewBox="0 0 16 16" class="ico16">' + ICONS.plus + '</svg></span><span class="mr-name">User panel mới</span>');
+    var addUp = el('button', 'm-row ghost', '<span class="mr-ico"><svg viewBox="0 0 16 16" class="ico16">' + ICONS.plus + '</svg></span><span class="mr-name">New user panel</span>');
     addUp.addEventListener('click', newUserPanel);
     users.appendChild(addUp);
     body.appendChild(users);
@@ -325,7 +325,7 @@
     body.appendChild(add);
   }
 
-  // Sheet: menu của 1 nhóm / user panel, phủ lên main panel
+  // Sheet: the menu of a category / user panel, covering the main panel
   function openSheet(sh) {
     st.sheet = sh;
     var old = $app.querySelector('.sheet'); if (old) old.remove();
@@ -335,17 +335,17 @@
     var sheet = el('div', 'sheet');
     if (c) catStyle(sheet, c.id);
     var head = el('header', 'sh-head');
-    head.appendChild(svgBtn('', 'Quay lại', ICONS.back, closeSheet));
+    head.appendChild(svgBtn('', 'Back', ICONS.back, closeSheet));
     head.insertAdjacentHTML('beforeend', '<span class="sh-ico">' + T.iconSvg(c ? 'cat-' + c.id : 'user') + '</span><span class="sh-title">' + esc(c ? c.name : u.name) + '</span>');
     head.appendChild(el('span', 'spacer'));
-    if (u) head.appendChild(svgBtn('', 'Thêm item', ICONS.plus, function () { addItemDialog(sh.id); }));
-    head.appendChild(svgBtn('', 'Dock thành panel', ICONS.dock, function () { dock(sh.kind, sh.id); }));
-    head.appendChild(svgBtn('', 'Đóng', ICONS.close, closeSheet));
+    if (u) head.appendChild(svgBtn('', 'Add item', ICONS.plus, function () { addItemDialog(sh.id); }));
+    head.appendChild(svgBtn('', 'Dock as panel', ICONS.dock, function () { dock(sh.kind, sh.id); }));
+    head.appendChild(svgBtn('', 'Close', ICONS.close, closeSheet));
     sheet.appendChild(head);
     var list = el('div', 'sh-body');
     if (c) T.inCat(c.id).forEach(function (t) { list.appendChild(toolRow(t, { star: true })); });
     else {
-      if (!u.items.length) list.appendChild(el('div', 'empty', 'Chưa có item. Bấm + để thêm script, expression, effect…'));
+      if (!u.items.length) list.appendChild(el('div', 'empty', 'No items yet. Click + to add scripts, expressions, effects…'));
       u.items.forEach(function (it) {
         var n = itemNode(it, false);
         n.addEventListener('contextmenu', function (e) { e.preventDefault(); itemMenu(sh.id, it, e); });
@@ -360,43 +360,43 @@
   function mainMenu(e) {
     var r = e.currentTarget.getBoundingClientRect();
     U.menu(r.left, r.bottom + 4, [
-      { label: 'Cài đặt…', onClick: openSettings },
-      { label: 'User panel mới…', onClick: newUserPanel },
+      { label: 'Settings…', onClick: openSettings },
+      { label: 'New user panel…', onClick: newUserPanel },
       { label: 'Add New Item…', onClick: function () { addItemDialog(null); } },
       '-',
-      { header: 'Panel phụ' }
+      { header: 'Sub panels' }
     ].concat(S.SLOTS.map(function (ext, i) {
       var name = S.contentName(S.slot(ext));
-      return { label: 'Panel ' + (i + 1), hint: name || 'trống', onClick: function () { openSlot(ext); } };
+      return { label: 'Panel ' + (i + 1), hint: name || 'empty', onClick: function () { openSlot(ext); } };
     })).concat(['-',
-      { label: 'Backup cài đặt…', onClick: exportSettings },
-      { label: 'Khôi phục cài đặt…', onClick: importSettings },
-      { label: 'Nạp lại host scripts', onClick: loadHost },
+      { label: 'Back up settings…', onClick: exportSettings },
+      { label: 'Restore settings…', onClick: importSettings },
+      { label: 'Reload host scripts', onClick: loadHost },
       { label: 'About MenMen Workflow', onClick: about }
     ]), { minWidth: 210 });
   }
 
   // ============ dock ============
   function openSlot(ext) {
-    if (!B.openPanel(ext)) U.toast('(xem trước) mở ' + ext.replace(/^.*\./, ''), true);
+    if (!B.openPanel(ext)) U.toast('(preview) open ' + ext.replace(/^.*\./, ''), true);
   }
   function dock(kind, id) {
     var found = S.findSlot(kind, id);
     var go = function (ext) {
       S.setSlot(ext, kind, id);
       openSlot(ext);
-      U.toast('Đã dock vào MenMen Panel ' + ext.slice(-1), true);
+      U.toast('Docked to MenMen Panel ' + ext.slice(-1), true);
     };
     if (found) return go(found.ext);
-    // hết slot → hỏi thay panel nào
-    U.menu(window.innerWidth / 2 - 100, 60, [{ header: 'Thay nội dung panel nào?' }].concat(S.SLOTS.map(function (ext, i) {
+    // no free slot → ask which panel to replace
+    U.menu(window.innerWidth / 2 - 100, 60, [{ header: 'Replace which panel?' }].concat(S.SLOTS.map(function (ext, i) {
       return { label: 'Panel ' + (i + 1), hint: S.contentName(S.slot(ext)) || '', onClick: function () { go(ext); } };
     })), { minWidth: 200 });
   }
 
   // ============ user panels & items ============
   function newUserPanel() {
-    U.prompt('User panel mới', 'Tên', 'User Panel ' + (S.data.upOrder.length + 1), function (v) {
+    U.prompt('New user panel', 'Name', 'User Panel ' + (S.data.upOrder.length + 1), function (v) {
       var id = S.newUserPanel(v); render();
       if (B.isMain) openSheet({ kind: 'user', id: id });
     });
@@ -405,13 +405,13 @@
     var u = S.data.userPanels[id];
     U.menu(e.clientX, e.clientY, [
       { header: u.name },
-      { label: 'Mở', onClick: function () { openSheet({ kind: 'user', id: id }); } },
-      { label: 'Dock thành panel', onClick: function () { dock('user', id); } },
-      { label: 'Đổi tên…', onClick: function () { U.prompt('Đổi tên', 'Tên', u.name, function (v) { u.name = v; S.save(); render(); }); } },
+      { label: 'Open', onClick: function () { openSheet({ kind: 'user', id: id }); } },
+      { label: 'Dock as panel', onClick: function () { dock('user', id); } },
+      { label: 'Rename…', onClick: function () { U.prompt('Rename', 'Name', u.name, function (v) { u.name = v; S.save(); render(); }); } },
       '-',
-      { label: 'Xóa user panel', danger: true, onClick: function () {
-        U.dialog('Xóa "' + u.name + '"?', el('p', null, 'Mọi item trong panel sẽ bị xóa.'), [{ label: 'Hủy' },
-          { label: 'Xóa', danger: true, onClick: function () { S.deleteUserPanel(id); closeSheet(); render(); } }]);
+      { label: 'Delete user panel', danger: true, onClick: function () {
+        U.dialog('Delete "' + u.name + '"?', el('p', null, 'All items in this panel will be deleted.'), [{ label: 'Cancel' },
+          { label: 'Delete', danger: true, onClick: function () { S.deleteUserPanel(id); closeSheet(); render(); } }]);
       } }
     ]);
   }
@@ -419,19 +419,19 @@
     var u = S.data.userPanels[upId], idx = u.items.indexOf(it);
     U.menu(e.clientX, e.clientY, [
       { header: itemLabel(it) },
-      { label: 'Sửa…', disabled: it.type === 'divider', onClick: function () { itemForm(upId, it.type, it); } },
-      { label: 'Lên trên', disabled: idx === 0, onClick: function () { u.items.splice(idx - 1, 0, u.items.splice(idx, 1)[0]); S.save(); render(); } },
-      { label: 'Xuống dưới', disabled: idx === u.items.length - 1, onClick: function () { u.items.splice(idx + 1, 0, u.items.splice(idx, 1)[0]); S.save(); render(); } },
+      { label: 'Edit…', disabled: it.type === 'divider', onClick: function () { itemForm(upId, it.type, it); } },
+      { label: 'Move up', disabled: idx === 0, onClick: function () { u.items.splice(idx - 1, 0, u.items.splice(idx, 1)[0]); S.save(); render(); } },
+      { label: 'Move down', disabled: idx === u.items.length - 1, onClick: function () { u.items.splice(idx + 1, 0, u.items.splice(idx, 1)[0]); S.save(); render(); } },
       '-',
-      { label: 'Xóa', danger: true, onClick: function () { u.items.splice(idx, 1); S.save(); render(); } }
+      { label: 'Delete', danger: true, onClick: function () { u.items.splice(idx, 1); S.save(); render(); } }
     ]);
   }
 
-  // Bước 1: chọn loại item
+  // Step 1: choose the item type
   function addItemDialog(upId) {
     if (!S.data.upOrder.length) S.newUserPanel('User Panel 1');
     var wrap = el('div', 'form');
-    var target = el('label', 'field', '<span>Thêm vào</span>');
+    var target = el('label', 'field', '<span>Add to</span>');
     var sel = el('select', 'input');
     S.data.upOrder.forEach(function (id) { var o = el('option', null, esc(S.data.userPanels[id].name)); o.value = id; sel.appendChild(o); });
     sel.value = upId || S.data.upOrder[0];
@@ -450,16 +450,16 @@
     U.dialog('Add New Item', wrap, []);
   }
 
-  // Bước 2: form theo loại item
+  // Step 2: form for the item type
   function itemForm(upId, type, existing) {
     var it = existing ? Object.assign({}, existing) : { id: S.uid(), type: type };
     var form = el('div', 'form');
     function field(label, node) { var f = el('label', 'field', '<span>' + esc(label) + '</span>'); f.appendChild(node); form.appendChild(f); return node; }
-    var name = el('input', 'input'); name.value = it.label || ''; name.placeholder = 'Tự động';
+    var name = el('input', 'input'); name.value = it.label || ''; name.placeholder = 'Automatic';
     var getters = [];
     if (type === 'tool') {
       var picked = it.tool || null;
-      var search = el('input', 'input'); search.placeholder = 'Tìm tool…';
+      var search = el('input', 'input'); search.placeholder = 'Search tools…';
       var list = el('div', 'pick-list');
       var fill = function () {
         var q = search.value.toLowerCase(); list.innerHTML = '';
@@ -473,47 +473,47 @@
       };
       search.addEventListener('input', fill);
       form.appendChild(search); form.appendChild(list); fill();
-      getters.push(function () { if (!picked) throw new Error('Chọn một tool'); it.tool = picked; });
+      getters.push(function () { if (!picked) throw new Error('Pick a tool'); it.tool = picked; });
     } else if (type === 'expression' || type === 'scriptlet') {
       var ta = el('textarea', 'input code'); ta.rows = 8; ta.spellcheck = false; ta.value = it.code || '';
       ta.placeholder = type === 'expression' ? 'wiggle(2, 30)' : 'app.project.activeItem.layers.addNull();';
       ta.addEventListener('keydown', function (e) { if (e.key === 'Tab') { e.preventDefault(); ta.setRangeText('  ', ta.selectionStart, ta.selectionEnd, 'end'); } });
       field(type === 'expression' ? 'Expression' : 'ExtendScript', ta);
-      getters.push(function () { if (!ta.value.trim()) throw new Error('Nhập nội dung'); it.code = ta.value; });
+      getters.push(function () { if (!ta.value.trim()) throw new Error('Enter some code'); it.code = ta.value; });
     } else if (type === 'script' || type === 'preset') {
       var row = el('div', 'row');
-      var pi = el('input', 'input'); pi.value = it.path || ''; pi.placeholder = type === 'preset' ? '/đường/dẫn/preset.ffx' : '/đường/dẫn/script.jsx';
-      var br = el('button', 'btn', 'Chọn…');
+      var pi = el('input', 'input'); pi.value = it.path || ''; pi.placeholder = type === 'preset' ? '/path/to/preset.ffx' : '/path/to/script.jsx';
+      var br = el('button', 'btn', 'Browse…');
       br.addEventListener('click', function (e) {
         e.preventDefault();
-        var p = B.fs.openDialog(type === 'preset' ? 'Chọn preset' : 'Chọn script', type === 'preset' ? ['ffx'] : ['jsx', 'jsxbin']);
-        if (p) pi.value = p; else if (!B.fs.available) U.toast('Hộp thoại chọn file chỉ có trong After Effects', false);
+        var p = B.fs.openDialog(type === 'preset' ? 'Choose a preset' : 'Choose a script', type === 'preset' ? ['ffx'] : ['jsx', 'jsxbin']);
+        if (p) pi.value = p; else if (!B.fs.available) U.toast('The file dialog is only available inside After Effects', false);
       });
       row.append(pi, br);
       var f = el('div', 'field', '<span>File</span>'); f.appendChild(row); form.appendChild(f);
-      getters.push(function () { if (!pi.value.trim()) throw new Error('Chọn file'); it.path = pi.value.trim(); });
+      getters.push(function () { if (!pi.value.trim()) throw new Error('Choose a file'); it.path = pi.value.trim(); });
     } else if (type === 'effect') {
-      var ef = field('Tên effect hoặc matchName (vd: ADBE Gaussian Blur 2)', el('input', 'input'));
+      var ef = field('Effect name or matchName (e.g. ADBE Gaussian Blur 2)', el('input', 'input'));
       ef.value = it.effect || '';
-      getters.push(function () { if (!ef.value.trim()) throw new Error('Nhập effect'); it.effect = ef.value.trim(); });
+      getters.push(function () { if (!ef.value.trim()) throw new Error('Enter an effect'); it.effect = ef.value.trim(); });
     } else if (type === 'command') {
-      var cm = field('Tên lệnh menu (vd: Pre-compose...) hoặc command ID', el('input', 'input'));
+      var cm = field('Menu command name (e.g. Pre-compose...) or command ID', el('input', 'input'));
       cm.value = it.command || '';
-      getters.push(function () { if (!cm.value.trim()) throw new Error('Nhập lệnh'); it.command = cm.value.trim(); });
+      getters.push(function () { if (!cm.value.trim()) throw new Error('Enter a command'); it.command = cm.value.trim(); });
     }
-    field('Tên hiển thị', name);
+    field('Display name', name);
     var tyName = T.ITEM_TYPES.filter(function (x) { return x.type === type; })[0].name;
-    U.dialog((existing ? 'Sửa ' : 'Thêm ') + tyName, form, [{ label: 'Hủy' }, { label: existing ? 'Lưu' : 'Thêm', primary: true, onClick: function () {
+    U.dialog((existing ? 'Edit ' : 'Add ') + tyName, form, [{ label: 'Cancel' }, { label: existing ? 'Save' : 'Add', primary: true, onClick: function () {
       try { getters.forEach(function (g) { g(); }); } catch (err) { U.toast(err.message, false); return false; }
       it.label = name.value.trim() || undefined;
       var items = S.data.userPanels[upId].items;
       if (existing) items[items.indexOf(existing)] = it; else items.push(it);
       S.save(); render();
-      U.toast((existing ? 'Đã lưu ' : 'Đã thêm ') + itemLabel(it), true);
+      U.toast((existing ? 'Saved ' : 'Added ') + itemLabel(it), true);
     } }]);
   }
 
-  // ============ PANEL PHỤ ============
+  // ============ SUB PANELS ============
   function renderSub() {
     $app.innerHTML = '';
     var slot = S.slot(B.extId);
@@ -531,11 +531,11 @@
     head.appendChild(el('span', 'spacer'));
     if (slot) {
       var view = slot.view || 'list';
-      head.appendChild(svgBtn('', view === 'list' ? 'Dạng lưới' : 'Dạng danh sách', view === 'list' ? ICONS.grid : ICONS.list, function () {
+      head.appendChild(svgBtn('', view === 'list' ? 'Grid view' : 'List view', view === 'list' ? ICONS.grid : ICONS.list, function () {
         slot.view = view === 'list' ? 'grid' : 'list'; S.save(); render();
       }));
-      if (slot.kind === 'user') head.appendChild(svgBtn(st.edit ? 'on' : '', 'Chỉnh sửa (kéo để sắp xếp)', ICONS.edit, function () { st.edit = !st.edit; render(); }));
-      else head.appendChild(svgBtn(st.edit ? 'on' : '', 'Ẩn / hiện tool', ICONS.eyeOff, function () { st.edit = !st.edit; render(); }));
+      if (slot.kind === 'user') head.appendChild(svgBtn(st.edit ? 'on' : '', 'Edit (drag to reorder)', ICONS.edit, function () { st.edit = !st.edit; render(); }));
+      else head.appendChild(svgBtn(st.edit ? 'on' : '', 'Hide / show tools', ICONS.eyeOff, function () { st.edit = !st.edit; render(); }));
     }
     head.appendChild(svgBtn('', 'Menu', ICONS.menu, subMenu));
     root.appendChild(head);
@@ -559,7 +559,7 @@
         else box.appendChild(toolRow(t, { star: !st.edit, hideToggle: st.edit, hidden: hidden }));
       });
       if (hiddenCount && !st.edit) {
-        var un = el('button', 'unhide', st.showHidden ? 'Ẩn lại ' + hiddenCount + ' tool' : 'Hiện tất cả (' + hiddenCount + ' đang ẩn)');
+        var un = el('button', 'unhide', st.showHidden ? 'Hide ' + hiddenCount + ' tool(s) again' : 'Unhide all (' + hiddenCount + ' hidden)');
         un.addEventListener('click', function () { st.showHidden = !st.showHidden; render(); });
         body.appendChild(un);
       }
@@ -580,13 +580,13 @@
             if (isNaN(from) || from === idx) return;
             u.items.splice(idx, 0, u.items.splice(from, 1)[0]); S.save(); render();
           });
-          var x = svgBtn('del-x', 'Xóa', ICONS.close, function () { u.items.splice(idx, 1); S.save(); render(); });
+          var x = svgBtn('del-x', 'Delete', ICONS.close, function () { u.items.splice(idx, 1); S.save(); render(); });
           n.appendChild(x);
         }
         box.appendChild(n);
       });
       var add = el('button', grid ? 'tile add' : 'row-item add', (grid ? '<span class="tile-ico">' : '<span class="ri-ico">') +
-        '<svg viewBox="0 0 16 16" class="ico16">' + ICONS.plus + '</svg></span><span class="' + (grid ? 'tile-lbl' : 'ri-name') + '">Thêm item</span>');
+        '<svg viewBox="0 0 16 16" class="ico16">' + ICONS.plus + '</svg></span><span class="' + (grid ? 'tile-lbl' : 'ri-name') + '">Add item</span>');
       add.addEventListener('click', function () { addItemDialog(u.id); });
       box.appendChild(add);
     }
@@ -594,7 +594,7 @@
   }
   function emptySub() {
     var w = el('div', 'sub-empty');
-    w.innerHTML = '<div class="se-title">Panel trống</div><div class="muted">Chọn nội dung cho panel này, hoặc bấm biểu tượng Dock trong main panel.</div>';
+    w.innerHTML = '<div class="se-title">Empty panel</div><div class="muted">Choose what this panel shows, or click the Dock icon in the main panel.</div>';
     var list = el('div', 'se-list');
     T.CATS.forEach(function (c) {
       var b = catStyle(el('button', 'chip', '<span class="chip-ico">' + T.iconSvg('cat-' + c.id) + '</span>' + esc(c.name)), c.id);
@@ -610,23 +610,23 @@
     return w;
   }
   function contentPicker(r) {
-    var items = [{ header: 'Nhóm tool' }];
+    var items = [{ header: 'Tool categories' }];
     T.CATS.forEach(function (c) { items.push({ label: c.name, onClick: function () { st.edit = false; S.setSlot(B.extId, 'category', c.id); render(); } }); });
     items.push({ header: 'User panels' });
     S.data.upOrder.forEach(function (id) { items.push({ label: S.data.userPanels[id].name, onClick: function () { st.edit = false; S.setSlot(B.extId, 'user', id); render(); } }); });
-    items.push('-', { label: 'Để trống', onClick: function () { S.clearSlot(B.extId); render(); } });
+    items.push('-', { label: 'Leave empty', onClick: function () { S.clearSlot(B.extId); render(); } });
     U.menu(r.left, r.bottom + 4, items, { minWidth: 190 });
   }
   function subMenu(e) {
     var r = e.currentTarget.getBoundingClientRect(), slot = S.slot(B.extId), items = [];
     if (slot && slot.kind === 'user') {
-      items.push({ label: 'Thêm item…', onClick: function () { addItemDialog(slot.id); } });
-      items.push({ label: 'Đổi tên panel…', onClick: function () {
-        var u = S.data.userPanels[slot.id]; U.prompt('Đổi tên', 'Tên', u.name, function (v) { u.name = v; S.save(); render(); });
+      items.push({ label: 'Add item…', onClick: function () { addItemDialog(slot.id); } });
+      items.push({ label: 'Rename panel…', onClick: function () {
+        var u = S.data.userPanels[slot.id]; U.prompt('Rename', 'Name', u.name, function (v) { u.name = v; S.save(); render(); });
       } });
     }
-    items.push({ label: 'Đổi nội dung…', onClick: function () { contentPicker(r); } });
-    items.push({ label: 'Cài đặt…', onClick: openSettings }, { label: 'Nạp lại host scripts', onClick: loadHost });
+    items.push({ label: 'Change content…', onClick: function () { contentPicker(r); } });
+    items.push({ label: 'Settings…', onClick: openSettings }, { label: 'Reload host scripts', onClick: loadHost });
     U.menu(r.right - 190, r.bottom + 4, items, { minWidth: 190 });
   }
 
@@ -649,37 +649,37 @@
       i.addEventListener('change', function () { th[key] = i.checked; S.save(); render(); });
       f.appendChild(i); return f;
     }
-    var accent = el('label', 'field inline', '<span>Màu nhấn</span>');
+    var accent = el('label', 'field inline', '<span>Accent color</span>');
     var ai = el('input'); ai.type = 'color'; ai.value = th.accent;
     ai.addEventListener('input', function () { th.accent = ai.value; applyTheme(); });
     ai.addEventListener('change', function () { S.save(); });
     accent.appendChild(ai);
     var data = el('div', 'row wrap');
-    var exp = el('button', 'btn', 'Backup…'), imp = el('button', 'btn', 'Khôi phục…'), rst = el('button', 'btn danger', 'Reset');
+    var exp = el('button', 'btn', 'Back up…'), imp = el('button', 'btn', 'Restore…'), rst = el('button', 'btn danger', 'Reset');
     exp.addEventListener('click', exportSettings);
     imp.addEventListener('click', importSettings);
     rst.addEventListener('click', function () {
-      U.dialog('Reset?', el('p', null, 'Khôi phục favorites, user panels và cài đặt về mặc định?'), [
-        { label: 'Hủy' }, { label: 'Reset', danger: true, onClick: function () { S.reset(); render(); } }]);
+      U.dialog('Reset?', el('p', null, 'Reset favorites, user panels and settings to defaults?'), [
+        { label: 'Cancel' }, { label: 'Reset', danger: true, onClick: function () { S.reset(); render(); } }]);
     });
     data.append(exp, imp, rst);
     form.append(
-      el('div', 'sec', 'Giao diện'),
-      seg('Kiểu icon', th.style, [['mono', 'Đơn sắc'], ['color', 'Màu'], ['solid', 'Khối màu']], function (v) { th.style = v; S.save(); render(); }),
-      seg('Cỡ icon', th.iconSize, [['s', 'Nhỏ'], ['m', 'Vừa'], ['l', 'Lớn']], function (v) { th.iconSize = v; S.save(); render(); }),
-      toggle('Hiện tooltip / helptip', 'tooltips'),
-      toggle('Theo màu nền After Effects', 'followHost'),
+      el('div', 'sec', 'Appearance'),
+      seg('Icon style', th.style, [['mono', 'Mono'], ['color', 'Color'], ['solid', 'Solid']], function (v) { th.style = v; S.save(); render(); }),
+      seg('Icon size', th.iconSize, [['s', 'Small'], ['m', 'Medium'], ['l', 'Large']], function (v) { th.iconSize = v; S.save(); render(); }),
+      toggle('Show tooltips / help bar', 'tooltips'),
+      toggle('Match After Effects background', 'followHost'),
       accent,
-      el('div', 'sec', 'Dữ liệu'), data
+      el('div', 'sec', 'Data'), data
     );
-    if (S.file) form.appendChild(el('div', 'muted small', 'File cài đặt: ' + esc(S.file)));
-    U.dialog('Cài đặt', form, [{ label: 'Đóng', primary: true }]);
+    if (S.file) form.appendChild(el('div', 'muted small', 'Settings file: ' + esc(S.file)));
+    U.dialog('Settings', form, [{ label: 'Close', primary: true }]);
   }
   function exportSettings() {
     var json = S.exportJSON();
     if (B.fs.available) {
-      var p = B.fs.saveDialog('Backup cài đặt MenMen', 'menmen-workflow-backup.json', ['json']);
-      if (p) { B.fs.write(p, json); U.toast('Đã backup → ' + p, true); }
+      var p = B.fs.saveDialog('Back up MenMen settings', 'menmen-workflow-backup.json', ['json']);
+      if (p) { B.fs.write(p, json); U.toast('Backed up → ' + p, true); }
       return;
     }
     var a = document.createElement('a');
@@ -688,19 +688,19 @@
   }
   function importSettings() {
     function apply(txt) {
-      try { S.importJSON(txt); render(); U.toast('Đã khôi phục cài đặt', true); }
-      catch (e) { U.toast('File không hợp lệ: ' + e.message, false); }
+      try { S.importJSON(txt); render(); U.toast('Settings restored', true); }
+      catch (e) { U.toast('Invalid file: ' + e.message, false); }
     }
-    if (B.fs.available) { var p = B.fs.openDialog('Khôi phục cài đặt MenMen', ['json']); if (p) apply(B.fs.read(p)); return; }
+    if (B.fs.available) { var p = B.fs.openDialog('Restore MenMen settings', ['json']); if (p) apply(B.fs.read(p)); return; }
     var i = document.createElement('input'); i.type = 'file'; i.accept = '.json';
     i.onchange = function () { var r = new FileReader(); r.onload = function () { apply(r.result); }; r.readAsText(i.files[0]); };
     i.click();
   }
   function about() {
     var box = el('div', 'about');
-    box.innerHTML = '<div class="about-logo">M</div><h3>MenMen Workflow</h3><p class="muted">v0.2.0 · ' + T.list.length + ' tool · 12 nhóm</p>' +
-      '<p>Main panel chứa toàn bộ tool; Dock một nhóm hoặc user panel ra MenMen Panel 1–4.</p><p class="muted small" id="hostInfo">Đang kiểm tra host…</p>';
-    U.dialog('About', box, [{ label: 'Đóng', primary: true }]);
+    box.innerHTML = '<div class="about-logo">M</div><h3>MenMen Workflow</h3><p class="muted">v0.2.0 · ' + T.list.length + ' tools · 12 categories</p>' +
+      '<p>The main panel holds every tool; dock a category or user panel to MenMen Panel 1–4.</p><p class="muted small" id="hostInfo">Checking host…</p>';
+    U.dialog('About', box, [{ label: 'Close', primary: true }]);
     B.run('hostInfo').then(function (r) { var n = document.getElementById('hostInfo'); if (n) n.textContent = r.msg; });
   }
 
@@ -708,7 +708,7 @@
   function loadHost() {
     return B.loadHost().then(function (r) {
       st.hostOk = r.ok; st.hostMsg = r.msg;
-      if (!r.ok) U.toast('Không nạp được host: ' + r.msg, false);
+      if (!r.ok) U.toast('Could not load host: ' + r.msg, false);
       setTip();
     });
   }

@@ -1,17 +1,17 @@
-// layertools.jsx - parent, rename, màu label, khóa, shy/solo, reset, trim, duplicate
+// layertools.jsx - parent, rename, label colors, lock, shy/solo, reset, trim, duplicate
 (function () {
     var T = MMW.tools;
 
     function withUnlock(L, fn) { var lk = L.locked; L.locked = false; try { fn(); } finally { L.locked = lk; } }
 
     // ---------- Parent ----------
-    // Mọi layer đang chọn làm con của layer được chọn đầu tiên.
+    // All selected layers become children of the first selected layer.
     T.parentToFirst = function () {
         var c = MMW.comp(), s = MMW.selLayers(c, 2), p = s[0], n = 0;
         for (var i = 1; i < s.length; i++) { (function (L) { withUnlock(L, function () { L.parent = p; }); })(s[i]); n++; }
-        return n + " layer → con của \"" + p.name + "\".";
+        return n + " layer(s) → parented to \"" + p.name + "\".";
     };
-    // Mỗi layer làm con của layer ngay phía trên nó.
+    // Each layer becomes a child of the layer directly above it.
     T.parentToAbove = function () {
         var c = MMW.comp(), s = MMW.sortByIndex(MMW.selLayers(c)), n = 0;
         for (var i = 0; i < s.length; i++) {
@@ -19,30 +19,30 @@
             (function (L) { withUnlock(L, function () { L.parent = c.layer(L.index - 1); }); })(s[i]);
             n++;
         }
-        return "Đã parent " + n + " layer vào layer phía trên.";
+        return "Parented " + n + " layer(s) to the layer above.";
     };
-    // Chuỗi parent theo thứ tự chọn: 2 → 1, 3 → 2, ...
+    // Parent chain in selection order: 2 → 1, 3 → 2, ...
     T.parentChain = function () {
         var c = MMW.comp(), s = MMW.selLayers(c, 2);
         for (var i = 1; i < s.length; i++) (function (L, P) { withUnlock(L, function () { L.parent = P; }); })(s[i], s[i - 1]);
-        return "Đã tạo chuỗi parent " + s.length + " layer.";
+        return "Chained " + s.length + " layers.";
     };
     T.unparent = function () {
         var c = MMW.comp(), s = MMW.selLayers(c);
         for (var i = 0; i < s.length; i++) (function (L) { withUnlock(L, function () { L.parent = null; }); })(s[i]);
-        return "Đã bỏ parent " + s.length + " layer.";
+        return "Unparented " + s.length + " layer(s).";
     };
 
     // ---------- Duplicate ----------
-    // o.count: số bản sao mỗi layer.
+    // o.count: copies per layer.
     T.duplicateLayers = function (o) {
         var c = MMW.comp(), s = MMW.selLayers(c), n = Math.max(1, Math.min(200, parseInt(o.count, 10) || 1)), made = 0;
         for (var i = 0; i < s.length; i++) for (var k = 0; k < n; k++) { s[i].duplicate(); made++; }
-        return "Đã tạo " + made + " bản sao.";
+        return "Created " + made + " duplicate(s).";
     };
 
     // ---------- Rename ----------
-    // o.name (đặt tên mới + số), o.start, o.prefix, o.suffix, o.find, o.replace
+    // o.name (new name + number), o.start, o.prefix, o.suffix, o.find, o.replace
     T.renameLayers = function (o) {
         var c = MMW.comp(), s = MMW.sortByIndex(MMW.selLayers(c)), num = parseInt(o.start, 10);
         if (isNaN(num)) num = 1;
@@ -53,11 +53,11 @@
             name = (o.prefix || "") + name + (o.suffix || "");
             L.name = name;
         }
-        return "Đã đổi tên " + s.length + " layer.";
+        return "Renamed " + s.length + " layer(s).";
     };
 
     // ---------- Label colors ----------
-    // o.mode: "type" (theo loại layer) | "random" | "1".."16" (một màu)
+    // o.mode: "type" (by layer type) | "random" | "1".."16" (single label)
     T.setLayerColors = function (o) {
         var c = MMW.comp(), s = c.selectedLayers.length ? c.selectedLayers : null, mode = String(o.mode || "type"), n = 0;
         for (var i = 1; i <= c.numLayers; i++) {
@@ -72,56 +72,56 @@
             } else lab = Math.max(0, Math.min(16, parseInt(mode, 10) || 0));
             L.label = lab; n++;
         }
-        return "Đã đổi màu label " + n + " layer.";
+        return "Recolored " + n + " layer(s).";
     };
 
     // ---------- Lock / Shy / Solo ----------
-    // Khóa hoặc mở khóa toàn bộ layer. Alt: chỉ layer đang chọn.
+    // Locks or unlocks all layers. Alt: selected layers only.
     T.lockToggle = function (o) {
         var c = MMW.comp(), list = [], i;
         for (i = 1; i <= c.numLayers; i++) if (!o.alt || c.layer(i).selected) list.push(c.layer(i));
         var anyUnlocked = false;
         for (i = 0; i < list.length; i++) if (!list[i].locked) anyUnlocked = true;
         for (i = 0; i < list.length; i++) list[i].locked = anyUnlocked;
-        return (anyUnlocked ? "Đã khóa " : "Đã mở khóa ") + list.length + " layer.";
+        return (anyUnlocked ? "Locked " : "Unlocked ") + list.length + " layer(s).";
     };
-    // Click: bật/tắt shy cho layer đang chọn. Alt: bật/tắt "Hide Shy Layers" của comp.
+    // Click: toggle shy on the selected layers. Alt: toggle the comp's "Hide Shy Layers".
     T.shyToggle = function (o) {
         var c = MMW.comp();
-        if (o.alt) { c.hideShyLayers = !c.hideShyLayers; return "Hide Shy Layers: " + (c.hideShyLayers ? "bật" : "tắt"); }
+        if (o.alt) { c.hideShyLayers = !c.hideShyLayers; return "Hide Shy Layers: " + (c.hideShyLayers ? "on" : "off"); }
         var s = MMW.selLayers(c);
         for (var i = 0; i < s.length; i++) s[i].shy = !s[i].shy;
-        return "Đã đổi shy cho " + s.length + " layer.";
+        return "Toggled shy on " + s.length + " layer(s).";
     };
-    // Chỉ hiện layer đang chọn trong timeline (dùng shy). Bấm lần nữa để hiện lại tất cả.
+    // Shows only the selected layers in the timeline (via shy). Run again to show all.
     T.soloTimeline = function () {
         var c = MMW.comp(), i;
         if (c.hideShyLayers && $.global.__mmwSoloShy) {
             for (i = 1; i <= c.numLayers; i++) c.layer(i).shy = false;
             c.hideShyLayers = false; $.global.__mmwSoloShy = false;
-            return "Đã hiện lại toàn bộ layer.";
+            return "All layers visible again.";
         }
         var s = MMW.selLayers(c);
         for (i = 1; i <= c.numLayers; i++) c.layer(i).shy = !c.layer(i).selected;
         c.hideShyLayers = true; $.global.__mmwSoloShy = true;
-        return "Timeline chỉ còn " + s.length + " layer (bấm lại để hiện tất cả).";
+        return "Timeline shows " + s.length + " layer(s) only (run again to show all).";
     };
-    // Click: bật/tắt Solo cho layer đang chọn. Alt: tắt Solo mọi layer.
+    // Click: toggle Solo on the selected layers. Alt: unsolo all layers.
     T.soloViewer = function (o) {
         var c = MMW.comp(), i;
-        if (o.alt) { for (i = 1; i <= c.numLayers; i++) try { c.layer(i).solo = false; } catch (e) {} return "Đã tắt solo."; }
+        if (o.alt) { for (i = 1; i <= c.numLayers; i++) try { c.layer(i).solo = false; } catch (e) {} return "Solo cleared."; }
         var s = MMW.selLayers(c);
         for (i = 0; i < s.length; i++) s[i].solo = !s[i].solo;
-        return "Đã đổi solo " + s.length + " layer.";
+        return "Toggled solo on " + s.length + " layer(s).";
     };
     T.toggleVisibility = function () {
         var c = MMW.comp(), s = MMW.selLayers(c);
         for (var i = 0; i < s.length; i++) s[i].enabled = !s[i].enabled;
-        return "Đã bật/tắt hiển thị " + s.length + " layer.";
+        return "Toggled visibility of " + s.length + " layer(s).";
     };
 
     // ---------- Reset ----------
-    // Reset transform (xóa keyframe). Alt: giữ nguyên Position.
+    // Resets the transform (removes keyframes). Alt: keep Position.
     T.resetTransform = function (o) {
         var c = MMW.comp(), s = MMW.selLayers(c);
         for (var i = 0; i < s.length; i++) {
@@ -144,11 +144,11 @@
                 });
             })(s[i]);
         }
-        return "Đã reset transform " + s.length + " layer.";
+        return "Reset the transform of " + s.length + " layer(s).";
     };
 
     // ---------- Trim ----------
-    // Click: cắt Out point về playhead. Alt: In point về playhead. Shift: về work area.
+    // Click: trim Out point to the playhead. Alt: In point to the playhead. Shift: to the work area.
     T.trimLayers = function (o) {
         var c = MMW.comp(), s = MMW.selLayers(c), t = c.time;
         for (var i = 0; i < s.length; i++) {
@@ -160,6 +160,6 @@
                 });
             })(s[i]);
         }
-        return "Đã trim " + s.length + " layer.";
+        return "Trimmed " + s.length + " layer(s).";
     };
 })();

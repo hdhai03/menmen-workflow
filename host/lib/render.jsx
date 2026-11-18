@@ -22,18 +22,18 @@
     }
 
     // ---------------- Simple Proxy ----------------
-    // Click: render proxy (lossless có alpha) cho comp đang chọn rồi gắn làm proxy.
-    // Alt: gỡ proxy. Shift: bật/tắt dùng proxy.
+    // Click: render a proxy (lossless with alpha) for the selected comps and assign it.
+    // Alt: remove proxies. Shift: toggle proxy usage.
     T.simpleProxy = function (o) {
         var comps = targetComps(), i;
         if (o.alt) {
             for (i = 0; i < comps.length; i++) comps[i].setProxyToNone();
-            return "Đã gỡ proxy của " + comps.length + " comp.";
+            return "Removed proxies from " + comps.length + " comp(s).";
         }
         if (o.shift) {
             var n = 0;
             for (i = 0; i < comps.length; i++) if (comps[i].proxySource) { comps[i].useProxy = !comps[i].useProxy; n++; }
-            return n ? "Đã bật/tắt proxy cho " + n + " comp." : "Comp chưa có proxy.";
+            return n ? "Toggled proxy for " + n + " comp(s)." : "The comp has no proxy.";
         }
         var rq = app.project.renderQueue, prev = [];
         for (i = 1; i <= rq.numItems; i++) {
@@ -61,6 +61,6 @@
         }
         for (i = mine.length - 1; i >= 0; i--) { try { mine[i].item.remove(); } catch (e2) {} }
         for (i = 1; i <= rq.numItems && i <= prev.length; i++) { try { if (prev[i - 1]) rq.item(i).render = true; } catch (e3) {} }
-        return "Đã tạo proxy cho " + ok + "/" + comps.length + " comp → " + folder.fsName;
+        return "Created proxies for " + ok + "/" + comps.length + " comp(s) → " + folder.fsName;
     };
 })();

@@ -1,4 +1,4 @@
-// comptools.jsx - auto trim, pre-compose, batch comp settings, màu nền, project & guides & view
+// comptools.jsx - auto trim, pre-compose, batch comp settings, background color, project & guides & view
 (function () {
     var T = MMW.tools;
 
@@ -6,12 +6,12 @@
         var out = [], sel = app.project.selection;
         for (var i = 0; i < sel.length; i++) if (sel[i] instanceof CompItem) out.push(sel[i]);
         if (!out.length && app.project.activeItem instanceof CompItem) out.push(app.project.activeItem);
-        if (!out.length) MMW.fail("Hãy chọn comp trong Project panel hoặc mở một comp.");
+        if (!out.length) MMW.fail("Select comps in the Project panel or open a comp.");
         return out;
     }
 
     // ================= Composition =================
-    // Click: work area ôm vừa các layer. Alt: đổi luôn độ dài comp.
+    // Click: fit the work area to the layers. Alt: also change the comp duration.
     T.autoTrimComp = function (o) {
         var comps = selectedComps(), n = 0;
         for (var i = 0; i < comps.length; i++) {
@@ -28,10 +28,10 @@
             c.workAreaDuration = Math.max(c.frameDuration, Math.min(b, c.duration) - a);
             n++;
         }
-        return "Đã trim " + n + " comp.";
+        return "Trimmed " + n + " comp(s).";
     };
 
-    // Pre-compose layer đang chọn (Move all attributes). Alt: Leave attributes (chỉ 1 layer).
+    // Pre-composes the selected layers (Move all attributes). Alt: Leave attributes (single layer only).
     T.preCompose = function (o) {
         var c = MMW.comp(), s = MMW.sortByIndex(MMW.selLayers(c)), idx = [];
         for (var i = 0; i < s.length; i++) idx.push(s[i].index);
@@ -42,10 +42,10 @@
         while (taken[name]) { k++; name = base + " " + k; }
         var leave = o.alt && s.length === 1;
         c.layers.precompose(idx, name, !leave);
-        return "Đã pre-compose " + s.length + " layer → \"" + name + "\".";
+        return "Pre-composed " + s.length + " layer(s) → \"" + name + "\".";
     };
 
-    // o.width, o.height, o.fps, o.duration (giây), o.pixelAspect – để trống = giữ nguyên
+    // o.width, o.height, o.fps, o.duration (seconds) – empty = unchanged
     T.batchCompSettings = function (o) {
         var comps = selectedComps(), n = 0;
         function num(v) { var x = parseFloat(v); return isNaN(x) || x <= 0 ? null : x; }
@@ -57,17 +57,17 @@
             if (num(o.duration)) c.duration = num(o.duration);
             n++;
         }
-        return "Đã cập nhật " + n + " comp.";
+        return "Updated " + n + " comp(s).";
     };
 
     // o.color = [r,g,b] (0..1)
     T.setBgColor = function (o) {
         var comps = selectedComps(), col = o.color || [0, 0, 0];
         for (var i = 0; i < comps.length; i++) comps[i].bgColor = [col[0], col[1], col[2]];
-        return "Đã đổi màu nền " + comps.length + " comp.";
+        return "Changed the background of " + comps.length + " comp(s).";
     };
 
-    // Chụp frame hiện tại thành PNG (cạnh file project hoặc Desktop).
+    // Saves the current frame as PNG (next to the project file, or on the Desktop).
     T.saveScreenshot = function () {
         var c = MMW.comp();
         var base = app.project.file ? app.project.file.parent : Folder.desktop;
@@ -76,7 +76,7 @@
         var frame = Math.round(c.time / c.frameDuration);
         var file = new File(f.fsName + "/" + c.name.replace(/[\\\/:*?"<>|]/g, "_") + "_f" + frame + ".png");
         c.saveFrameToPng(c.time, file);
-        return "Đã lưu " + file.fsName;
+        return "Saved " + file.fsName;
     };
 
     // ================= Project =================
@@ -84,7 +84,7 @@
         var before = app.project.numItems;
         app.project.removeUnusedFootage();
         if (!o.alt) app.project.consolidateFootage();
-        return "Đã dọn project: " + (before - app.project.numItems) + " item bị xóa.";
+        return "Project cleaned: " + (before - app.project.numItems) + " item(s) removed.";
     };
 
     function rootFolder(name) {
@@ -95,7 +95,7 @@
         }
         return app.project.items.addFolder(name);
     }
-    // Gom item ở thư mục gốc vào folder theo loại.
+    // Moves root-level items into folders by type.
     T.organizeProject = function () {
         var root = app.project.rootFolder, items = [], n = 0, i;
         for (i = 1; i <= root.numItems; i++) items.push(root.item(i));
@@ -112,9 +112,9 @@
             }
             if (folder) { it.parentFolder = rootFolder(folder); n++; }
         }
-        return "Đã sắp xếp " + n + " item.";
+        return "Organized " + n + " item(s).";
     };
-    // o.folders: danh sách tên, cách nhau bằng dấu phẩy. Dùng "/" để tạo folder con.
+    // o.folders: comma-separated names. Use "/" for subfolders.
     T.createFolderStructure = function (o) {
         var names = String(o.folders || "").split(","), n = 0;
         for (var i = 0; i < names.length; i++) {
@@ -128,17 +128,17 @@
                 parent = found;
             }
         }
-        return "Đã tạo " + n + " folder.";
+        return "Created " + n + " folder(s).";
     };
     T.revealProjectFolder = function () {
-        if (!app.project.file) MMW.fail("Project chưa được lưu.");
+        if (!app.project.file) MMW.fail("The project has not been saved yet.");
         app.project.file.parent.execute();
         return app.project.file.parent.fsName;
     };
     T.revealLayerSource = function () {
         var c = MMW.comp(), s = MMW.selLayers(c);
         var src = s[0].source;
-        if (!(src instanceof FootageItem) || !src.file) MMW.fail("Layer không có file nguồn.");
+        if (!(src instanceof FootageItem) || !src.file) MMW.fail("The layer has no source file.");
         src.file.parent.execute();
         return src.file.fsName;
     };
@@ -162,7 +162,7 @@
         return list.length ? bboxOf(c, list) : { l: 0, t: 0, r: c.width, b: c.height };
     }
     // o.where: "around" | "left" | "right" | "top" | "bottom" | "center" | "middle" | "both"
-    // Áp dụng cho layer đang chọn (khung bao) hoặc cả comp nếu không chọn layer.
+    // Uses the selected layers' bounds, or the whole comp when nothing is selected.
     T.addGuides = function (o) {
         var c = MMW.comp(), b = targetBox(c), w = o.where || "around", n = 0;
         function V(x) { c.addGuide(1, x); n++; }
@@ -173,9 +173,9 @@
         if (w === "around" || w === "bottom") H(b.b);
         if (w === "center" || w === "both") V((b.l + b.r) / 2);
         if (w === "middle" || w === "both") H((b.t + b.b) / 2);
-        return "Đã thêm " + n + " guide.";
+        return "Added " + n + " guide(s).";
     };
-    // Guide tại anchor point của layer đang chọn.
+    // Guides at the anchor point of the selected layers.
     T.addGuidesAnchor = function () {
         var c = MMW.comp(), s = MMW.selLayers(c), h = MMW.helper(c), n = 0;
         for (var i = 0; i < s.length; i++) {
@@ -183,7 +183,7 @@
             c.addGuide(1, p[0]); c.addGuide(0, p[1]); n += 2;
         }
         h.remove();
-        return "Đã thêm " + n + " guide.";
+        return "Added " + n + " guide(s).";
     };
     // o.cols, o.rows, o.margin, o.gutter (px)
     T.guideGrid = function (o) {
@@ -205,39 +205,39 @@
                 if (g > 0) { c.addGuide(0, y + g); n++; }
             }
         }
-        return "Đã tạo lưới " + cols + " cột" + (rows > 1 ? " × " + rows + " hàng" : "") + " (" + n + " guide).";
+        return "Created a " + cols + "-column" + (rows > 1 ? " × " + rows + "-row" : "") + " grid (" + n + " guides).";
     };
     T.clearGuides = function () {
         var c = MMW.comp(), n = c.guides.length;
         for (var i = n - 1; i >= 0; i--) c.removeGuide(i);
-        return "Đã xóa " + n + " guide.";
+        return "Removed " + n + " guide(s).";
     };
     T.copyGuides = function () {
         var c = MMW.comp(), g = [];
         for (var i = 0; i < c.guides.length; i++) g.push({ o: c.guides[i].orientationType, p: c.guides[i].position });
         $.global.__mmwGuides = { list: g, w: c.width, h: c.height };
-        return "Đã copy " + g.length + " guide.";
+        return "Copied " + g.length + " guide(s).";
     };
-    // Paste guide. Alt: co giãn theo kích thước comp đích.
+    // Pastes guides. Alt: scale to the target comp size.
     T.pasteGuides = function (o) {
         var clip = $.global.__mmwGuides;
-        if (!clip || !clip.list.length) MMW.fail("Chưa copy guide nào.");
+        if (!clip || !clip.list.length) MMW.fail("No guides copied yet.");
         var c = MMW.comp();
         for (var i = 0; i < clip.list.length; i++) {
             var g = clip.list[i], p = g.p;
             if (o.alt) p = p * (g.o === 1 ? c.width / clip.w : c.height / clip.h);
             c.addGuide(g.o, p);
         }
-        return "Đã paste " + clip.list.length + " guide.";
+        return "Pasted " + clip.list.length + " guide(s).";
     };
 
-    // Chạy lệnh menu AE theo tên (thử nhiều tên vì tên menu đổi theo trạng thái).
+    // Runs an AE menu command by name (tries several names since labels change with state).
     MMW.menuCommand = function (names) {
         for (var i = 0; i < names.length; i++) {
             var id = app.findMenuCommandId(names[i]);
             if (id) { app.executeCommand(id); return names[i]; }
         }
-        MMW.fail("Không tìm thấy lệnh menu: " + names.join(" / ") + " (AE không phải tiếng Anh?)");
+        MMW.fail("Menu command not found: " + names.join(" / ") + " (non-English AE?)");
     };
     T.toggleGuides = function () { return MMW.menuCommand(["Show Guides", "Hide Guides"]); };
     T.lockGuides = function () { return MMW.menuCommand(["Lock Guides", "Unlock Guides"]); };
@@ -247,24 +247,24 @@
     // o.zoom: 1 = 100%, 0.5 = 50%...
     T.viewZoom = function (o) {
         var v = app.activeViewer;
-        if (!v) MMW.fail("Không có viewer đang mở.");
+        if (!v) MMW.fail("No viewer is open.");
         v.setActive();
-        try { v.views[0].options.zoom = Number(o.zoom) || 1; } catch (e) { MMW.fail("AE phiên bản này không hỗ trợ đổi zoom bằng script."); }
+        try { v.views[0].options.zoom = Number(o.zoom) || 1; } catch (e) { MMW.fail("This AE version does not support setting zoom from scripts."); }
         return "Zoom " + Math.round((Number(o.zoom) || 1) * 100) + "%";
     };
     T.toggleRulers = function () { return MMW.menuCommand(["Show Rulers", "Hide Rulers"]); };
     T.toggleGrid = function () { return MMW.menuCommand(["Show Grid", "Hide Grid"]); };
 
     // ================= Command (cho user item) =================
-    // o.command: tên lệnh menu hoặc số command ID
+    // o.command: menu command name or numeric command ID
     T.runCommand = function (o) {
         var id = parseInt(o.command, 10);
         if (isNaN(id)) id = app.findMenuCommandId(String(o.command));
-        if (!id) MMW.fail("Không tìm thấy lệnh: " + o.command);
+        if (!id) MMW.fail("Command not found: " + o.command);
         app.executeCommand(id);
-        return "Đã chạy lệnh " + o.command;
+        return "Ran command " + o.command;
     };
-    // o.effect: matchName hoặc tên hiển thị của effect
+    // o.effect: effect matchName or display name
     T.applyEffect = function (o) {
         var c = MMW.comp(), s = MMW.selLayers(c), n = 0;
         for (var i = 0; i < s.length; i++) {
@@ -272,12 +272,12 @@
             if (!fx || !fx.canAddProperty(o.effect)) continue;
             fx.addProperty(o.effect); n++;
         }
-        if (!n) MMW.fail("Không áp được effect \"" + o.effect + "\" (sai tên/matchName?).");
-        return "Đã áp " + o.effect + " cho " + n + " layer.";
+        if (!n) MMW.fail("Could not apply effect \"" + o.effect + "\" (wrong name/matchName?).");
+        return "Applied " + o.effect + " to " + n + " layer(s).";
     };
-    // o.code: đoạn ExtendScript ngắn
+    // o.code: a short ExtendScript snippet
     T.runScriptlet = function (o) {
         var r = eval(String(o.code || ""));
-        return r === undefined ? "Đã chạy scriptlet." : String(r);
+        return r === undefined ? "Scriptlet done." : String(r);
     };
 })();

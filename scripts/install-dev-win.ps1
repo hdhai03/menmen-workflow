@@ -1,5 +1,5 @@
-# Cài MenMen Workflow ở chế độ dev trên Windows: bật PlayerDebugMode + junction vào thư mục CEP extensions.
-# Chạy: powershell -ExecutionPolicy Bypass -File scripts\install-dev-win.ps1
+# Installs MenMen Workflow for development on Windows: enables PlayerDebugMode + junctions into the CEP extensions folder.
+# Run: powershell -ExecutionPolicy Bypass -File scripts\install-dev-win.ps1
 $ErrorActionPreference = "Stop"
 
 $src = Resolve-Path (Join-Path $PSScriptRoot "..")
@@ -11,13 +11,13 @@ foreach ($v in 9, 10, 11, 12) {
   if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
   Set-ItemProperty -Path $key -Name "PlayerDebugMode" -Value "1" -Type String
 }
-Write-Host "OK  Da bat PlayerDebugMode (CSXS 9-12)"
+Write-Host "OK  PlayerDebugMode enabled (CSXS 9-12)"
 
 New-Item -ItemType Directory -Force -Path $destDir | Out-Null
 if (Test-Path $dest) {
-  Write-Host "--  $dest da ton tai (bo qua). Neu muon link lai, hay tu xoa thu muc do."
+  Write-Host "--  $dest already exists (skipped). To relink, remove that folder yourself first."
 } else {
   New-Item -ItemType Junction -Path $dest -Target $src | Out-Null
-  Write-Host "OK  Da link $src -> $dest"
+  Write-Host "OK  Linked $src -> $dest"
 }
-Write-Host "Khoi dong lai After Effects, roi mo Window > Extensions > MenMen Workflow 1..4"
+Write-Host "Restart After Effects, then open Window > Extensions > MenMen Workflow"

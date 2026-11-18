@@ -1,5 +1,5 @@
-/* store.js - cài đặt dùng chung cho main panel + 4 panel phụ.
- * Lưu tại <userData>/MenMenWorkflow/settings.json, đồng bộ giữa các panel qua CEP event. */
+/* store.js - settings shared by the main panel + 4 sub panels.
+ * Saved to <userData>/MenMenWorkflow/settings.json and synced between panels via CEP events. */
 (function () {
   var B = window.Bridge;
   var FILE = B.userData ? B.userData.replace(/\\/g, '/') + '/MenMenWorkflow/settings.json' : null;
@@ -25,8 +25,8 @@
         ] }
       },
       upOrder: ['up1'],
-      hidden: {},        // { catId: [toolId,...] } - tool bị ẩn trong panel nhóm
-      params: {},        // { toolId: {...} } - tham số dùng lần trước
+      hidden: {},        // { catId: [toolId,...] } - tools hidden in category panels
+      params: {},        // { toolId: {...} } - last used parameters
       slots: {},         // { extId: { kind: 'category'|'user', id, view: 'list'|'grid' } }
       main: { collapsedFav: false }
     };
@@ -55,7 +55,7 @@
 
   S.load = function () {
     var parsed = null, raw = readRaw();
-    if (raw) { try { parsed = JSON.parse(raw); } catch (e) { console.warn('settings.json hỏng, dùng mặc định', e); } }
+    if (raw) { try { parsed = JSON.parse(raw); } catch (e) { console.warn('settings.json is corrupt, using defaults', e); } }
     S.data = normalize(parsed);
     return S.data;
   };
@@ -83,7 +83,7 @@
     S.save();
   };
 
-  // ----- hidden tools trong panel nhóm -----
+  // ----- hidden tools in category panels -----
   S.isHidden = function (cat, id) { return (S.data.hidden[cat] || []).indexOf(id) >= 0; };
   S.toggleHidden = function (cat, id) {
     var h = S.data.hidden[cat] = S.data.hidden[cat] || [], i = h.indexOf(id);
@@ -119,7 +119,7 @@
     S.save();
   };
 
-  // ----- slots (panel phụ) -----
+  // ----- slots (sub panels) -----
   S.slot = function (extId) { return S.data.slots[extId] || null; };
   S.setSlot = function (extId, kind, id) {
     var prev = S.data.slots[extId] || {};
@@ -127,7 +127,7 @@
     S.save(true);
   };
   S.clearSlot = function (extId) { delete S.data.slots[extId]; S.save(true); };
-  // Slot đang hiển thị nội dung này, hoặc slot trống đầu tiên.
+  // The slot already showing this content, or the first empty slot.
   S.findSlot = function (kind, id) {
     var i;
     for (i = 0; i < SLOTS.length; i++) {

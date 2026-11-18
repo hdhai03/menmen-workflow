@@ -32,11 +32,11 @@
                 n++;
             }
         }
-        return "Đã áp dụng cho " + n + " keyframe.";
+        return "Applied to " + n + " keyframe(s).";
     };
 
     // ---------------- Clone ----------------
-    // Copy key đang chọn tới playhead. Alt: chọn các key mới. Shift: clone đảo ngược.
+    // Copies the selected keys to the playhead. Alt: select the new keys. Shift: reversed clone.
     T.clone = function (o) {
         var c = MMW.comp(), list = MMW.keyProps(c), total = 0, i, j;
         var first = 1e9, last = -1e9;
@@ -46,7 +46,7 @@
         }
         for (i = 0; i < list.length; i++) {
             var p = list[i].prop, data = [];
-            var layerTime = c.time; // keyTime/addKey dùng thời gian comp
+            var layerTime = c.time; // keyTime/addKey use comp time
             for (j = 0; j < list[i].keys.length; j++) data.push(MMW.readKey(p, list[i].keys[j]));
             var created = [];
             for (j = 0; j < data.length; j++) {
@@ -66,7 +66,7 @@
             }
             total += data.length;
         }
-        return "Đã clone " + total + " keyframe.";
+        return "Cloned " + total + " keyframe(s).";
     };
 
     function swapInOut(d) {
@@ -79,19 +79,19 @@
     }
 
     // ---------------- Easings Manager ----------------
-    // copy: Alt = chỉ easing, Shift = chỉ giá trị. paste: tương tự.
+    // copy: Alt = easing only, Shift = values only. paste: same.
     T.easingsCopy = function (o) {
         var c = MMW.comp(), list = MMW.keyProps(c), clip = [];
         for (var i = 0; i < list.length; i++) {
             for (var j = 0; j < list[i].keys.length; j++) clip.push(MMW.readKey(list[i].prop, list[i].keys[j]));
         }
         $.global.__mmwEaseClip = { keys: clip, mode: o.alt ? "ease" : (o.shift ? "value" : "both") };
-        return "Đã copy " + clip.length + " keyframe" + (o.alt ? " (easing)" : (o.shift ? " (giá trị)" : "")) + ".";
+        return "Copied " + clip.length + " keyframe(s)" + (o.alt ? " (easing)" : (o.shift ? " (values)" : "")) + ".";
     };
 
     T.easingsPaste = function (o) {
         var clip = $.global.__mmwEaseClip;
-        if (!clip || !clip.keys.length) MMW.fail("Chưa copy keyframe nào.");
+        if (!clip || !clip.keys.length) MMW.fail("Nothing copied yet.");
         var mode = o.alt ? "ease" : (o.shift ? "value" : clip.mode);
         var c = MMW.comp(), list = MMW.keyProps(c), n = 0;
         for (var i = 0; i < list.length; i++) {
@@ -108,11 +108,11 @@
                 n++;
             }
         }
-        return "Đã paste lên " + n + " keyframe.";
+        return "Pasted onto " + n + " keyframe(s).";
     };
 
     // ---------------- Fix Keys Time ----------------
-    // Đưa keyframe về đúng frame (theo frame rate của comp). Không chọn key = toàn bộ key của property đang chọn.
+    // Snaps keyframes to whole frames (comp frame rate). No keys selected = all keys of the selected properties.
     T.fixKeysTime = function (o) {
         var c = MMW.comp(), fd = c.frameDuration, fixed = 0;
         var list = MMW.keyProps(c, false);
@@ -126,7 +126,7 @@
                 }
             }
         }
-        if (!list.length) MMW.fail("Hãy chọn keyframe hoặc property có keyframe.");
+        if (!list.length) MMW.fail("Select keyframes or properties with keyframes.");
         for (var i = 0; i < list.length; i++) {
             var p = list[i].prop, off = 0, bad = [];
             for (var j = 0; j < list[i].keys.length; j++) {
@@ -138,7 +138,7 @@
             MMW.moveKeys(p, bad, function (d) { return Math.round((d.t + off) / fd) * fd - off; });
             fixed += bad.length;
         }
-        return fixed ? "Đã sửa " + fixed + " keyframe lệch frame." : "Mọi keyframe đã nằm đúng frame.";
+        return fixed ? "Snapped " + fixed + " off-frame keyframe(s)." : "All keyframes are already on frames.";
     };
 
     // ---------------- Loop In/Out ----------------
@@ -146,7 +146,7 @@
     T.loop = function (o) {
         var c = MMW.comp(), props = MMW.selProps(c), n = 0;
         var type = o.alt ? "pingpong" : (o.ctrl ? "continue" : (o.shift ? "offset" : "cycle"));
-        if (!props.length) MMW.fail("Hãy chọn property (vd: Position, Rotation...).");
+        if (!props.length) MMW.fail("Select properties (e.g. Position, Rotation...).");
         for (var i = 0; i < props.length; i++) {
             var p = props[i].prop;
             if (!p.canSetExpression) continue;
@@ -193,7 +193,7 @@
             p.expression = code;
             n++;
         }
-        if (!n) MMW.fail("Hãy chọn property có ít nhất 2 keyframe.");
+        if (!n) MMW.fail("Select properties with at least 2 keyframes.");
         return label + " → " + n + " property.";
     }
 })();

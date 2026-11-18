@@ -10,7 +10,7 @@
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>
-      <!-- After Effects 2022 (22.0) trở lên -->
+      <!-- After Effects 2022 (22.0) or later -->
       <Host Name="AEFT" Version="[22.0,99.9]" />
     </HostList>
     <LocaleList>

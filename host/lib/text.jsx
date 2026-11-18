@@ -1,4 +1,4 @@
-// text.jsx - tìm/thay text, lorem ipsum, typewriter, number counter, text box
+// text.jsx - find/replace text, lorem ipsum, typewriter, number counter, text box
 (function () {
     var T = MMW.tools;
 
@@ -8,7 +8,7 @@
             var L = c.layer(i);
             if (L instanceof TextLayer && (L.selected || (allIfNone && !c.selectedLayers.length))) out.push(L);
         }
-        if (!out.length) MMW.fail("Hãy chọn text layer.");
+        if (!out.length) MMW.fail("Select text layers.");
         return out;
     }
     function srcText(L) { return L.property("ADBE Text Properties").property("ADBE Text Document"); }
@@ -20,9 +20,9 @@
         return L.property("ADBE Effect Parade").property(name);
     }
 
-    // o.find, o.replace — trên text layer đang chọn (hoặc mọi text layer nếu không chọn gì).
+    // o.find, o.replace — in the selected text layers (or all text layers if none selected).
     T.findReplaceText = function (o) {
-        if (!o.find) MMW.fail("Nhập chuỗi cần tìm.");
+        if (!o.find) MMW.fail("Enter the text to find.");
         var c = MMW.comp(), list = textLayers(c, true), n = 0;
         for (var i = 0; i < list.length; i++) {
             var p = srcText(list[i]);
@@ -36,11 +36,11 @@
                 if (d.text.indexOf(o.find) >= 0) { d.text = d.text.split(o.find).join(o.replace || ""); p.setValue(d); n++; }
             }
         }
-        return "Đã thay " + n + " chỗ.";
+        return "Replaced in " + n + " place(s).";
     };
 
     var LOREM = "lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat";
-    // o.words: số từ
+    // o.words: word count
     T.loremIpsum = function (o) {
         var c = MMW.comp(), words = LOREM.split(" "), n = Math.max(1, parseInt(o.words, 10) || 12), out = [];
         for (var i = 0; i < n; i++) out.push(words[i % words.length]);
@@ -48,10 +48,10 @@
         txt = txt.charAt(0).toUpperCase() + txt.slice(1) + ".";
         var L = c.layers.addBoxText([Math.round(c.width * 0.6), Math.round(c.height * 0.4)], txt);
         L.name = "Lorem Ipsum";
-        return "Đã tạo text " + n + " từ.";
+        return "Created a " + n + "-word text.";
     };
 
-    // Typewriter: hiện dần ký tự theo slider "Typewriter %" (tạo sẵn key 0 → 100 trong o.seconds giây).
+    // Typewriter: reveals characters via the "Typewriter %" slider (keys 0 → 100 over o.seconds).
     T.typewriter = function (o) {
         var c = MMW.comp(), list = textLayers(c), dur = Number(o.seconds) || 2;
         for (var i = 0; i < list.length; i++) {
@@ -68,7 +68,7 @@
         return "Typewriter → " + list.length + " text layer.";
     };
 
-    // Number Counter: text layer mới (hoặc text đang chọn) đếm theo slider "Counter".
+    // Number Counter: a new text layer (or the selected text) driven by the "Counter" slider.
     T.numberCounter = function (o) {
         var c = MMW.comp(), list = [], i;
         var sel = c.selectedLayers;
@@ -92,7 +92,7 @@
         return "Number counter → " + list.length + " layer.";
     };
 
-    // Text Box: shape layer nền tự co giãn theo text (padding / bo góc chỉnh bằng slider).
+    // Text Box: a background shape layer that resizes with the text (padding / roundness sliders).
     T.textBox = function (o) {
         var c = MMW.comp(), list = textLayers(c), made = 0;
         for (var i = 0; i < list.length; i++) {
@@ -122,6 +122,6 @@
             rect.property("ADBE Vector Rect Roundness").expression = "effect(\"Roundness\")(1)";
             made++;
         }
-        return "Đã tạo " + made + " text box.";
+        return "Created " + made + " text box(es).";
     };
 })();

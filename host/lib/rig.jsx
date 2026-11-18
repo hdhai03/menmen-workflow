@@ -3,7 +3,7 @@
     var T = MMW.tools;
     var ROOT = "ADBE Root Vectors Group";
 
-    // Tạo shape layer có 1 group chứa path + stroke. Trả về layer.
+    // Creates a shape layer with one group holding a path + stroke. Returns the layer.
     function newStrokeLayer(c, name, color, width) {
         var L = c.layers.addShape();
         L.name = MMW.uniqueLayerName(c, name);
@@ -28,7 +28,7 @@
     }
 
     // ---------------- Create Limb ----------------
-    // Tạo "ống" (hose) điều khiển bởi 2 null Start/End. Khi 2 đầu lại gần, ống tự cong để giữ chiều dài.
+    // Creates a hose driven by Start/End nulls. When the ends get closer, it bends to keep its length.
     T.createLimb = function (o) {
         var c = MMW.comp();
         var base = MMW.uniqueLayerName(c, "Limb");
@@ -59,12 +59,12 @@
             "createPath([p0,m,p2],[[0,0],[-ux*k,-uy*k],bIn],[aOut,[ux*k,uy*k],[0,0]],false);";
         strokeWidth(limb).expression = "effect(\"Thickness\")(1)";
         a.moveBefore(limb); b.moveBefore(limb);
-        return "Đã tạo " + limb.name + " (kéo 2 null Start/End để điều khiển).";
+        return "Created " + limb.name + " (move the Start/End nulls to control it).";
     };
 
     // ---------------- Position Trace ----------------
-    // Vẽ quỹ đạo (vị trí anchor trong không gian comp) của layer đang chọn thành shape layer.
-    // Alt: chỉ trong vùng work area.
+    // Draws the motion path (comp-space anchor position) of the selected layers as a shape layer.
+    // Alt: work area only.
     T.positionTrace = function (o) {
         var c = MMW.comp(), layers = MMW.selLayers(c), made = 0;
         var fd = c.frameDuration;
@@ -92,7 +92,7 @@
             tr.moveBefore(L);
             made++;
         }
-        if (!made) MMW.fail("Hãy chọn layer có vị trí (không phải camera/light).");
-        return "Đã vẽ quỹ đạo cho " + made + " layer.";
+        if (!made) MMW.fail("Select layers with a position (not cameras/lights).");
+        return "Traced " + made + " layer(s).";
     };
 })();

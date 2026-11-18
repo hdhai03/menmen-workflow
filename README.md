@@ -1,34 +1,34 @@
 # MenMen Workflow
 
-Extension cho **Adobe After Effects 2022+** (CEP). Gom script, widget và expression vào **4 panel dạng lưới** có thể tùy biến, giúp tăng tốc workflow motion design.
+An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets and expressions together in **one main panel plus dockable sub panels** to speed up motion design work.
 
-## Tính năng (v0.2.0)
+## Features (v0.2.0)
 
-### Giao diện: 1 main panel + 4 panel phụ
-- **MenMen Workflow** (main panel, `Window ▸ Extensions ▸ MenMen Workflow`): thanh dọc gọn gồm
-  - ô **tìm kiếm** tool (dùng phím ↑ ↓, Enter để chạy, Esc để xóa),
-  - dải **Favorites** (bấm ☆ cạnh tool để ghim),
-  - **12 nhóm tool**: bấm vào nhóm để mở menu tool,
-  - **User panels** (panel tự tạo) và **Add New Item**.
-  - Khi panel được kéo thấp và rộng, main panel tự chuyển sang dạng thanh ngang chỉ có icon.
-- **Dock**: trong menu của một nhóm hay một user panel, bấm biểu tượng Dock để mở nội dung đó ra **MenMen Panel 1–4** (panel phụ, dock được như panel AE bình thường).
-- **Panel phụ**: hiển thị một nhóm tool hoặc một user panel, dạng danh sách hoặc lưới.
-  - Với nhóm tool: ẩn bớt tool không dùng; nút "Hiện tất cả" để hiện lại tạm thời.
-  - Với user panel: kéo thả để sắp xếp, chuột phải để sửa / xóa item.
-- **User panel** chứa được nhiều loại item: MenMen tool, Expression, Scriptlet (ExtendScript), Script file (.jsx/.jsxbin), Preset (.ffx), Effect, Menu Command, Divider.
-- **Tool có tham số** mở một form nhỏ, giá trị lần trước được ghi nhớ. **Widget** (Keyframe Assistant, Easing Presets, Easings Manager, Offset Layers, Set Anchor Point) mở trong một hộp thoại.
-- **Cài đặt**:
-  - kiểu icon: Đơn sắc / Màu / Khối màu,
-  - cỡ icon: S / M / L,
-  - bật/tắt tooltip,
-  - theo màu nền AE, màu nhấn,
-  - Backup / Khôi phục / Reset.
-- Cài đặt lưu ở `<userData>/MenMenWorkflow/settings.json` và đồng bộ giữa mọi panel.
+### Interface: 1 main panel + 4 sub panels
+- **MenMen Workflow** (main panel, `Window ▸ Extensions ▸ MenMen Workflow`) is a compact vertical bar with:
+  - a **tool search** field (↑ ↓ to move, Enter to run, Esc to clear),
+  - a **Favorites** strip (click ☆ next to a tool to pin it),
+  - **12 tool categories**: click a category to open its tool menu,
+  - **User panels** (your own panels) and **Add New Item**.
+  - When the panel is short and wide, it switches to a horizontal icon-only bar.
+- **Dock**: in the menu of a category or user panel, click the Dock icon to open it in **MenMen Panel 1–4** (sub panels that dock like any AE panel).
+- **Sub panels** show one category or one user panel, as a list or a grid.
+  - Category panels: hide the tools you don't use; "Unhide all" brings them back temporarily.
+  - User panels: drag to reorder, right-click to edit / delete items.
+- **User panels** can hold: MenMen tools, Expressions, Scriptlets (ExtendScript), Script files (.jsx/.jsxbin), Presets (.ffx), Effects, Menu Commands, Dividers.
+- **Tools with parameters** open a small form that remembers the last values. **Widgets** (Keyframe Assistant, Easing Presets, Easings Manager, Offset Layers, Set Anchor Point) open in a dialog.
+- **Settings**:
+  - icon style: Mono / Color / Solid,
+  - icon size: S / M / L,
+  - tooltips on/off,
+  - match the AE background, accent color,
+  - Back up / Restore / Reset.
+- Settings are saved to `<userData>/MenMenWorkflow/settings.json` and synced across all panels.
 
-### 126 tool trong 12 nhóm
-| Nhóm | Tool |
+### 126 tools in 12 categories
+| Category | Tools |
 |---|---|
-| Selection (23) | Select Nulls / 3D / Lights (Alt: camera) / Precomps / Shape / Text / Audio / Guide / Adjustment, Inverse, Every Nth, Odd/Even, Above, Below, Children, Parents, Hierarchy, Random, At Frame, Matching Property, All Paths / Fills / Strokes |
+| Selection (23) | Select Nulls / 3D / Lights (Alt: cameras) / Precomps / Shape / Text / Audio / Guide / Adjustment, Inverse, Every Nth, Odd/Even, Above, Below, Children, Parents, Hierarchy, Random, At Frame, Matching Property, All Paths / Fills / Strokes |
 | Layers (17) | Parent to Null, Parent to First / Above / Selection Order, Unparent, Offset Layers, Duplicate, Rename, Layer Colors, Lock All, Shy, Solo (Timeline), Visibility, Reset Transform, Trim, Set Anchor Point, Collect Colors |
 | Keyframes (12) | Clone, Clone & Mirror, Align to Playhead / In-Out / Left-Right, Offset, Time-Reverse, Snap to Frames, Clean, Copy/Paste Values, Key Looper |
 | Easing (6) | Keyframe Assistant, Easing Presets (Sine…Back × In/Out/InOut), Easings Manager, Copy/Paste Easing, Reverse Easing |
@@ -41,12 +41,12 @@ Extension cho **Adobe After Effects 2022+** (CEP). Gom script, widget và expres
 | Text (5) | Find & Replace Text, Lorem Ipsum, Typewriter, Number Counter, Text Box Generator |
 | Animation (9) | Overshoot, Bounce, Wiggle, Spin, Auto Fader, Blinker, Stop Motion, Bend / Limb Rig, Position Trace |
 
-Các tool tạo animation bằng expression đều thêm slider để chỉnh lại sau (Wiggle Freq/Amp, Spin, Fade, Counter…). Giữ **Alt / Shift / Ctrl** khi click để đổi chế độ; chữ nhỏ A/S/C cạnh tên tool cho biết tool đó có chế độ phụ nào.
+Expression-driven tools add sliders so you can tweak them later (Wiggle Freq/Amp, Spin, Fade, Counter…). Hold **Alt / Shift / Ctrl** while clicking for alternate modes; the small A/S/C letters next to a tool name show which modes it has.
 
-## Cài đặt để phát triển
+## Development setup
 
-1. Clone repo về máy có After Effects.
-2. Chạy script cài:
+1. Clone the repo on a machine with After Effects.
+2. Run the install script:
    - macOS:
      ```bash
      bash scripts/install-dev-mac.sh
@@ -55,51 +55,51 @@ Các tool tạo animation bằng expression đều thêm slider để chỉnh l�
      ```powershell
      powershell -ExecutionPolicy Bypass -File scripts\install-dev-win.ps1
      ```
-   Script bật `PlayerDebugMode` (cho phép chạy extension chưa ký) và link thư mục project vào thư mục `CEP/extensions`.
-3. Khởi động lại After Effects → `Window ▸ Extensions ▸ MenMen Workflow` (main panel). Các panel phụ ở `MenMen Panel 1–4`.
-4. Debug: mở Chrome tới `http://localhost:8090` (main panel); panel phụ 1–4 dùng cổng 8091–8094 (khai báo trong `.debug`).
-5. Sau khi sửa file trong `host/`: menu ☰ ▸ **Nạp lại host scripts**. Sau khi sửa `client/`: đóng/mở lại panel (hoặc F5 trong DevTools).
+   The script enables `PlayerDebugMode` (allows unsigned extensions) and links the project folder into `CEP/extensions`.
+3. Restart After Effects → `Window ▸ Extensions ▸ MenMen Workflow` (main panel). Sub panels are under `MenMen Panel 1–4`.
+4. Debugging: open Chrome at `http://localhost:8090` (main panel); sub panels 1–4 use ports 8091–8094 (see `.debug`).
+5. After editing files in `host/`: menu ☰ ▸ **Reload host scripts**. After editing `client/`: close and reopen the panel (or press F5 in DevTools).
 
-**Xem trước giao diện không cần AE:** mở `client/index.html` bằng Chrome (`?panel=main` hoặc `?panel=1…4`). Bridge sẽ chạy ở chế độ mock, tool chỉ được giả lập.
+**Preview the UI without AE:** open `client/index.html` in Chrome (`?panel=main` or `?panel=1…4`). The bridge runs in mock mode and tools are simulated.
 
-## Cấu trúc
+## Structure
 
 ```
-CSXS/manifest.xml      main panel + 4 panel phụ, AE 22.0+, CSXS 9.0
-client/                giao diện panel (HTML/CSS/JS thuần, không cần build)
+CSXS/manifest.xml      main panel + 4 sub panels, AE 22.0+, CSXS 9.0
+client/                panel UI (plain HTML/CSS/JS, no build step)
   js/bridge.js         evalScript, events, file system (window.__adobe_cep__ / window.cep.fs)
-  js/tools.js          12 nhóm + 126 tool (tên, icon, mô tả, phím bổ trợ, tham số)
-  js/store.js          favorites, user panels, slot panel phụ, tham số; lưu file + đồng bộ
+  js/tools.js          12 categories + 126 tools (name, icon, description, modifiers, parameters)
+  js/store.js          favorites, user panels, sub panel slots, parameters; file storage + sync
   js/widgets.js        Keyframe Assistant, Easing Presets, Easings Manager, Offset Layers, Set Anchor
   js/ui.js             menu, dialog, toast
-  js/app.js            main panel, sheet nhóm, dock, panel phụ, add item, settings
+  js/app.js            main panel, category sheets, docking, sub panels, add item, settings
 host/                  ExtendScript (ES3)
-  main.jsx             MMW.load() nạp các module
-  lib/core.jsx         MMW.run (undo group + "OK|"/"ERR|"), helper keyframe/expression
-  lib/*.jsx            tool theo nhóm
-scripts/               cài đặt dev
+  main.jsx             MMW.load() loads the modules
+  lib/core.jsx         MMW.run (undo group + "OK|"/"ERR|"), keyframe/expression helpers
+  lib/*.jsx            tools by category
+scripts/               dev install scripts
 ```
 
-## Thêm một tool mới
+## Adding a tool
 
-1. Viết hàm trong `host/lib/<nhóm>.jsx`:
+1. Write a function in `host/lib/<category>.jsx`:
    ```js
-   T.myTool = function (o) {          // o = { alt, shift, ctrl, ...tham số widget }
+   T.myTool = function (o) {          // o = { alt, shift, ctrl, ...params }
        var c = MMW.comp(), layers = MMW.selLayers(c);
        // ...
-       return "Thông báo hiển thị trên toast";   // lỗi: MMW.fail("…")
+       return "Message shown in the toast";   // errors: MMW.fail("…")
    };
    ```
-2. Khai báo trong `client/js/tools.js` (`cat` là một trong 12 nhóm; `params` tùy chọn sẽ tạo form):
+2. Register it in `client/js/tools.js` (`cat` is one of the 12 categories; optional `params` create a form):
    ```js
    { id: 'myTool', name: 'My Tool', cat: 'layers', desc: '…', mods: { alt: '…' },
-     params: [P.num('count', 'Số lượng', 3)] }
+     params: [P.num('count', 'Count', 3)] }
    ```
-3. Thêm icon (SVG 24×24) vào object `I` trong `tools.js` (tùy chọn).
+3. Optionally add a 24×24 SVG icon to the `I` object in `tools.js`.
 
-## Đóng gói ZXP
+## Packaging a ZXP
 
-Dùng [ZXPSignCmd](https://github.com/Adobe-CEP/CEP-Resources/tree/master/ZXPSignCMD):
+Use [ZXPSignCmd](https://github.com/Adobe-CEP/CEP-Resources/tree/master/ZXPSignCMD):
 
 ```bash
 ZXPSignCmd -selfSignedCert VN HN MenMen "MenMen Workflow" <password> cert.p12
@@ -109,24 +109,23 @@ ZXPSignCmd -selfSignedCert VN HN MenMen "MenMen Workflow" <password> cert.p12
 ZXPSignCmd -sign menmen-workflow dist/MenMenWorkflow.zxp cert.p12 <password> -tsa http://timestamp.digicert.com
 ```
 
-(Chạy từ thư mục cha của project. Không commit file `.p12`.)
+(Run from the project's parent folder. Never commit the `.p12` file.)
 
-## Giới hạn đã biết
+## Known limitations
 
-- Merge Shapes / Nulls To Point quy đổi transform của group ở dạng tĩnh (2D). Path nằm trong group có transform khác mặc định có thể bị lệch.
-- UnPreComp bỏ qua Time Remap, effect và opacity của layer precomp.
-- Remove Artboards nhận diện artboard theo tên group có chứa "Artboard".
-- Simple Proxy dùng template "High Quality with Alpha"/"Lossless with Alpha" (theo tên tiếng Anh); AE ngôn ngữ khác sẽ dùng template mặc định.
+- Merge Shapes / Null Controllers for Points convert group transforms statically (2D). Paths inside groups with non-default transforms may be offset.
+- Decompose ignores the precomp layer's Time Remap, effects and opacity.
+- Remove Artboards detects artboards by group names containing "Artboard".
+- Proxy Manager uses the "High Quality with Alpha"/"Lossless with Alpha" templates (English names); other AE languages fall back to the default template.
+- Viewer zoom and Show/Hide Guides/Rulers/Grid use English menu command names; non-English AE may report the command as not found.
+- There are only 4 sub panel slots (CEP needs the panel count declared in the manifest).
 
-- Zoom viewer, Show/Hide Guides/Rulers/Grid dùng tên lệnh menu tiếng Anh; AE ngôn ngữ khác có thể báo không tìm thấy lệnh.
-- Panel phụ chỉ có 4 slot (CEP cần khai báo trước số panel trong manifest).
+## Roadmap
 
-## Roadmap gợi ý
-
-- Phím tắt cho tool (qua thư mục Scripts của AE), tìm cả effect và script trong thư mục người dùng.
-- Icon tùy chỉnh (SVG) cho item của user panel.
-- Code editor (Monaco) + thư viện expression, đồng bộ với editor ngoài.
-- Thư viện theme, icon vector, Rive animation cho ô.
-- Widget: bảng màu (Collect Palette), easing presets có Speed Graph, Visualize Easings.
-- Xuất GIF (ffmpeg), quản lý format mạng xã hội (tạo comp + safe zone).
-- Share Center: export/import chọn lọc layout, script, expression.
+- Keyboard shortcuts for tools (via the AE Scripts folder); search effects and scripts in user folders.
+- Custom SVG icons for user panel items.
+- Code editor (Monaco) + expression library, synced with external editors.
+- Theme library, vector icons, Rive animations for cells.
+- Widgets: Collect Palette, easing presets with a Speed Graph, Visualize Easings.
+- GIF export (ffmpeg), social media format manager (comps + safe zones).
+- Share Center: selective export/import of layouts, scripts, expressions.
