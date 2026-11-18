@@ -46,7 +46,7 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 
 ### Rigs
 - **Area Effector** (Area Opacity / Scale / Position / Rotation / Color): an `Area Effector` null with Radius, Falloff, Invert Field and Show Field controls plus a dashed guide; layers react to their distance from it. Alt = new controller, Shift = remove the effect.
-- **Spot Blur**: draggable focus nulls; everything outside them is blurred by Compound Blur driven by an auto-built map comp (Max Blur, Spot Size, Feather, Blur Inside Spots on the controller).
+- **Spot Blur** (spot.Blur setup): `spot.Blur` adjustment layer with **Compound Blur** reading `blur.Map` (white feathered circles = sharp). Drag the `spot.Blur_01…` guide circles; `spot.Blur_Controller` holds Blur Amount, Spot Size, Feather, Invert and Show Spot Guides. Helper layers are shy and the comp hides shy layers.
 - **Audio to Precomps**: copies the selected audio layers into every nested precomp (time-offset, locked, named `♪ …`); precomps with time remapping/stretch or used more than once are skipped. Shift = remove all synced audio.
 
 ### MenMen Tools (Panel 1)
@@ -55,6 +55,7 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 - **Graph Editor** (full), **Quick Access** (10 most used tools).
 - **Add** row: Solid (Alt: pick color), Adjustment, Null, Camera (Alt: with a 3D control null), Light, Text, Shape (Alt: empty) - added above the selected layer.
 - **Align** row: **To: Comp / To: Sel** switch + align left / center / right / top / middle / bottom.
+- **Split** row: the first box shows **By: Line / Word / Char** (pick with the three buttons); select a point text layer and click **Split** to get one layer per line / word / character, each exactly where it was (anchor centered; Alt = anchor on the baseline). The original is hidden. Paragraph (box) text must be converted to point text first.
 - Easings copy/paste, Offset Layers, anchor grid and one-click tools.
 
 ### Quick Access

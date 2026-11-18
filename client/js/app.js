@@ -771,9 +771,9 @@
     setTip();
   }
   // ============ LAYOUT VIEW (compact grid, inline widgets) ============
-  var INLINE = { diskCache: 'diskCache', addRow: 'addRow', alignRow: 'alignRow', easyKeyframes: 'easyKeyframes', easings: 'easings', moveAnchor: 'moveAnchor', sequencer: 'sequencerCompact', align: 'align' };
+  var INLINE = { splitRow: 'splitRow', diskCache: 'diskCache', addRow: 'addRow', alignRow: 'alignRow', easyKeyframes: 'easyKeyframes', easings: 'easings', moveAnchor: 'moveAnchor', sequencer: 'sequencerCompact', align: 'align' };
   var FULL_WIDTH = { easyKeyframes: true };
-  var SLIM = { diskCache: true, addRow: true, alignRow: true };  // one full-width line  // full editor: spans the whole row, height fits its content
+  var SLIM = { diskCache: true, addRow: true, alignRow: true, splitRow: true };  // one full-width line  // full editor: spans the whole row, height fits its content
   var DEFAULT_SIZE = { easyKeyframes: [2, 2], easings: [2, 1], moveAnchor: [2, 2], sequencer: [2, 1], align: [2, 2] };
   function cellSize(it) {
     var t = it.type === 'tool' ? T.get(it.tool) : null, d = (t && t.widget && DEFAULT_SIZE[t.widget]) || [1, 1];

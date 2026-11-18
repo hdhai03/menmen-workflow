@@ -169,83 +169,116 @@
     };
 
     // ===================== Spot Blur =====================
-    // Draggable focus spots: everything outside the spots is blurred (Compound Blur driven by a map comp).
+    // Same setup as spot.Blur: an adjustment layer "spot.Blur" with Compound Blur, driven by a
+    // black & white "blur.Map" (white = sharp spots), "spot.Blur_01.." guide shapes you drag around,
+    // and "spot.Blur_Controller" with the settings. Helper layers are shy (comp hides shy layers).
+    // The map is a precomp so Compound Blur reads its shapes + feather (a layer param ignores effects).
     // o.spots, o.maxBlur, o.size, o.feather
     T.spotBlur = function (o) {
-        var c = MMW.comp(), W = c.width, H = c.height;
+        var c = MMW.comp(), W = c.width, H = c.height, i;
         var nSpots = Math.max(1, Math.min(12, parseInt(o.spots, 10) || 4));
-        var base = MMW.uniqueLayerName(c, "Spot Blur");
+        var R = "ADBE Root Vectors Group", V = "ADBE Vectors Group";
+        var nm = function (b) { return MMW.uniqueLayerName(c, b); };
 
-        var ctrl = MMW.newNull(c, base + " Controller");
+        // controller: guide shape (white square outline) + settings
+        var ctrl = c.layers.addShape();
+        ctrl.name = nm("spot.Blur_Controller");
+        var cg = ctrl.property(R).addProperty("ADBE Vector Group");
+        cg.property(V).addProperty("ADBE Vector Shape - Rect").property("ADBE Vector Rect Size").setValue([50, 50]);
+        var cs = ctrl.property(R).property(1).property(V).addProperty("ADBE Vector Graphic - Stroke");
+        cs.property("ADBE Vector Stroke Color").setValue([1, 1, 1]);
+        ctrl.property(R).property(1).property(V).property("ADBE Vector Graphic - Stroke").property("ADBE Vector Stroke Width").setValue(2);
+        ctrl.transform.position.setValue([35, H - 35]);
         ctrl.label = 11;
-        ctrl.transform.position.setValue([60, H - 60]);
-        ensureFx(ctrl, "ADBE Slider Control", "Max Blur", Number(o.maxBlur) || 40);
+        ctrl.guideLayer = true;
+        ensureFx(ctrl, "ADBE Slider Control", "Blur Amount", Number(o.maxBlur) || 40);
         ensureFx(ctrl, "ADBE Slider Control", "Spot Size", Number(o.size) || 240);
         ensureFx(ctrl, "ADBE Slider Control", "Feather", Number(o.feather) || 120);
-        ensureFx(ctrl, "ADBE Checkbox Control", "Blur Inside Spots", 0);
+        ensureFx(ctrl, "ADBE Checkbox Control", "Invert (blur inside spots)", 0);
+        ensureFx(ctrl, "ADBE Checkbox Control", "Show Spot Guides", 1);
+        var CT = "thisComp.layer(" + q(ctrl.name) + ")";
 
-        var spots = [], i;
+        // spot points: guide shape layers with a circle showing the spot size
+        var spots = [];
         for (i = 0; i < nSpots; i++) {
-            var a = (i / nSpots) * Math.PI * 2 - Math.PI / 2, rad = nSpots === 1 ? 0 : Math.min(W, H) * 0.18;
-            var s = MMW.newNull(c, base + " " + (i < 9 ? "0" : "") + (i + 1));
-            s.label = 11;
+            var a = (i / nSpots) * Math.PI * 2 - Math.PI * 3 / 4, rad = nSpots === 1 ? 0 : Math.min(W, H) * 0.12;
+            var s = c.layers.addShape();
+            s.name = nm("spot.Blur_" + (i < 9 ? "0" : "") + (i + 1));
+            var g = s.property(R).addProperty("ADBE Vector Group");
+            s.property(R).property(1).property(V).addProperty("ADBE Vector Shape - Ellipse");
+            s.property(R).property(1).property(V).addProperty("ADBE Vector Graphic - Stroke");
+            var gv = s.property(R).property(1).property(V);
+            gv.property("ADBE Vector Shape - Ellipse").property("ADBE Vector Ellipse Size").expression = "var z=" + CT + ".effect(\"Spot Size\")(1);[z,z];";
+            gv.property("ADBE Vector Graphic - Stroke").property("ADBE Vector Stroke Color").setValue([1, 0.8, 0.2]);
+            gv.property("ADBE Vector Graphic - Stroke").property("ADBE Vector Stroke Width").setValue(1.5);
+            s.transform.opacity.expression = CT + ".effect(\"Show Spot Guides\")(1)*100;";
+            s.transform.anchorPoint.setValue([0, 0]);
             s.transform.position.setValue([W / 2 + Math.cos(a) * rad, H / 2 + Math.sin(a) * rad]);
+            s.label = 8;
+            s.guideLayer = true;
+            s.shy = true;
             spots.push(s);
         }
 
-        // Map comp: black background, white feathered ellipses following the spot nulls.
-        var mapComp = app.project.items.addComp(c.name + " - " + base + " Map", W, H, c.pixelAspect, c.duration, c.frameRate);
+        // blur.Map precomp: black background, white feathered circles following the spots
+        var mapComp = app.project.items.addComp(c.name + " blur.Map", W, H, c.pixelAspect, c.duration, c.frameRate);
         mapComp.parentFolder = c.parentFolder;
+        mapComp.bgColor = [0, 0, 0];
+        var main = "comp(" + q(c.name) + ")", ctl = main + ".layer(" + q(ctrl.name) + ")";
         var sh = mapComp.layers.addShape();
         sh.name = "Spots";
         sh.transform.anchorPoint.setValue([0, 0]);
         sh.transform.position.setValue([0, 0]);
-        var R = "ADBE Root Vectors Group", main = "comp(" + q(c.name) + ")", ctl = main + ".layer(" + q(ctrl.name) + ")";
+        sh.property(R).addProperty("ADBE Vector Group");
+        var bgv = sh.property(R).property(1).property(V);
+        sh.property(R).property(1).name = "Background";
+        bgv.addProperty("ADBE Vector Shape - Rect");
+        bgv.addProperty("ADBE Vector Graphic - Fill");
+        bgv = sh.property(R).property(1).property(V);
+        bgv.property("ADBE Vector Shape - Rect").property("ADBE Vector Rect Size").setValue([W * 3, H * 3]);
+        bgv.property("ADBE Vector Shape - Rect").property("ADBE Vector Rect Position").setValue([W / 2, H / 2]);
+        bgv.property("ADBE Vector Graphic - Fill").property("ADBE Vector Fill Color").setValue([0, 0, 0]);
         for (i = 0; i < nSpots; i++) {
             sh.property(R).addProperty("ADBE Vector Group");
             var gi = sh.property(R).numProperties;
             sh.property(R).property(gi).name = spots[i].name;
-            sh.property(R).property(gi).property("ADBE Vectors Group").addProperty("ADBE Vector Shape - Ellipse");
-            sh.property(R).property(gi).property("ADBE Vectors Group").addProperty("ADBE Vector Graphic - Fill");
-            var v = sh.property(R).property(gi).property("ADBE Vectors Group");
+            sh.property(R).property(gi).property(V).addProperty("ADBE Vector Shape - Ellipse");
+            sh.property(R).property(gi).property(V).addProperty("ADBE Vector Graphic - Fill");
+            var v = sh.property(R).property(gi).property(V);
             v.property("ADBE Vector Graphic - Fill").property("ADBE Vector Fill Color").setValue([1, 1, 1]);
             var el = v.property("ADBE Vector Shape - Ellipse");
-            el.property("ADBE Vector Ellipse Size").expression = "var s=" + ctl + ".effect(\"Spot Size\")(1);[s,s];";
-            el.property("ADBE Vector Ellipse Position").expression =
-                "var L=" + main + ".layer(" + q(spots[i].name) + ");L.toComp(L.anchorPoint);";
+            el.property("ADBE Vector Ellipse Size").expression = "var z=" + ctl + ".effect(\"Spot Size\")(1);[z,z];";
+            el.property("ADBE Vector Ellipse Position").expression = "var L=" + main + ".layer(" + q(spots[i].name) + ");L.toComp(L.anchorPoint);";
         }
-        sh.property(R).addProperty("ADBE Vector Group");
-        var bg = sh.property(R).numProperties;
-        sh.property(R).property(bg).name = "Background";
-        sh.property(R).property(bg).property("ADBE Vectors Group").addProperty("ADBE Vector Shape - Rect");
-        sh.property(R).property(bg).property("ADBE Vectors Group").addProperty("ADBE Vector Graphic - Fill");
-        var bv = sh.property(R).property(bg).property("ADBE Vectors Group");
-        bv.property("ADBE Vector Shape - Rect").property("ADBE Vector Rect Size").setValue([W * 3, H * 3]);
-        bv.property("ADBE Vector Shape - Rect").property("ADBE Vector Rect Position").setValue([W / 2, H / 2]);
-        bv.property("ADBE Vector Graphic - Fill").property("ADBE Vector Fill Color").setValue([0, 0, 0]);
         var gb = MMW.addEffect(sh, "ADBE Gaussian Blur 2", "Feather");
         gb.property(1).expression = ctl + ".effect(\"Feather\")(1);";
         try { sh.property("ADBE Effect Parade").property("Feather").property(3).setValue(1); } catch (e0) {} // repeat edge pixels
 
-        var mapLayer = c.layers.add(mapComp);
-        mapLayer.name = base + " Map";
-        mapLayer.enabled = false;
-        mapLayer.shy = true;
+        var map = c.layers.add(mapComp);
+        map.name = nm("blur.Map");
+        map.enabled = false;
 
-        var adj = c.layers.addSolid([0, 0, 0], base, W, H, c.pixelAspect, c.duration);
+        // spot.Blur: adjustment layer with Compound Blur reading blur.Map
+        var adj = c.layers.addSolid([0, 0, 0], nm("spot.Blur"), W, H, c.pixelAspect, c.duration);
         adj.adjustmentLayer = true;
-        adj.label = 11;
-        var cb = MMW.addEffect(adj, "ADBE Compound Blur", "Spot Blur");
-        cb.property(1).setValue(mapLayer.index);
-        cb = adj.property("ADBE Effect Parade").property("Spot Blur");
-        cb.property(2).expression = "thisComp.layer(" + q(ctrl.name) + ").effect(\"Max Blur\")(1);";
-        cb.property(4).expression = "thisComp.layer(" + q(ctrl.name) + ").effect(\"Blur Inside Spots\")(1)==1?0:1;";
+        adj.label = 8;
+        var fx = adj.property("ADBE Effect Parade").addProperty("ADBE Compound Blur");
+        fx = adj.property("ADBE Effect Parade").property(fx.propertyIndex);
+        fx.property(1).setValue(map.index);                                                    // Blur Layer
+        fx.property(2).expression = CT + ".effect(\"Blur Amount\")(1);";                        // Maximum Blur
+        fx.property(4).expression = CT + ".effect(\"Invert (blur inside spots)\")(1)==1?0:1;";  // Invert Blur: white = sharp
 
+        // order (top -> bottom): controller, spots, spot.Blur, ... footage ..., blur.Map
         adj.moveToBeginning();
         for (i = spots.length - 1; i >= 0; i--) spots[i].moveToBeginning();
         ctrl.moveToBeginning();
-        mapLayer.moveToEnd();
-        return "Spot Blur ready: move the \"" + base + " 01...\" nulls; settings on \"" + ctrl.name + "\".";
+        map.moveToEnd();
+        // Compound Blur keeps its layer link through re-ordering; set it again by name to be safe
+        try { fx.property(1).setValue(c.layer(map.name).index); } catch (e1) {}
+        map.locked = true; map.shy = true;
+        adj.locked = true; adj.shy = true;
+        c.hideShyLayers = true;
+        return "spot.Blur ready: drag the spot.Blur_0x guides; settings on " + ctrl.name;
     };
 
     // ===================== Audio to Precomps =====================

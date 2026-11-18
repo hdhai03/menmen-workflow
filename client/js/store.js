@@ -15,7 +15,7 @@
   function quickItems() {
     var it = function (tool, w, h) { var o = { id: uid(), type: 'tool', tool: tool }; if (w) { o.w = w; o.h = h; } return o; };
     return [
-      it('diskCache'), it('easyKeyframes', 2, 2), { id: uid(), type: 'quickAccess' }, it('addRow'), it('alignRow'),
+      it('diskCache'), it('easyKeyframes', 2, 2), { id: uid(), type: 'quickAccess' }, it('addRow'), it('alignRow'), it('splitRow'),
       it('easings', 2, 1), it('sequencer', 2, 1), it('moveAnchor', 2, 2), it('addNull'), it('clone'), it('cloneMirror'), it('loop'),
       it('elastic'), it('bounce'), it('fixKeysTime'), it('easingPresets'),
       it('extractShapes'), it('mergeShapes'), it('nullsToPoint'), it('selectPaths'),
@@ -48,6 +48,7 @@
       usage: {},         // { toolId: { n: run count, t: last run } } - feeds Quick Access
       qaAdded: true,
       rowsAdded: true,
+      splitAdded: true,
       main: { collapsedFav: false, iconsOnly: false, together: true }
     };
   }
@@ -78,11 +79,21 @@
       var add = [];
       if (!has('addRow')) add.push({ id: uid(), type: 'tool', tool: 'addRow' });
       if (!has('alignRow')) add.push({ id: uid(), type: 'tool', tool: 'alignRow' });
+      if (!has('splitRow')) add.push({ id: uid(), type: 'tool', tool: 'splitRow' });
       tp.items.splice.apply(tp.items, [after, 0].concat(add));
       if (!has('diskCache')) tp.items.unshift({ id: uid(), type: 'tool', tool: 'diskCache' });
       if (!s.slots[TOOLS_SLOT]) s.slots[TOOLS_SLOT] = { kind: 'user', id: 'quick', view: 'layout' };
     }
     s.rowsAdded = true;
+    if (!s.splitAdded) {  // the Split Text row came later: add it under the Align row once
+      var hasSplit = tp.items.some(function (x) { return x.tool === 'splitRow'; });
+      if (!hasSplit) {
+        var at = tp.items.length;
+        tp.items.forEach(function (x, i) { if (x.tool === 'alignRow') at = i + 1; });
+        tp.items.splice(at, 0, { id: uid(), type: 'tool', tool: 'splitRow' });
+      }
+    }
+    s.splitAdded = true;
     if (!s.qaAdded && s.userPanels.quick) {  // older settings: add Quick Access under the Graph Editor once
       var qi = s.userPanels.quick.items, at = 0;
       for (var i = 0; i < qi.length; i++) if (qi[i].type === 'tool' && qi[i].tool === 'easyKeyframes') { at = i + 1; break; }

@@ -540,3 +540,12 @@ body.icons-only .m-row { justify-content: center; padding: 0; }
 .w-add.mid .wr-lbl, .w-add.mid .wr-btn:not(.wr-main) > span { display: none; }
 .w-add.mid .wr-btn:not(.wr-main) { flex: 0 0 26px; padding: 0; }
 .w-add.mid .wr-btn.wr-main { flex: 1 1 auto; }
+/* split text row */
+.wr-by { flex: 0 0 auto; display: flex; align-items: center; padding: 0 8px; min-width: 70px; background: var(--surface); border: 1px solid var(--line); color: var(--accent); font-weight: 600; font-size: calc(var(--fs) - 1px); white-space: nowrap; }
+.wr-seg { flex: 1; display: flex; gap: 2px; min-width: 0; }
+.wr-opt { flex: 1 1 0; }
+.wr-opt.on { background: rgba(var(--accent-rgb), .18); border-color: rgba(var(--accent-rgb), .6); color: var(--accent); }
+.wr-go { flex: none; padding: 0 9px; }
+.w-split.narrow .wr-by { min-width: 0; padding: 0 5px; }
+.w-split.narrow .wr-by .wr-to-k, .w-split.narrow .wr-go > span { display: none; }
+.wr-by .wr-to-k { color: var(--muted); margin-right: 4px; font-weight: 400; }

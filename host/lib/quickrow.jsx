@@ -169,4 +169,89 @@
         place(c, L);
         return L.name;
     };
+
+    // ---------- split text ----------
+    // Splits the selected (point) text layers into one layer per line / word / character.
+    // Each piece is a duplicate of the original holding only its text (left-justified); it is put
+    // in place by shifting its anchor point, so scale / rotation / parenting / 3D all stay exact.
+    // The anchor is then centered on the piece (Alt: keep it on the text baseline). The original is hidden.
+    function pieces(text, by) {
+        var lines = String(text).split(/\r\n|\r|\n|\u0003/), out = [];
+        for (var li = 0; li < lines.length; li++) {
+            var line = lines[li];
+            if (by === "line") { if (/\S/.test(line)) out.push({ line: li, start: line.search(/\S/), text: line.replace(/^\s+|\s+$/g, "") }); continue; }
+            var re = by === "word" ? /\S+/g : /\S/g, m;
+            while ((m = re.exec(line)) !== null) out.push({ line: li, start: m.index, text: m[0] });
+        }
+        return { lines: lines, list: out };
+    }
+    function textDoc(L) { return L.property("ADBE Text Properties").property("ADBE Text Document"); }
+    function setText(L, s, just) {
+        var p = textDoc(L);
+        while (p.numKeys) p.removeKey(1);
+        if (p.expression) p.expression = "";
+        var td = p.value;
+        td.text = s;
+        if (just) td.justification = just;
+        p.setValue(td);
+    }
+    T.splitText = function (o) {
+        var c = MMW.comp(), sel = c.selectedLayers, texts = [], made = [], by = o.by || "word";
+        for (var i = 0; i < sel.length; i++) if (sel[i] instanceof TextLayer) texts.push(sel[i]);
+        if (!texts.length) MMW.fail("Select a text layer");
+        for (var t = 0; t < texts.length; t++) {
+            var src = texts[t], td = textDoc(src).valueAtTime(c.time, false);
+            if (td.boxText) MMW.fail(src.name + ": paragraph (box) text - right-click > Convert to Point Text first");
+            var P = pieces(td.text, by);
+            if (P.list.length < 2 && by !== "line") MMW.fail(src.name + ": nothing to split");
+            if (!P.list.length) MMW.fail(src.name + ": the layer is empty");
+            var lk = src.locked; src.locked = false;
+
+            // line starts (left edge of each baseline, layer space): baselineLocs when available, else leading
+            var fs = td.fontSize, lead = fs * 1.2;
+            try { if (!td.autoLeading && td.leading) lead = td.leading; } catch (e0) { /* old AE */ }
+            var locs = null;
+            try { locs = td.baselineLocs; } catch (e1) { locs = null; }
+            // advance (width incl. spaces) of a string, measured on a left-justified temp copy
+            var tmp = src.duplicate(), cache = {};
+            tmp.enabled = false;
+            var adv = function (s) {
+                if (cache[s] !== undefined) return cache[s];
+                setText(tmp, s + "|", ParagraphJustification.LEFT_JUSTIFY);
+                var r1 = tmp.sourceRectAtTime(c.time, false);
+                setText(tmp, "|", ParagraphJustification.LEFT_JUSTIFY);
+                var r0 = tmp.sourceRectAtTime(c.time, false);
+                return (cache[s] = (r1.left + r1.width) - (r0.left + r0.width));
+            };
+            var lineStart = function (li) {
+                if (locs && locs.length >= (li + 1) * 4) return [locs[li * 4], locs[li * 4 + 1]];
+                var w = adv(P.lines[li]), j = td.justification, x = 0;
+                if (j === ParagraphJustification.CENTER_JUSTIFY) x = -w / 2;
+                else if (j === ParagraphJustification.RIGHT_JUSTIFY) x = -w;
+                return [x, li * lead];
+            };
+            // baselineLocs counts only non-empty lines in some versions: fall back when the count is off
+            if (locs && locs.length / 4 !== P.lines.length) locs = null;
+
+            var above = src;
+            for (var k = 0; k < P.list.length; k++) {
+                var pc = P.list[k], ls = lineStart(pc.line);
+                var ox = ls[0] + (pc.start ? adv(P.lines[pc.line].substring(0, pc.start)) : 0), oy = ls[1];
+                var L = src.duplicate();
+                setText(L, pc.text, ParagraphJustification.LEFT_JUSTIFY);
+                L.name = MMW.uniqueLayerName(c, pc.text.length > 24 ? pc.text.substring(0, 24) : pc.text);
+                L.enabled = true;
+                L.moveBefore(above);
+                MMW.offsetProp(L.transform.anchorPoint, [-ox, -oy, 0]);
+                made.push(L);
+            }
+            tmp.remove();
+            src.enabled = false;  // hide the original
+            src.locked = lk;
+        }
+        for (var s = 1; s <= c.numLayers; s++) c.layer(s).selected = false;
+        for (var m = 0; m < made.length; m++) made[m].selected = true;
+        if (!o.alt) { try { T.moveAnchor({ x: 0.5, y: 0.5 }); } catch (e2) { /* keep baseline anchors */ } }
+        return made.length + " layer(s) by " + by;
+    };
 })();

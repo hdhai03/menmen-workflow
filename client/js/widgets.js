@@ -603,6 +603,34 @@
     return root;
   };
 
+  // Split text row: "By: …" readout, Line / Word / Char choice, Split button
+  W.splitRow = function (d, ctx) {
+    if (!d.by) d.by = 'word';
+    var NAMES = { line: 'Line', word: 'Word', char: 'Char' };
+    var root = el('div', 'w w-row w-split');
+    var by = el('div', 'wr-by');
+    var opts = el('div', 'wr-seg');
+    var paint = function () {
+      by.innerHTML = '<span class="wr-to-k">By:</span> ' + NAMES[d.by];
+      opts.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.by === d.by); });
+    };
+    [['line', 'Line', 'One layer per line'], ['word', 'Word', 'One layer per word'], ['char', 'Char', 'One layer per character']].forEach(function (o) {
+      var b = el('button', 'w-btn wr-opt', '<span>' + o[1] + '</span>');
+      b.dataset.by = o[0]; b.title = o[2];
+      b.addEventListener('click', function (e) { stop(e); d.by = o[0]; paint(); ctx.save(); });
+      opts.appendChild(b);
+    });
+    var go = el('button', 'w-btn w-primary wr-go', '<svg viewBox="0 0 16 16"><path d="M5 3v10M11 3v10M2 8h3M11 8h3"/></svg><span>Split</span>');
+    go.title = 'Split the selected text layer(s) into separate layers; the original is hidden. Alt: keep anchors on the baseline';
+    go.addEventListener('click', function (e) { stop(e); ctx.run('splitText', { by: d.by }, e); });
+    root.append(by, opts, go);
+    paint();
+    var fit = function () { var w = root.clientWidth; if (w) root.classList.toggle('narrow', w < 230); };
+    requestAnimationFrame(fit);
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(root);
+    return root;
+  };
+
   // Align row: To: Comp / To: Sel switch + 6 align buttons
   W.alignRow = function (d, ctx) {
     if (!d.to) d.to = 'comp';
