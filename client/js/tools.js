@@ -154,7 +154,7 @@
     { id: 'selectStrokes', name: 'Select All Strokes', cat: 'selection', host: 'selector', opts: { shift: true }, icon: 'selector', desc: 'Selects all Strokes in the selected shape layers.' },
 
     // ---------------- Layers ----------------
-    { id: 'addNull', name: 'Parent to Null', cat: 'layers', desc: 'Adds a parent null centered on the selected layers.', mods: { alt: 'Default null', shift: 'One null per layer' } },
+    { id: 'addNull', name: 'Parent to Null', cat: 'layers', desc: 'Click - Add one Null in the middle of all selected layers (no layer selected: in the middle of the comp).', mods: { alt: 'Create a classic Null without an offset center.', shift: 'Add Null to each selected layer.' } },
     { id: 'parentToFirst', name: 'Parent to First Selected', cat: 'layers', icon: 'parent', desc: 'Parents the other layers to the first selected layer.' },
     { id: 'parentToAbove', name: 'Parent to Above Layer', cat: 'layers', icon: 'parent', desc: 'Parents each layer to the layer directly above it.' },
     { id: 'parentChain', name: 'Parent in Selection Order', cat: 'layers', icon: 'parent', desc: 'Creates a parent chain in selection order.' },

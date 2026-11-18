@@ -5,8 +5,18 @@
     // ---------------- Add Null To Layers ----------------
     // Click: one null centered on the selected layers. Alt: AE default null (not centered).
     // Shift: one null per layer.
+    // Click: one null in the middle of the selected layers (they are parented to it);
+    //        nothing selected: one null in the middle of the comp.
+    // Alt:   a classic null (AE default, no centering).  Shift: one null per selected layer.
     T.addNull = function (o) {
-        var c = MMW.comp(), layers = MMW.sortByIndex(MMW.selLayers(c)), i;
+        var c = MMW.comp(), i;
+        if (!c.selectedLayers.length) {
+            var solo = o.alt ? c.layers.addNull() : MMW.newNull(c, "");
+            solo.name = MMW.uniqueLayerName(c, "Null Control");
+            if (!o.alt) solo.transform.position.setValue([c.width / 2, c.height / 2]);
+            return o.alt ? "Added classic null \"" + solo.name + "\"." : "Added null \"" + solo.name + "\" in the middle of the comp.";
+        }
+        var layers = MMW.sortByIndex(MMW.selLayers(c));
         var any3D = false;
         for (i = 0; i < layers.length; i++) if (layers[i].threeDLayer) any3D = true;
 
