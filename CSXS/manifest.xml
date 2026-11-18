@@ -7,6 +7,7 @@
     <Extension Id="com.menmen.workflow.panel2" Version="0.3.0" />
     <Extension Id="com.menmen.workflow.panel3" Version="0.3.0" />
     <Extension Id="com.menmen.workflow.panel4" Version="0.3.0" />
+    <Extension Id="com.menmen.workflow.timer" Version="0.3.0" />
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>
@@ -102,6 +103,22 @@
           <Geometry>
             <Size><Height>360</Height><Width>300</Width></Size>
             <MinSize><Height>80</Height><Width>80</Width></MinSize>
+          </Geometry>
+        </UI>
+      </DispatchInfo>
+    </Extension>
+    <Extension Id="com.menmen.workflow.timer">
+      <DispatchInfo>
+        <Resources>
+          <MainPath>./client/timer.html</MainPath>
+        </Resources>
+        <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle>
+        <UI>
+          <Type>Panel</Type>
+          <Menu>MenMen Timer</Menu>
+          <Geometry>
+            <Size><Height>340</Height><Width>260</Width></Size>
+            <MinSize><Height>90</Height><Width>140</Width></MinSize>
           </Geometry>
         </UI>
       </DispatchInfo>

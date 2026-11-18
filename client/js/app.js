@@ -539,6 +539,7 @@
       { label: 'New user panel…', onClick: newUserPanel },
       { label: 'New quick panel (layout)…', onClick: newQuickPanel },
       { label: 'Add New Item…', onClick: function () { addItemDialog(null); } },
+      { label: 'Open Timer (Pomodoro / Countdown)', onClick: function () { if (!B.openPanel('com.menmen.workflow.timer')) U.toast('(preview) open client/timer.html', true); } },
       { label: 'Open Scripts folder', onClick: function (e) { exec('openScriptsFolder', { root: B.extPath }, e, 'Scripts'); } },
       { label: 'Refresh Scripts', onClick: function () { loadLibrary(true); } },
       '-',

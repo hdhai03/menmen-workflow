@@ -58,6 +58,13 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 - **Split** row: the first box shows **By: Line / Word / Char** (pick with the three buttons); select a point text layer and click **Split** to get one layer per line / word / character, each exactly where it was (anchor centered; Alt = anchor on the baseline). The original is hidden. Paragraph (box) text must be converted to point text first.
 - Easings copy/paste, Offset Layers, anchor grid and one-click tools.
 
+### MenMen Timer (separate panel)
+`Window ▸ Extensions ▸ MenMen Timer` (or ☰ ▸ Open Timer) is its own panel with:
+- **Pomodoro**: Pomodoro / Short Break / Long Break phases, Start / Pause / Resume, Reset, Skip, a progress bar and the pomodoro count. After a pomodoro comes a short break, and every *Long Break interval* pomodoros a long break.
+- **Countdown**: type minutes : seconds (or pick 1 / 5 / 10 / 15 / 30 / 60 min), Start / Pause, Reset.
+- **Setting** (gear): Time (minutes) for Pomodoro / Short Break / Long Break, **Auto Start Breaks**, **Auto Start Pomodoros**, **Long Break interval**.
+- A short chime and a flashing clock when time is up. The timer runs on real time, so it stays right if the panel is closed and reopened (a phase that ended meanwhile is completed). Space = start / pause. Follows the AE panel color and the MenMen accent / AE native look.
+
 ### Export PNG / GIF
 - **Export PNG** (View ▸ Export PNG, also in MenMen Tools): saves the frame shown in the viewer at comp resolution; asks where to save (Alt = reveal the folder).
 - **Export GIF** (View ▸ Export GIF): renders the work area (or whole comp) and encodes it in the panel with an encoder tuned for small files:
@@ -112,7 +119,7 @@ Expression-driven tools add sliders so you can tweak them later (Wiggle Freq/Amp
      powershell -ExecutionPolicy Bypass -File scripts\install-dev-win.ps1
      ```
    The script enables `PlayerDebugMode` (allows unsigned extensions) and links the project folder into `CEP/extensions`.
-3. Restart After Effects → `Window ▸ Extensions ▸ MenMen Workflow` (main panel). `MenMen Tools` opens with it; extra sub panels are under `MenMen Panel 2–4`.
+3. Restart After Effects → `Window ▸ Extensions ▸ MenMen Workflow` (main panel). `MenMen Tools` opens with it; extra sub panels are under `MenMen Panel 2–4`, and `MenMen Timer` is the Pomodoro / Countdown panel.
 4. Debugging: open Chrome at `http://localhost:8090` (main panel); sub panels 1–4 use ports 8091–8094 (see `.debug`).
 5. After editing files in `host/`: menu ☰ ▸ **Reload host scripts**. After editing `client/`: close and reopen the panel (or press F5 in DevTools).
 
