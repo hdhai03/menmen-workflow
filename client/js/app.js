@@ -521,16 +521,14 @@
   }
   function closeSheet() { st.sheet = null; var s = $app.querySelector('.sheet'); if (s) s.remove(); setTip(); }
 
-  // Icons only: the panel shrinks to the icon column (CEP can only resize floating panels; docked
-  // panels keep the width of their workspace frame - drag the frame edge in that case).
+  // Icons only. The panel's frame belongs to After Effects: an extension cannot resize a docked
+  // panel (resizeContent only resized the page inside the frame, so icons got clipped). The content
+  // always follows the real frame width; drag the frame edge once and AE keeps it in the workspace.
   function toggleIconsOnly() {
-    var m = S.data.main, cep = window.__adobe_cep__;
+    var m = S.data.main;
     m.iconsOnly = !m.iconsOnly;
-    if (m.iconsOnly) m.wideWidth = Math.max(150, window.innerWidth);
     S.save(); sizeClasses(); render();
-    if (cep && cep.resizeContent) {
-      try { cep.resizeContent(m.iconsOnly ? 44 : (m.wideWidth || 190), window.innerHeight); } catch (err) { /* docked */ }
-    }
+    if (m.iconsOnly && window.innerWidth > 80) U.toast('Icons only: drag the panel edge to make it narrow – After Effects remembers the width', true);
   }
   function mainMenu(e) {
     var r = e.currentTarget.getBoundingClientRect();
