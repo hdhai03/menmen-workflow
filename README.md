@@ -70,7 +70,7 @@ Opening either the main panel (**MenMen Workflow**) or **MenMen Tools** opens th
 ### Graph Editor
 Easing ▸ **Graph Editor** edits one curve between two keyframes, inspired by the graph editors of Motion-style toolkits:
 - **Value graph** (default): a cubic-bezier curve with two handles you drag freely; pull a handle outside the box for overshoot. **Speed graph** shows the same curve as AE's speed graph.
-- Dragging works like Motion 4: grab a handle anywhere near it (it keeps its offset, no jump), or click the empty graph to move the nearest handle there. The drag continues outside the graph; past the top/bottom edge the view grows step by step for overshoot. A dashed ghost shows the curve before the drag, and a live readout shows influence and speed.
+- Dragging works like Motion 4: grab a handle anywhere near it (it keeps its offset, no jump), or click the empty graph to move the nearest handle there. The graph only reacts inside its own box: leaving it or releasing the button ends the drag. Hold a handle at the top/bottom edge and the view grows step by step for overshoot. A dashed ghost shows the curve before the drag, and a live readout shows influence and speed.
 - **Shift** = lock to the axis you move along, **Ctrl/Cmd** = fine (1/5 speed), **Alt** or **Link** = mirrored handles, double-click = reset. Handles snap softly to flat ease (0 / 1) and to 1/3, 2/3.
 - Keyboard: click the graph, then arrows nudge the active handle (Shift = ×10), Tab switches handle, Enter applies.
 - **Auto** applies the curve to the selected keys every time you release a handle or pick a preset.

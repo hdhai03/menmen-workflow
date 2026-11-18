@@ -70,7 +70,7 @@
   // Interaction (Motion-style):
   //  - grab a handle (generous hit area) and it keeps its offset to the pointer: no jump on click
   //  - click on empty graph = the nearest handle jumps to the pointer
-  //  - mouse events on the document: the drag keeps going outside the graph / panel
+  //  - the graph only reacts inside its box: leaving it or releasing the button ends the drag
   //  - Shift = lock to the dominant axis, Ctrl/Cmd = fine (1/5 speed), Alt or Link = mirror
   //  - soft snapping to flat ease (0 / 1) and to the key level, view grows while dragging past the edge
   //  - ghost of the previous curve + live readout while dragging, Auto = apply on release
@@ -241,24 +241,23 @@
       draw(); ctx.save();
       if (moved && d.auto) apply('both', e);
     }
-    // Mouse events on the document (not pointer capture): this is what drags reliably inside
-    // After Effects' embedded Chromium (CEP). The drag keeps going outside the graph and the panel.
+    // The graph only reacts inside its own box: leaving the box or releasing the button ends the
+    // drag. (Listening on the whole document kept a drag alive when the button was released outside
+    // the panel - AE never sends that mouseup - and every move anywhere then edited the curve.)
     box.addEventListener('mousedown', function (e) {
-      if (e.button !== 0 || drag) return;
+      if (e.button !== 0) return;
       onDown(e);
-      if (!drag) return;
-      var mv = function (ev) { onMove(ev); };
-      var up = function (ev) {
-        document.removeEventListener('mousemove', mv, true); document.removeEventListener('mouseup', up, true);
-        window.removeEventListener('blur', up);
-        onUp(ev || {});
-      };
-      document.addEventListener('mousemove', mv, true);
-      document.addEventListener('mouseup', up, true);
-      window.addEventListener('blur', up);  // panel lost focus mid-drag: finish cleanly
     });
-    box.addEventListener('mousemove', function (e) { if (!drag) onMove(e); });
-    box.addEventListener('mouseleave', function () { if (!drag && hover != null) { hover = null; draw(); } });
+    box.addEventListener('mousemove', function (e) {
+      if (drag && !(e.buttons & 1)) { onUp(e); return; }  // button already released (missed mouseup)
+      onMove(e);
+    });
+    box.addEventListener('mouseup', function (e) { if (drag) onUp(e); });
+    box.addEventListener('mouseleave', function (e) {
+      if (drag) onUp(e);
+      if (hover != null) { hover = null; draw(); }
+    });
+    window.addEventListener('blur', function () { if (drag) onUp({}); });
     box.addEventListener('dblclick', function () { d.bz = [0.333, 0, 0.667, 1]; draw(); ctx.save(); });
     box.addEventListener('keydown', function (e) {
       var k = e.key;
