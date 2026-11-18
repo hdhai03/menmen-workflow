@@ -194,7 +194,11 @@
         if (n.dist > HIT) { setHandle(n.i, ptr[0], ptr[1], d.link || e.altKey); drag.moved = true; }
       } else {
         var f = infl();
-        drag = { x: e.clientX, y: e.clientY, o: f[0], i: f[1], moved: false, fine: false };
+        // vx / vy = how far the mouse travelled since the (re)base point
+        drag = { x: e.clientX, y: e.clientY, vx: 0, vy: 0, o: f[0], i: f[1], moved: false, fine: false, locked: false };
+        // Pointer lock: unlimited drag - the cursor never leaves the panel and the release always
+        // arrives. Where AE's Chromium refuses it, the drag ends when the pointer leaves the panel.
+        try { if (box.requestPointerLock) box.requestPointerLock(); } catch (x) { /* unsupported */ }
       }
       document.body.classList.add('ge-dragging');
       docMove = function (ev) { onMove(ev); };
@@ -234,19 +238,25 @@
         drag.moved = true;
         return draw();
       }
-      if (fine !== drag.fine) {  // re-base so switching fine mode never jumps
-        var cur = infl(); drag.o = cur[0]; drag.i = cur[1]; drag.x = e.clientX; drag.y = e.clientY; drag.fine = fine;
-      }
+      // incremental: each move adds its own delta to the current curve, so hitting 0 % / 100 % has no
+      // dead zone - reversing the mouse responds at once (locked: movementX/Y, else client deltas)
+      var mx, my;
+      if (drag.locked) { mx = e.movementX || 0; my = e.movementY || 0; }
+      else { mx = e.clientX - drag.x; my = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY; }
+      drag.fine = fine;
       var k = fine ? 0.2 : 1, gw = Math.max(60, W_ - 2 * PX), gh = Math.max(40, H_ - 2 * PY);
+      drag.tx = (drag.tx || 0) + Math.abs(mx); drag.ty = (drag.ty || 0) + Math.abs(my);  // for Shift: dominant axis so far
       // sensitive like Motion: ~60 % of the graph width sweeps the peak end to end, ~80 % of its height the strength
-      var dx = (e.clientX - drag.x) / gw * 1.6 * k, dy = -(e.clientY - drag.y) / gh * 1.25 * k;
-      if (e.shiftKey) { if (Math.abs(dx) * gw >= Math.abs(dy) * gh) dy = 0; else dx = 0; }
+      var dx = mx / gw * 1.6 * k, dy = -my / gh * 1.25 * k;
+      if (e.shiftKey) { if (drag.tx * gh >= drag.ty * gw) dy = 0; else dx = 0; }
       if (e.altKey || d.link) dx = 0;  // symmetric: strength only
-      setInfl(drag.o + dx + dy, drag.i - dx + dy);
+      var cur = infl();
+      setInfl(cur[0] + dx + dy, cur[1] - dx + dy);
       drag.moved = true;
       draw();
     }
     function endDrag() {
+      if (document.pointerLockElement === box) { try { document.exitPointerLock(); } catch (x) { /* ignore */ } }
       if (docMove) { document.removeEventListener('mousemove', docMove, true); document.removeEventListener('mouseup', docUp, true); }
       document.documentElement.removeEventListener('mouseleave', docUp);
       docMove = docUp = null;
@@ -258,6 +268,16 @@
       if (moved && d.auto) autoApply();
     }
     box.addEventListener('mousedown', onDown);
+    // pointer lock granted: the pointer can no longer leave the panel, so leaving is not an end;
+    // lock lost while dragging (Esc, focus change): end the drag
+    document.addEventListener('pointerlockchange', function () {
+      if (!drag || drag.handle) return;
+      if (document.pointerLockElement === box) {
+        drag.locked = true; drag.vx = drag.vy = 0; drag.x = drag.y = 0;
+        var cur = infl(); drag.o = cur[0]; drag.i = cur[1];
+        document.documentElement.removeEventListener('mouseleave', docUp);
+      } else if (drag.locked) endDrag();
+    });
     box.addEventListener('mousemove', function (e) {  // value view: hover a handle
       if (drag || d.view !== 'value') { if (!drag) box.style.cursor = ''; return; }
       var n = nearest(local(e)), h = n.dist <= HIT ? n.i : null;
