@@ -308,4 +308,146 @@
         if (skipped.length) msg += " Skipped: " + skipped.join(", ") + ".";
         return msg;
     };
+
+    // ===================== Metronome (beat-driven layer switching) =====================
+    // Everything reads one "Metronome" controller: BPM, Beats per Bar, Start Time, Mode, step sizes.
+    var MODES = ["BPM", "Frames", "Markers", "Keyframes"];
+
+    function findMetronome(c) {
+        for (var i = 1; i <= c.numLayers; i++) if (c.layer(i).name === "Metronome") return c.layer(i);
+        return null;
+    }
+    function setFx(L, name, v) { try { L.property("ADBE Effect Parade").property(name).property(1).setValue(v); } catch (e) {} }
+
+    // Creates (or returns) the controller; o.* values are applied when given.
+    function metronome(c, o) {
+        var m = findMetronome(c), isNew = !m;
+        if (!m) {
+            m = MMW.newNull(c, "Metronome");
+            m.label = 14;
+            m.transform.position.setValue([80, 80]);
+            ensureFx(m, "ADBE Slider Control", "BPM", 120);
+            ensureFx(m, "ADBE Slider Control", "Beats per Bar", 4);
+            ensureFx(m, "ADBE Slider Control", "Start Time (s)", 0);
+            ensureFx(m, "ADBE Slider Control", "Beats per Step", 1);
+            ensureFx(m, "ADBE Slider Control", "Frames per Step", 6);
+            ensureFx(m, "ADBE Slider Control", "Step (keyframe me)", 0);
+            ensureFx(m, "ADBE Checkbox Control", "Random Order", 0);
+            // Mode: dropdown when available (AE 2020+), slider 1-4 otherwise
+            try {
+                var di = MMW.addEffect(m, "ADBE Dropdown Control", "Mode").propertyIndex;
+                // setPropertyParameters invalidates earlier references: re-resolve by index afterwards
+                m.property("ADBE Effect Parade").property(di).property(1).setPropertyParameters(MODES);
+                m.property("ADBE Effect Parade").property(di).name = "Mode";
+            } catch (e) {
+                var ex = m.property("ADBE Effect Parade").property("Mode");
+                if (ex) ex.remove();
+                ensureFx(m, "ADBE Slider Control", "Mode", 1);
+            }
+            m.moveToBeginning();
+        }
+        if (o.bpm !== undefined && o.bpm !== "") setFx(m, "BPM", Number(o.bpm));
+        if (o.beatsPerBar !== undefined && o.beatsPerBar !== "") setFx(m, "Beats per Bar", Number(o.beatsPerBar));
+        if (o.beatsPerStep !== undefined && o.beatsPerStep !== "") setFx(m, "Beats per Step", Number(o.beatsPerStep));
+        if (o.framesPerStep !== undefined && o.framesPerStep !== "") setFx(m, "Frames per Step", Number(o.framesPerStep));
+        if (o.random !== undefined) setFx(m, "Random Order", o.random ? 1 : 0);
+        if (o.mode) setFx(m, "Mode", Math.max(1, MMW.indexOf(MODES, o.mode) + 1));
+        if (isNew && o.start !== undefined && o.start !== "") setFx(m, "Start Time (s)", Number(o.start));
+        return m;
+    }
+    MMW.metronome = metronome;
+
+    var BEAT_TAG = "// MenMen Beat Switch";
+    var M_REF = "thisComp.layer(\"Metronome\")";
+    var BEAT_CORE =
+        "var M=" + M_REF + ";\n" +
+        "var bpm=Math.max(1,M.effect(\"BPM\")(1)), beat=60/bpm, t=time-M.effect(\"Start Time (s)\")(1);\n";
+
+    // Selected layers take turns being visible: one layer per step.
+    // o.mode, o.bpm, o.beatsPerStep, o.framesPerStep, o.random. Shift: remove the switching.
+    T.beatSwitch = function (o) {
+        var c = MMW.comp(), sel = MMW.sortByIndex(MMW.selLayers(c)), layers = [], i;
+        for (i = 0; i < sel.length; i++) if (sel[i].name !== "Metronome" && !(sel[i] instanceof CameraLayer) && !(sel[i] instanceof LightLayer)) layers.push(sel[i]);
+        if (o.shift) {
+            var r = 0;
+            for (i = 0; i < layers.length; i++) if (layers[i].transform.opacity.expression.indexOf(BEAT_TAG) === 0) { layers[i].transform.opacity.expression = ""; r++; }
+            return "Removed beat switching from " + r + " layer(s).";
+        }
+        if (layers.length < 2) MMW.fail("Select at least 2 layers to switch between.");
+        metronome(c, o);
+        var n = layers.length;
+        for (i = 0; i < n; i++) {
+            layers[i].transform.opacity.expression = BEAT_TAG + "\n" + BEAT_CORE +
+                "var mode=Math.round(M.effect(\"Mode\")(1)), k=0, idx=" + i + ", n=" + n + ";\n" +
+                "if(mode==1){k=Math.floor(t/(beat*Math.max(0.01,M.effect(\"Beats per Step\")(1))));}\n" +
+                "else if(mode==2){k=Math.floor(t/(Math.max(1,M.effect(\"Frames per Step\")(1))*thisComp.frameDuration));}\n" +
+                "else if(mode==3){var mk=M.marker;k=0;for(var j=1;j<=mk.numKeys;j++){if(mk.key(j).time<=time)k=j;}}\n" +
+                "else{k=Math.round(M.effect(\"Step (keyframe me)\")(1));}\n" +
+                "if(mode<3&&t<0)k=0;\n" +
+                "var pick=((k%n)+n)%n;\n" +
+                "if(M.effect(\"Random Order\")(1)==1){seedRandom(k*31+7,true);pick=Math.floor(random(n));}\n" +
+                "pick==idx?value:0;";
+        }
+        return "Beat switching on " + n + " layers (Metronome: " + (o.mode || "BPM") + ").";
+    };
+
+    // Beat markers on the Metronome layer across the work area ("bar.beat"). Shift: clear them.
+    T.beatMarkers = function (o) {
+        var c = MMW.comp(), m = metronome(c, o), mk = m.property("ADBE Marker"), i;
+        if (o.shift) { var n0 = mk.numKeys; for (i = n0; i >= 1; i--) mk.removeKey(i); return "Removed " + n0 + " marker(s)."; }
+        var fx = m.property("ADBE Effect Parade");
+        var bpm = Math.max(1, fx.property("BPM").property(1).value), per = Math.max(1, Math.round(fx.property("Beats per Bar").property(1).value));
+        var start = fx.property("Start Time (s)").property(1).value, beat = 60 / bpm;
+        var a = c.workAreaStart, b = c.workAreaStart + c.workAreaDuration, count = 0;
+        var first = Math.ceil((a - start) / beat - 1e-6);
+        for (var k = first; start + k * beat < b && count < 5000; k++) {
+            if (k < 0) continue;
+            var tm = start + k * beat;
+            var mv = new MarkerValue((Math.floor(k / per) + 1) + "." + (k % per + 1));
+            if (o.alt && k % per !== 0) continue;   // Alt: bars only
+            mk.setValueAtTime(tm, mv);
+            count++;
+        }
+        return "Added " + count + " beat marker(s) on \"Metronome\".";
+    };
+
+    // Audible click track (Tone effect). Downbeats are higher. Alt: no accent.
+    T.metronomeClick = function (o) {
+        var c = MMW.comp(), m = metronome(c, o);
+        var L = c.layers.addSolid([0, 0, 0], MMW.uniqueLayerName(c, "Metronome Click"), 16, 16, 1, c.duration);
+        L.enabled = false;
+        L.label = 14;
+        var tone = L.property("ADBE Effect Parade").addProperty("ADBE Tone");
+        tone = L.property("ADBE Effect Parade").property(tone.propertyIndex);
+        var acc = o.alt ? "880" : "(Math.floor(t/beat+1e-6)%Math.max(1,Math.round(M.effect(\"Beats per Bar\")(1)))==0?1760:880)";
+        for (var f = 2; f <= 6; f++) {
+            try { tone.property(f).expression = BEAT_CORE + "t<0?0:" + acc + ";"; } catch (e) {}
+        }
+        try {
+            tone.property(7).expression = BEAT_CORE +
+                "if(t<0){0}else{var p=t%beat;p<0.035?100*(1-p/0.035):0}";
+        } catch (e2) {}
+        L.moveAfter(m);
+        return "Click track added (\"" + L.name + "\"): turn on audio preview to hear it.";
+    };
+
+    // Text layer counting bars and beats. Alt: total beat count only.
+    T.beatCounter = function (o) {
+        var c = MMW.comp(), m = metronome(c, o);
+        var L = c.layers.addText("1.1");
+        L.name = MMW.uniqueLayerName(c, "Beat Counter");
+        L.property("ADBE Text Properties").property("ADBE Text Document").expression = BEAT_CORE +
+            "var per=Math.max(1,Math.round(M.effect(\"Beats per Bar\")(1)));\n" +
+            "var k=Math.max(0,Math.floor(t/beat+1e-6));\n" +
+            (o.alt ? "String(k+1);" : "\"BAR \"+(Math.floor(k/per)+1)+\"  BEAT \"+(k%per+1);");
+        L.moveAfter(m);
+        return "Beat counter added.";
+    };
+
+    // Just creates / updates the Metronome controller with the given settings.
+    T.metronomeSetup = function (o) {
+        var c = MMW.comp(), m = metronome(c, o);
+        m.selected = true;
+        return "Metronome ready: " + m.property("ADBE Effect Parade").property("BPM").property(1).value + " BPM.";
+    };
 })();

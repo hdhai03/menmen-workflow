@@ -401,8 +401,8 @@ body.h-sm .toast, body.w-xs .toast { bottom: 8px; }
   .dlg-head { padding: 6px 4px 2px 8px; }
   .dlg-body { padding: 4px 8px 8px; }
   .dlg-foot { padding: 6px 8px 8px; flex-wrap: wrap; }
-  .field.inline { flex-wrap: wrap; }
-  .field.inline > span { flex: 1 1 100%; }
+  .field.inline:not(.check) { flex-wrap: wrap; }
+  .field.inline:not(.check) > span { flex: 1 1 100%; }
   .w-btns { flex-wrap: wrap; }
   .w-btns .w-btn { flex: 1 1 30%; }
   .w-pre-row { grid-template-columns: 40px repeat(3, 1fr); }
