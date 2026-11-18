@@ -118,6 +118,10 @@ body.horizontal .sep { width: 1px; height: 60%; margin: 0 4px; }
 .sh-ico .ico { width: 16px; height: 16px; }
 .sh-title { font-weight: 700; margin-left: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sh-body, .p-body { flex: 1; overflow-y: auto; padding: 4px 5px 8px; }
+/* sub panels always keep the scrollbar gutter: a scrollbar popping in and out changed the width
+   and the layout grid re-fit in a loop (panel shaking) */
+.p-body { overflow-y: scroll; }
+.p-body::-webkit-scrollbar-track { background: transparent; }
 
 /* tool rows */
 .row-list { display: flex; flex-direction: column; }
@@ -183,6 +187,8 @@ body.horizontal .sep { width: 1px; height: 60%; margin: 0 4px; }
   display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; color: var(--muted);
   font-size: calc(var(--fs) - 1px); overflow: hidden; max-height: 64px;
 }
+/* fixed height (2 lines) so hovering tools never changes the panel's layout */
+.helptip { height: 38px; min-height: 38px; max-height: 38px; align-content: flex-start; }
 .helptip b { color: var(--text); font-weight: 600; }
 .tip-mod { display: inline-flex; align-items: center; gap: 4px; }
 .tip-err { color: var(--danger); }
@@ -577,3 +583,12 @@ body.native .w-disk.full .wd-dot, body.native .w-disk.full .wd-track i { backgro
 body.native .ge-tip { background: var(--surface-3); }
 body.native .m-search:focus-within { box-shadow: none; }
 body.native .w-btn.w-accent, body.native .ge-save:hover, body.native .tile.add:hover, body.native .q-add:hover, body.native .row-item.add:hover, body.native .m-row.ghost:hover .mr-name, body.native .m-row.ghost:hover .mr-ico { color: var(--text); border-color: var(--line-2); }
+/* icon column: nothing but the icon takes space, so every icon sits on the panel's center line */
+body.w-xs .mr-count { display: none; }
+body.w-xs .m-row { gap: 0; }
+body.w-xs .m-list, body.w-xs .m-fav { align-items: center; }
+body.w-xs .m-fav { padding-left: 0; padding-right: 0; margin-left: 0; margin-right: 0; }
+body.w-xs .m-body { padding-left: 0; padding-right: 0; scrollbar-width: none; }
+body.w-xs .m-body::-webkit-scrollbar { width: 0; }
+body.w-xs .sep { margin-left: 4px; margin-right: 4px; }
+body.icons-only .m-head { align-items: center; padding-left: 0; padding-right: 0; }

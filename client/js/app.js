@@ -855,7 +855,15 @@
     grid._refit = apply;
     apply();
     requestAnimationFrame(apply);
-    if (window.ResizeObserver) new ResizeObserver(apply).observe(grid);
+    // Re-fit only when the width really changes: row spans change the grid's height, and reacting
+    // to that (or to a scrollbar appearing) fed back into the layout and made the panel shake.
+    var lastW = grid.clientWidth;
+    if (window.ResizeObserver) new ResizeObserver(function () {
+      var w = grid.clientWidth;
+      if (Math.abs(w - lastW) < 1) return;
+      lastW = w;
+      apply();
+    }).observe(grid);
   }
   // Full-width widget: graph height ~ half the width (110-260px) + its toolbar rows, rounded up to whole cells.
   function fitFull(c, cols, cell, gap, half) {
