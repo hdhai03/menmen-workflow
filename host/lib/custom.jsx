@@ -60,6 +60,6 @@
 
     // Info for the About dialog.
     T.hostInfo = function () {
-        return "After Effects " + app.version + " · MenMen host " + MMW.VERSION;
+        return "After Effects " + app.version + " | MenMen host " + MMW.VERSION;
     };
 })();

@@ -157,7 +157,7 @@
             p.expression = 'loopOut("' + type + '")';
             n++;
         }
-        return "loopOut(\"" + type + "\") → " + n + " property.";
+        return "loopOut(\"" + type + "\") -> " + n + " property.";
     };
 
     var VEC_HELPERS =
@@ -198,6 +198,6 @@
             n++;
         }
         if (!n) MMW.fail("Select properties with at least 2 keyframes.");
-        return label + " → " + n + " property.";
+        return label + " -> " + n + " property.";
     }
 })();

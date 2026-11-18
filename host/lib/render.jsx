@@ -61,6 +61,6 @@
         }
         for (i = mine.length - 1; i >= 0; i--) { try { mine[i].item.remove(); } catch (e2) {} }
         for (i = 1; i <= rq.numItems && i <= prev.length; i++) { try { if (prev[i - 1]) rq.item(i).render = true; } catch (e3) {} }
-        return "Created proxies for " + ok + "/" + comps.length + " comp(s) → " + folder.fsName;
+        return "Created proxies for " + ok + "/" + comps.length + " comp(s) -> " + folder.fsName;
     };
 })();

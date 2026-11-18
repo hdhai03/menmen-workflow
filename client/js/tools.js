@@ -99,7 +99,10 @@
     command: '<path d="M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3z"/>',
     effect: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>',
     preset: '<path d="M4 4h10l6 6v10H4z"/><path d="M14 4v6h6M8 15l2.5-3 2 2 3.5-4"/>',
-    divider: '<path d="M3 12h18"/>'
+    divider: '<path d="M3 12h18"/>',
+    area: '<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="10" stroke-dasharray="2.5 2.5"/>',
+    spotBlur: '<circle cx="9" cy="10" r="4"/><circle cx="16" cy="15" r="3"/><path d="M3 3h18v18H3z" stroke-dasharray="1.5 3"/>',
+    audio: '<path d="M9 18V5l10-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>'
   };
 
   var P = {
@@ -194,6 +197,9 @@
     { id: 'compDuplicator', name: 'Duplicate Comps', cat: 'composition', desc: 'Duplicates comps + nested comps and fixes comp("…") expressions.', mods: { alt: 'Put into a new folder' } },
     { id: 'batchCompSettings', name: 'Batch Comp Settings', cat: 'composition', icon: 'cat-composition', desc: 'Changes size / fps / duration of many comps (empty = unchanged).',
       params: [P.num('width', 'Width (px)', ''), P.num('height', 'Height (px)', ''), P.num('fps', 'Frame rate', ''), P.num('duration', 'Duration (seconds)', '')] },
+    { id: 'audioToPrecomps', name: 'Audio to Precomps', cat: 'composition', icon: 'audio', desc: 'Copies the selected audio layers into every nested precomp, in sync, so you can hear them while working inside precomps.', mods: { shift: 'Remove all synced audio from the project' } },
+    { id: 'spotBlur', name: 'Spot Blur', cat: 'composition', icon: 'spotBlur', desc: 'Draggable focus spots: everything outside the spots is blurred (Compound Blur + map comp, settings on a controller).',
+      params: [P.num('spots', 'Spots', 4, { min: 1, max: 12 }), P.num('maxBlur', 'Max blur', 40), P.num('size', 'Spot size (px)', 240), P.num('feather', 'Feather (px)', 120)] },
     { id: 'bgBlack', name: 'Black BG', cat: 'composition', host: 'setBgColor', opts: { color: [0, 0, 0] }, icon: 'rect', desc: 'Black comp background.' },
     { id: 'bgGray', name: 'Gray BG', cat: 'composition', host: 'setBgColor', opts: { color: [0.5, 0.5, 0.5] }, icon: 'rect', desc: 'Gray comp background.' },
     { id: 'bgWhite', name: 'White BG', cat: 'composition', host: 'setBgColor', opts: { color: [1, 1, 1] }, icon: 'rect', desc: 'White comp background.' },
@@ -282,6 +288,11 @@
     { id: 'blinker', name: 'Blinker / Flicker', cat: 'animation', icon: 'blink', desc: 'Blinks the opacity.',
       params: [P.num('freq', 'Frequency', 6), P.num('random', 'Randomness (%)', 0)] },
     { id: 'stopMotion', name: 'Stop Motion', cat: 'animation', icon: 'stopMotion', desc: 'Stop-motion style stepping.', params: [P.num('fps', 'FPS', 12)] },
+    { id: 'areaOpacity', name: 'Area Opacity', cat: 'animation', host: 'areaEffector', opts: { mode: 'opacity' }, icon: 'area', desc: 'Layers fade in as the Area Effector controller gets close (Radius + Falloff).', mods: { alt: 'New controller', shift: 'Remove effect' } },
+    { id: 'areaScale', name: 'Area Scale', cat: 'animation', host: 'areaEffector', opts: { mode: 'scale' }, icon: 'area', desc: 'Layers scale between Outside % and Inside % depending on the distance to the controller.', mods: { alt: 'New controller', shift: 'Remove effect' } },
+    { id: 'areaPosition', name: 'Area Position', cat: 'animation', host: 'areaEffector', opts: { mode: 'position' }, icon: 'area', desc: 'Layers near the controller are pushed by Offset X / Y / Z.', mods: { alt: 'New controller', shift: 'Remove effect' } },
+    { id: 'areaRotation', name: 'Area Rotation', cat: 'animation', host: 'areaEffector', opts: { mode: 'rotation' }, icon: 'area', desc: 'Layers near the controller rotate by the Rotation slider.', mods: { alt: 'New controller', shift: 'Remove effect' } },
+    { id: 'areaColor', name: 'Area Color', cat: 'animation', host: 'areaEffector', opts: { mode: 'color' }, icon: 'area', desc: 'Layers blend from Color Outside to Color Inside near the controller (Fill effect).', mods: { alt: 'New controller', shift: 'Remove effect' } },
     { id: 'createLimb', name: 'Bend / Limb Rig', cat: 'animation', desc: 'A bendable hose/limb driven by 2 nulls.' },
     { id: 'positionTrace', name: 'Position Trace', cat: 'animation', desc: 'Draws the motion path as a shape.', mods: { alt: 'Work area only' } }
   ];

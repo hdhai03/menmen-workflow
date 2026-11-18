@@ -174,6 +174,6 @@
             }
         }
         if (!n) MMW.fail("Select at least 2 consecutive keyframes on the same property.");
-        return "Easing " + (o.curve || "custom") + " → " + n + " segment(s).";
+        return "Easing " + (o.curve || "custom") + " -> " + n + " segment(s).";
     };
 })();

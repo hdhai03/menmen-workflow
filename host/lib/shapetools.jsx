@@ -1,4 +1,4 @@
-// shapetools.jsx - cap/join, fill/stroke, reset transform shape, rect/circle wizard, trim paths, mask → shape
+// shapetools.jsx - cap/join, fill/stroke, reset transform shape, rect/circle wizard, trim paths, mask -> shape
 (function () {
     var T = MMW.tools;
     var ROOT = "ADBE Root Vectors Group";
@@ -116,7 +116,7 @@
             tr.property("ADBE Vector Trim End").expression = "clamp(effect(\"Trim End\")(1),0,100)";
             tr.property("ADBE Vector Trim Offset").expression = "effect(\"Trim Offset\")(1)";
         }
-        return "Trim Paths controller → " + list.length + " layer.";
+        return "Trim Paths controller -> " + list.length + " layer.";
     };
 
     // Converts masks into a shape layer (keeps transforms & mask keyframes). Alt: delete the original masks.

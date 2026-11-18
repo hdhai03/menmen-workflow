@@ -20,7 +20,8 @@ MMW.load = function (root) {
         "comptools.jsx",
         "expression.jsx",
         "text.jsx",
-        "shapetools.jsx"
+        "shapetools.jsx",
+        "rigs.jsx"
     ];
     var errs = [];
     for (var i = 0; i < files.length; i++) {

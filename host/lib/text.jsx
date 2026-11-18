@@ -20,7 +20,7 @@
         return L.property("ADBE Effect Parade").property(name);
     }
 
-    // o.find, o.replace — in the selected text layers (or all text layers if none selected).
+    // o.find, o.replace - in the selected text layers (or all text layers if none selected).
     T.findReplaceText = function (o) {
         if (!o.find) MMW.fail("Enter the text to find.");
         var c = MMW.comp(), list = textLayers(c, true), n = 0;
@@ -51,7 +51,7 @@
         return "Created a " + n + "-word text.";
     };
 
-    // Typewriter: reveals characters via the "Typewriter %" slider (keys 0 → 100 over o.seconds).
+    // Typewriter: reveals characters via the "Typewriter %" slider (keys 0 -> 100 over o.seconds).
     T.typewriter = function (o) {
         var c = MMW.comp(), list = textLayers(c), dur = Number(o.seconds) || 2;
         for (var i = 0; i < list.length; i++) {
@@ -65,7 +65,7 @@
                 "var n=Math.round(s.length*p), out=s.substr(0,n);\n" +
                 "if(effect(\"Cursor\")(1)==1 && (p<1 || Math.floor(time*2)%2==0)) out+=\"|\";\nout;";
         }
-        return "Typewriter → " + list.length + " text layer.";
+        return "Typewriter -> " + list.length + " text layer.";
     };
 
     // Number Counter: a new text layer (or the selected text) driven by the "Counter" slider.
@@ -89,7 +89,7 @@
                 "if(sep) parts[0]=parts[0].replace(/\\B(?=(\\d{3})+(?!\\d))/g, \",\");\n" +
                 MMW.quote(o.prefix || "") + " + (v<0?\"-\":\"\") + parts.join(\".\") + " + MMW.quote(o.suffix || "") + ";";
         }
-        return "Number counter → " + list.length + " layer.";
+        return "Number counter -> " + list.length + " layer.";
     };
 
     // Text Box: a background shape layer that resizes with the text (padding / roundness sliders).

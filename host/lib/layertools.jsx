@@ -9,7 +9,7 @@
     T.parentToFirst = function () {
         var c = MMW.comp(), s = MMW.selLayers(c, 2), p = s[0], n = 0;
         for (var i = 1; i < s.length; i++) { (function (L) { withUnlock(L, function () { L.parent = p; }); })(s[i]); n++; }
-        return n + " layer(s) → parented to \"" + p.name + "\".";
+        return n + " layer(s) -> parented to \"" + p.name + "\".";
     };
     // Each layer becomes a child of the layer directly above it.
     T.parentToAbove = function () {
@@ -21,7 +21,7 @@
         }
         return "Parented " + n + " layer(s) to the layer above.";
     };
-    // Parent chain in selection order: 2 → 1, 3 → 2, ...
+    // Parent chain in selection order: 2 -> 1, 3 -> 2, ...
     T.parentChain = function () {
         var c = MMW.comp(), s = MMW.selLayers(c, 2);
         for (var i = 1; i < s.length; i++) (function (L, P) { withUnlock(L, function () { L.parent = P; }); })(s[i], s[i - 1]);

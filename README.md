@@ -25,21 +25,26 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
   - Back up / Restore / Reset.
 - Settings are saved to `<userData>/MenMenWorkflow/settings.json` and synced across all panels.
 
-### 126 tools in 12 categories
+### 133 tools in 12 categories
 | Category | Tools |
 |---|---|
 | Selection (23) | Select Nulls / 3D / Lights (Alt: cameras) / Precomps / Shape / Text / Audio / Guide / Adjustment, Inverse, Every Nth, Odd/Even, Above, Below, Children, Parents, Hierarchy, Random, At Frame, Matching Property, All Paths / Fills / Strokes |
 | Layers (17) | Parent to Null, Parent to First / Above / Selection Order, Unparent, Offset Layers, Duplicate, Rename, Layer Colors, Lock All, Shy, Solo (Timeline), Visibility, Reset Transform, Trim, Set Anchor Point, Collect Colors |
 | Keyframes (12) | Clone, Clone & Mirror, Align to Playhead / In-Out / Left-Right, Offset, Time-Reverse, Snap to Frames, Clean, Copy/Paste Values, Key Looper |
 | Easing (6) | Keyframe Assistant (speed graph editor), Easing Presets (Sine…Back × In/Out/InOut), Easings Manager, Copy/Paste Easing, Reverse Easing |
-| Composition (9) | Auto Crop, Auto Trim, Pre-Compose, Decompose, Duplicate Comps, Batch Comp Settings, Black/Gray/White BG |
+| Composition (11) | Auto Crop, Auto Trim, Pre-Compose, Decompose, Duplicate Comps, Batch Comp Settings, Audio to Precomps, Spot Blur, Black/Gray/White BG |
 | Project (6) | Project Cleanup, Organize Project, Folder Structure, Reveal Project Folder, Reveal Layer Source, Proxy Manager |
 | Guides (11) | Guides Around / Center / Edge / Anchor, Grid System, Clear, Copy, Paste, Show/Hide, Lock, Snap |
 | View (6) | Zoom 100% / 50%, Solo (Viewer), Rulers, Grid, Save Screenshot |
 | Expression (7) | Expression Editor, Enable / Disable / Remove, Remove Broken, Bake, Find & Replace |
 | Shapes (15) | Separate Shapes, Merge, Null Controllers for Points, Shapes from Vector, Remove Artboards, Mask → Shape, Cap/Join Round/Miter/Bevel, Toggle Fill/Stroke, Reverse Path, Reset Shape Transforms, Rectangle / Circle Wizard, Trim Paths Controller |
 | Text (5) | Find & Replace Text, Lorem Ipsum, Typewriter, Number Counter, Text Box Generator |
-| Animation (9) | Overshoot, Bounce, Wiggle, Spin, Auto Fader, Blinker, Stop Motion, Bend / Limb Rig, Position Trace |
+| Animation (14) | Overshoot, Bounce, Wiggle, Spin, Auto Fader, Blinker, Stop Motion, Area Opacity / Scale / Position / Rotation / Color, Bend / Limb Rig, Position Trace |
+
+### Rigs
+- **Area Effector** (Area Opacity / Scale / Position / Rotation / Color): an `Area Effector` null with Radius, Falloff, Invert Field and Show Field controls plus a dashed guide; layers react to their distance from it. Alt = new controller, Shift = remove the effect.
+- **Spot Blur**: draggable focus nulls; everything outside them is blurred by Compound Blur driven by an auto-built map comp (Max Blur, Spot Size, Feather, Blur Inside Spots on the controller).
+- **Audio to Precomps**: copies the selected audio layers into every nested precomp (time-offset, locked, named `♪ …`); precomps with time remapping/stretch or used more than once are skipped. Shift = remove all synced audio.
 
 ### Script library
 Every `.jsx`, `.jsxbin` and `.ffx` file in `library/` (inside the extension) or in `Documents/MenMen Workflow/Scripts` appears in the **Scripts** category. Scripts can be favorited, searched, docked and added to user panels like built-in tools; `.ffx` presets are applied to the selected layers. Use the folder and refresh icons in the Scripts header after adding files. Files in `library/` are git-ignored so third-party scripts are not published with this repo.

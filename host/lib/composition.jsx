@@ -13,7 +13,7 @@
             if (!(L.source instanceof CompItem) || seen[L.source.id]) continue;
             seen[L.source.id] = true;
             var r = cropInner(L.source);
-            if (r) { done++; msgs.push(L.source.name + " → " + r); }
+            if (r) { done++; msgs.push(L.source.name + " -> " + r); }
         }
         if (!done) MMW.fail("No precomp needs cropping (select precomp layers).");
         return msgs.join(", ");
@@ -75,7 +75,7 @@
                 }
             }
         }
-        return w + "×" + hgt;
+        return w + "x" + hgt;
     }
 
     // Shifts all layers in the comp via a temporary null (keeps existing parenting).

@@ -715,11 +715,7 @@
   }
 
   // ============ script library ============
-  var DEMO_SCRIPTS = [
-    { name: 'Area.Sense 1.5.jsx', path: 'library/Area.Sense 1.5.jsx', src: 'bundled' },
-    { name: 'spot.Blur.jsx', path: 'library/spot.Blur.jsx', src: 'bundled' },
-    { name: 'Universal Audio.jsxbin', path: 'library/Universal Audio.jsxbin', src: 'bundled' }
-  ];
+  var DEMO_SCRIPTS = [];  // preview mode: no script files
   function loadLibrary(notify) {
     if (!B.inCEP) { T.registerScripts(DEMO_SCRIPTS); render(); return; }
     B.run('listLibrary', { root: B.extPath }).then(function (r) {

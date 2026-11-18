@@ -42,10 +42,10 @@
         while (taken[name]) { k++; name = base + " " + k; }
         var leave = o.alt && s.length === 1;
         c.layers.precompose(idx, name, !leave);
-        return "Pre-composed " + s.length + " layer(s) → \"" + name + "\".";
+        return "Pre-composed " + s.length + " layer(s) -> \"" + name + "\".";
     };
 
-    // o.width, o.height, o.fps, o.duration (seconds) – empty = unchanged
+    // o.width, o.height, o.fps, o.duration (seconds) - empty = unchanged
     T.batchCompSettings = function (o) {
         var comps = selectedComps(), n = 0;
         function num(v) { var x = parseFloat(v); return isNaN(x) || x <= 0 ? null : x; }
@@ -205,7 +205,7 @@
                 if (g > 0) { c.addGuide(0, y + g); n++; }
             }
         }
-        return "Created a " + cols + "-column" + (rows > 1 ? " × " + rows + "-row" : "") + " grid (" + n + " guides).";
+        return "Created a " + cols + "-column" + (rows > 1 ? " x " + rows + "-row" : "") + " grid (" + n + " guides).";
     };
     T.clearGuides = function () {
         var c = MMW.comp(), n = c.guides.length;

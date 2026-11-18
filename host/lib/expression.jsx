@@ -2,7 +2,7 @@
 (function () {
     var T = MMW.tools;
 
-    // Properties with expressions: selected → selected layers → (Alt) whole comp
+    // Properties with expressions: selected -> selected layers -> (Alt) whole comp
     function exprTargets(c, o, includeEmpty) {
         var out = [], i, sel = MMW.selProps(c);
         for (i = 0; i < sel.length; i++) if (sel[i].prop.canSetExpression && (includeEmpty || sel[i].prop.expression !== "")) out.push(sel[i].prop);
@@ -41,7 +41,7 @@
         }
         return "Removed " + n + " broken expression(s).";
     };
-    // Bakes expressions into keyframes (every frame between the layer In–Out).
+    // Bakes expressions into keyframes (every frame between the layer In-Out).
     T.bakeExpressions = function (o) {
         var c = MMW.comp(), ps = exprTargets(c, o), fd = c.frameDuration, n = 0;
         for (var i = 0; i < ps.length; i++) {
@@ -58,7 +58,7 @@
         }
         return "Baked " + n + " expression(s) into keyframes.";
     };
-    // o.find, o.replace — in the selected layers, or the whole comp if none selected / Alt held
+    // o.find, o.replace - in the selected layers, or the whole comp if none selected / Alt held
     T.findReplaceExpressions = function (o) {
         if (!o.find) MMW.fail("Enter the text to find.");
         var c = MMW.comp(), all = o.alt || !c.selectedLayers.length, n = 0;
@@ -96,7 +96,7 @@
             p.expression = "wiggle(effect(" + q("Wiggle Freq - " + tag) + ")(1), effect(" + q("Wiggle Amp - " + tag) + ")(1))";
             n++;
         }
-        return "Wiggle → " + n + " property.";
+        return "Wiggle -> " + n + " property.";
     };
     // Continuous rotation (degrees/second) on the selected layers.
     T.spin = function (o) {
@@ -105,7 +105,7 @@
             ensureSlider(s[i], "Spin (deg/s)", Number(o.speed) || 90);
             s[i].transform.rotation.expression = "value + (time - inPoint) * effect(\"Spin (deg/s)\")(1)";
         }
-        return "Spin → " + s.length + " layer.";
+        return "Spin -> " + s.length + " layer.";
     };
     // Automatic fade in/out based on the In/Out points.
     T.autoFader = function (o) {
@@ -117,7 +117,7 @@
                 "var fi=effect(\"Fade In (frames)\")(1)*thisComp.frameDuration, fo=effect(\"Fade Out (frames)\")(1)*thisComp.frameDuration;\n" +
                 "var a=fi>0?linear(time,inPoint,inPoint+fi,0,1):1, b=fo>0?linear(time,outPoint-fo,outPoint,1,0):1;\nvalue*Math.min(a,b);";
         }
-        return "Auto fade → " + s.length + " layer.";
+        return "Auto fade -> " + s.length + " layer.";
     };
     // Opacity blink/flicker.
     T.blinker = function (o) {
@@ -129,7 +129,7 @@
                 "var f=effect(\"Blink Freq\")(1), r=effect(\"Blink Random %\")(1)/100;\n" +
                 "seedRandom(Math.floor(time*f),true);\nvar on=Math.sin(time*f*Math.PI*2)>=0;\nif(random()<r) on=!on;\non?value:0;";
         }
-        return "Blinker → " + s.length + " layer.";
+        return "Blinker -> " + s.length + " layer.";
     };
     // Stop-motion stepping (posterizeTime) on the selected properties, or every keyframed transform property.
     T.stopMotion = function (o) {
@@ -147,6 +147,6 @@
             var old = list[i].prop.expression;
             list[i].prop.expression = "posterizeTime(effect(\"Stop Motion FPS\")(1));\n" + (old ? old : "value");
         }
-        return "Stop motion → " + list.length + " property.";
+        return "Stop motion -> " + list.length + " property.";
     };
 })();
