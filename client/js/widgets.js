@@ -161,7 +161,10 @@
       });
       svgHost.innerHTML = svg + '</svg>';
       var s2 = speedOf();
-      if (read) read.innerHTML = '<span>Out <b>' + Math.round(b[0] * 100) + '%</b> · ' + fmt(s2[0]) + '×</span><span>In <b>' + Math.round((1 - b[2]) * 100) + '%</b> · ' + fmt(s2[1]) + '×</span>';
+      if (nums) {
+        var vals = { oi: Math.round(b[0] * 100), os: fmt(s2[0]), ii: Math.round((1 - b[2]) * 100), is: fmt(s2[1]) };
+        Object.keys(nums).forEach(function (k) { if (document.activeElement !== nums[k]) nums[k].value = vals[k]; });
+      }
       if (bzInput && !typing) bzInput.value = b.map(fmt).join(', ');
       if (drag) {
         var i = drag.i, kp = k[i];
@@ -204,6 +207,7 @@
         return;
       }
       box.style.cursor = 'grabbing';
+      p = [clamp(p[0], 0, W_), p[1]];
       var fine = e.ctrlKey || e.metaKey;
       // past the top / bottom edge: the view grows a little per move (no runaway), the pointer is clamped to it
       var over = p[1] < 4 ? 1 : (p[1] > H_ - 4 ? -1 : 0);
@@ -242,23 +246,34 @@
       draw(); ctx.save();
       if (moved && d.auto) autoApply();
     }
-    // The graph only reacts inside its own box: leaving the box or releasing the button ends the
-    // drag. (Listening on the whole document kept a drag alive when the button was released outside
-    // the panel - AE never sends that mouseup - and every move anywhere then edited the curve.)
+    // Drag: mouse events on the document while the button is down (what drags reliably in AE's
+    // embedded Chromium - its e.buttons is not trustworthy). The graph only works around its box:
+    // moving more than 24 px away from it, leaving the panel or losing focus ends the drag, so a
+    // release outside the panel (AE never sends that mouseup) can't leave a drag running.
+    var MARGIN = 24, docMove = null, docUp = null;
+    function endDrag(e) {
+      if (docMove) { document.removeEventListener('mousemove', docMove, true); document.removeEventListener('mouseup', docUp, true); }
+      document.documentElement.removeEventListener('mouseleave', docUp);
+      docMove = docUp = null;
+      onUp(e || {});
+    }
     box.addEventListener('mousedown', function (e) {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || drag) return;
       onDown(e);
+      if (!drag) return;
+      docMove = function (ev) {
+        var r = box.getBoundingClientRect();
+        if (ev.clientX < r.left - MARGIN || ev.clientX > r.right + MARGIN || ev.clientY < r.top - MARGIN || ev.clientY > r.bottom + MARGIN) return endDrag(ev);
+        onMove(ev);
+      };
+      docUp = function (ev) { endDrag(ev); };
+      document.addEventListener('mousemove', docMove, true);
+      document.addEventListener('mouseup', docUp, true);
+      document.documentElement.addEventListener('mouseleave', docUp);  // pointer left the panel
     });
-    box.addEventListener('mousemove', function (e) {
-      if (drag && !(e.buttons & 1)) { onUp(e); return; }  // button already released (missed mouseup)
-      onMove(e);
-    });
-    box.addEventListener('mouseup', function (e) { if (drag) onUp(e); });
-    box.addEventListener('mouseleave', function (e) {
-      if (drag) onUp(e);
-      if (hover != null) { hover = null; draw(); }
-    });
-    window.addEventListener('blur', function () { if (drag) onUp({}); });
+    box.addEventListener('mousemove', function (e) { if (!drag) onMove(e); });
+    box.addEventListener('mouseleave', function () { if (!drag && hover != null) { hover = null; draw(); } });
+    window.addEventListener('blur', function () { if (drag) endDrag({}); });
     box.addEventListener('dblclick', function () { d.bz = [0.333, 0, 0.667, 1]; draw(); ctx.save(); });
     box.addEventListener('keydown', function (e) {
       var k = e.key;
@@ -301,7 +316,7 @@
     }
 
     // ---- toolbar ----
-    var read = null, bzInput = null, typing = false;
+    var nums = null, bzInput = null, typing = false;
     var bar = el('div', 'ge-bar');
     var tabs = el('div', 'seg ge-tabs');
     [['value', 'Value'], ['speed', 'Speed']].forEach(function (v) {
@@ -333,7 +348,27 @@
     root.append(bar, box);
 
     var info = el('div', 'ge-info');
-    read = el('div', 'w-read ge-read');
+    // Out / In: influence % and speed (x average speed) of the two keys - type to set them
+    var read = el('div', 'ge-nums');
+    nums = {};
+    [['oi', 'Out', '%', 'Outgoing influence %'], ['os', '', '×', 'Outgoing speed (× average speed; 0 = ease)'],
+     ['ii', 'In', '%', 'Incoming influence %'], ['is', '', '×', 'Incoming speed (× average speed; 0 = ease)']].forEach(function (f) {
+      var wrap = el('label', 'ge-num', (f[1] ? '<b>' + f[1] + '</b>' : ''));
+      var inp = el('input', 'input'); inp.type = 'number'; inp.step = f[2] === '%' ? 1 : 0.1; inp.min = 0; if (f[2] === '%') inp.max = 100;
+      inp.title = f[3];
+      wrap.appendChild(inp); wrap.appendChild(el('span', 'ge-unit-l', f[2]));
+      inp.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') inp.blur(); });
+      inp.addEventListener('change', function () {
+        var oi = clamp(Number(nums.oi.value) || 0, 0.1, 100) / 100, ii = clamp(Number(nums.ii.value) || 0, 0.1, 100) / 100;
+        var os = Math.max(0, Number(nums.os.value) || 0), is = Math.max(0, Number(nums.is.value) || 0);
+        d.bz = [oi, oi * os, 1 - ii, 1 - ii * is];
+        if (d.link) { d.bz[2] = 1 - d.bz[0]; d.bz[3] = 1 - d.bz[1]; }
+        range = null; draw(); ctx.save();
+        if (d.auto) autoApply();
+      });
+      nums[f[0]] = inp;
+      read.appendChild(wrap);
+    });
     bzInput = el('input', 'input ge-bz'); bzInput.spellcheck = false; bzInput.title = 'cubic-bezier(x1, y1, x2, y2) - edit or paste, then press Enter';
     bzInput.addEventListener('input', function () { typing = true; });
     bzInput.addEventListener('blur', function () { typing = false; draw(); });

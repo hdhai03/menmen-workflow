@@ -81,9 +81,10 @@ Opening either the main panel (**MenMen Workflow**) or **MenMen Tools** opens th
 ### Graph Editor
 Easing ▸ **Graph Editor** edits one curve between two keyframes, inspired by the graph editors of Motion-style toolkits:
 - **Value graph** (default): a cubic-bezier curve with two handles you drag freely; pull a handle outside the box for overshoot. **Speed graph** shows the same curve as AE's speed graph.
-- Dragging works like Motion 4: grab a handle anywhere near it (it keeps its offset, no jump), or click the empty graph to move the nearest handle there. The graph only reacts inside its own box: leaving it or releasing the button ends the drag. Hold a handle at the top/bottom edge and the view grows step by step for overshoot. A dashed ghost shows the curve before the drag, and a live readout shows influence and speed.
+- Dragging works like Motion 4: grab a handle anywhere near it (it keeps its offset, no jump), or click the empty graph to move the nearest handle there. The graph only works around its own box: releasing the button, moving more than 24 px away from it or leaving the panel ends the drag. Hold a handle at the top/bottom edge and the view grows step by step for overshoot. A dashed ghost shows the curve before the drag, and a live readout shows influence and speed.
 - **Shift** = lock to the axis you move along, **Ctrl/Cmd** = fine (1/5 speed), **Alt** or **Link** = mirrored handles, double-click = reset. Handles snap softly to flat ease (0 / 1) and to 1/3, 2/3.
 - Keyboard: click the graph, then arrows nudge the active handle (Shift = ×10), Tab switches handle, Enter applies.
+- **Out / In number fields**: influence % and speed (× the average speed, 0 = full ease) of the two keys; type a value and press Enter (applied right away when Auto is on).
 - **Auto** (on by default): releasing a handle, picking a preset or nudging with the arrows applies the curve to the selected keys right away, no need to click Apply. A small "Applied" note shows in the graph (no popup; "Select keyframes to apply" if none are selected). Turn Auto off to apply only with Apply / In / Out.
 - Type or paste `cubic-bezier(x1, y1, x2, y2)`; **Read** loads the curve from the selected keyframes.
 - Built-in curves plus your own (**+** saves, right-click deletes); click a curve to load it, double-click to load and apply.
