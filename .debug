@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ExtensionList>
+  <Extension Id="com.menmen.workflow.main"><HostList><Host Name="AEFT" Port="8090"/></HostList></Extension>
   <Extension Id="com.menmen.workflow.panel1"><HostList><Host Name="AEFT" Port="8091"/></HostList></Extension>
   <Extension Id="com.menmen.workflow.panel2"><HostList><Host Name="AEFT" Port="8092"/></HostList></Extension>
   <Extension Id="com.menmen.workflow.panel3"><HostList><Host Name="AEFT" Port="8093"/></HostList></Extension>

@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="7.0" ExtensionBundleId="com.menmen.workflow" ExtensionBundleVersion="0.1.0" ExtensionBundleName="MenMen Workflow"
+<ExtensionManifest Version="7.0" ExtensionBundleId="com.menmen.workflow" ExtensionBundleVersion="0.2.0" ExtensionBundleName="MenMen Workflow"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <ExtensionList>
-    <Extension Id="com.menmen.workflow.panel1" Version="0.1.0" />
-    <Extension Id="com.menmen.workflow.panel2" Version="0.1.0" />
-    <Extension Id="com.menmen.workflow.panel3" Version="0.1.0" />
-    <Extension Id="com.menmen.workflow.panel4" Version="0.1.0" />
+    <Extension Id="com.menmen.workflow.main" Version="0.2.0" />
+    <Extension Id="com.menmen.workflow.panel1" Version="0.2.0" />
+    <Extension Id="com.menmen.workflow.panel2" Version="0.2.0" />
+    <Extension Id="com.menmen.workflow.panel3" Version="0.2.0" />
+    <Extension Id="com.menmen.workflow.panel4" Version="0.2.0" />
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>
@@ -20,6 +21,23 @@
     </RequiredRuntimeList>
   </ExecutionEnvironment>
   <DispatchInfoList>
+    <Extension Id="com.menmen.workflow.main">
+      <DispatchInfo>
+        <Resources>
+          <MainPath>./client/index.html</MainPath>
+          <ScriptPath>./host/main.jsx</ScriptPath>
+        </Resources>
+        <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle>
+        <UI>
+          <Type>Panel</Type>
+          <Menu>MenMen Workflow</Menu>
+          <Geometry>
+            <Size><Height>560</Height><Width>190</Width></Size>
+            <MinSize><Height>40</Height><Width>40</Width></MinSize>
+          </Geometry>
+        </UI>
+      </DispatchInfo>
+    </Extension>
     <Extension Id="com.menmen.workflow.panel1">
       <DispatchInfo>
         <Resources>
@@ -29,7 +47,7 @@
         <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle>
         <UI>
           <Type>Panel</Type>
-          <Menu>MenMen Workflow 1</Menu>
+          <Menu>MenMen Panel 1</Menu>
           <Geometry>
             <Size><Height>360</Height><Width>300</Width></Size>
             <MinSize><Height>80</Height><Width>80</Width></MinSize>
@@ -46,7 +64,7 @@
         <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle>
         <UI>
           <Type>Panel</Type>
-          <Menu>MenMen Workflow 2</Menu>
+          <Menu>MenMen Panel 2</Menu>
           <Geometry>
             <Size><Height>360</Height><Width>300</Width></Size>
             <MinSize><Height>80</Height><Width>80</Width></MinSize>
@@ -63,7 +81,7 @@
         <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle>
         <UI>
           <Type>Panel</Type>
-          <Menu>MenMen Workflow 3</Menu>
+          <Menu>MenMen Panel 3</Menu>
           <Geometry>
             <Size><Height>360</Height><Width>300</Width></Size>
             <MinSize><Height>80</Height><Width>80</Width></MinSize>
@@ -80,7 +98,7 @@
         <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle>
         <UI>
           <Type>Panel</Type>
-          <Menu>MenMen Workflow 4</Menu>
+          <Menu>MenMen Panel 4</Menu>
           <Geometry>
             <Size><Height>360</Height><Width>300</Width></Size>
             <MinSize><Height>80</Height><Width>80</Width></MinSize>

@@ -2,45 +2,46 @@
 
 Extension cho **Adobe After Effects 2022+** (CEP). Gom script, widget và expression vào **4 panel dạng lưới** có thể tùy biến, giúp tăng tốc workflow motion design.
 
-## Tính năng (v0.1.0)
+## Tính năng (v0.2.0)
 
-**Giao diện**
-- 4 panel độc lập (`Window ▸ Extensions ▸ MenMen Workflow 1…4`), mỗi panel chọn một layout riêng.
-- Layout: tạo, đổi tên, nhân bản, xóa, tìm kiếm.
-- Edit mode (biểu tượng bút chì): kéo ô để sắp xếp, kéo góc để đổi kích thước, xóa ô, thêm tool từ thư viện.
-- Chuột phải lên ô: chạy theo từng chế độ phím (Alt/Shift/Ctrl), đổi tên, đổi màu, đổi kích thước.
-- Thanh helptip ở cuối panel hiện mô tả tool và các phím bổ trợ.
-- Cài đặt: màu nhấn, kích thước ô, khoảng cách, cỡ chữ, ẩn/hiện tên, theo màu nền AE; export/import/reset.
-- Cài đặt lưu ở `<userData>/MenMenWorkflow/settings.json` và tự đồng bộ giữa các panel.
+### Giao diện: 1 main panel + 4 panel phụ
+- **MenMen Workflow** (main panel, `Window ▸ Extensions ▸ MenMen Workflow`): thanh dọc gọn gồm
+  - ô **tìm kiếm** tool (dùng phím ↑ ↓, Enter để chạy, Esc để xóa),
+  - dải **Favorites** (bấm ☆ cạnh tool để ghim),
+  - **12 nhóm tool**: bấm vào nhóm để mở menu tool,
+  - **User panels** (panel tự tạo) và **Add New Item**.
+  - Khi panel được kéo thấp và rộng, main panel tự chuyển sang dạng thanh ngang chỉ có icon.
+- **Dock**: trong menu của một nhóm hay một user panel, bấm biểu tượng Dock để mở nội dung đó ra **MenMen Panel 1–4** (panel phụ, dock được như panel AE bình thường).
+- **Panel phụ**: hiển thị một nhóm tool hoặc một user panel, dạng danh sách hoặc lưới.
+  - Với nhóm tool: ẩn bớt tool không dùng; nút "Hiện tất cả" để hiện lại tạm thời.
+  - Với user panel: kéo thả để sắp xếp, chuột phải để sửa / xóa item.
+- **User panel** chứa được nhiều loại item: MenMen tool, Expression, Scriptlet (ExtendScript), Script file (.jsx/.jsxbin), Preset (.ffx), Effect, Menu Command, Divider.
+- **Tool có tham số** mở một form nhỏ, giá trị lần trước được ghi nhớ. **Widget** (Keyframe Assistant, Easing Presets, Easings Manager, Offset Layers, Set Anchor Point) mở trong một hộp thoại.
+- **Cài đặt**:
+  - kiểu icon: Đơn sắc / Màu / Khối màu,
+  - cỡ icon: S / M / L,
+  - bật/tắt tooltip,
+  - theo màu nền AE, màu nhấn,
+  - Backup / Khôi phục / Reset.
+- Cài đặt lưu ở `<userData>/MenMenWorkflow/settings.json` và đồng bộ giữa mọi panel.
 
-**Tool** (giữ phím bổ trợ khi click để đổi chế độ)
+### 126 tool trong 12 nhóm
+| Nhóm | Tool |
+|---|---|
+| Selection (23) | Select Nulls / 3D / Lights (Alt: camera) / Precomps / Shape / Text / Audio / Guide / Adjustment, Inverse, Every Nth, Odd/Even, Above, Below, Children, Parents, Hierarchy, Random, At Frame, Matching Property, All Paths / Fills / Strokes |
+| Layers (17) | Parent to Null, Parent to First / Above / Selection Order, Unparent, Offset Layers, Duplicate, Rename, Layer Colors, Lock All, Shy, Solo (Timeline), Visibility, Reset Transform, Trim, Set Anchor Point, Collect Colors |
+| Keyframes (12) | Clone, Clone & Mirror, Align to Playhead / In-Out / Left-Right, Offset, Time-Reverse, Snap to Frames, Clean, Copy/Paste Values, Key Looper |
+| Easing (6) | Keyframe Assistant, Easing Presets (Sine…Back × In/Out/InOut), Easings Manager, Copy/Paste Easing, Reverse Easing |
+| Composition (9) | Auto Crop, Auto Trim, Pre-Compose, Decompose, Duplicate Comps, Batch Comp Settings, Black/Gray/White BG |
+| Project (6) | Project Cleanup, Organize Project, Folder Structure, Reveal Project Folder, Reveal Layer Source, Proxy Manager |
+| Guides (11) | Guides Around / Center / Edge / Anchor, Grid System, Clear, Copy, Paste, Show/Hide, Lock, Snap |
+| View (6) | Zoom 100% / 50%, Solo (Viewer), Rulers, Grid, Save Screenshot |
+| Expression (7) | Expression Editor, Enable / Disable / Remove, Remove Broken, Bake, Find & Replace |
+| Shapes (15) | Separate Shapes, Merge, Null Controllers for Points, Shapes from Vector, Remove Artboards, Mask → Shape, Cap/Join Round/Miter/Bevel, Toggle Fill/Stroke, Reverse Path, Reset Shape Transforms, Rectangle / Circle Wizard, Trim Paths Controller |
+| Text (5) | Find & Replace Text, Lorem Ipsum, Typewriter, Number Counter, Text Box Generator |
+| Animation (9) | Overshoot, Bounce, Wiggle, Spin, Auto Fader, Blinker, Stop Motion, Bend / Limb Rig, Position Trace |
 
-| Nhóm | Tool | Click | Alt | Shift | Ctrl |
-|---|---|---|---|---|---|
-| Composition | Crop Comp | Crop precomp về vùng nội dung | | | |
-| | Comp Duplicator | Nhân bản comp + comp lồng, sửa `comp("…")` | Đưa vào folder mới | | |
-| | UnPreComp | Bung layer ra comp hiện tại (null giữ transform) | Giữ layer precomp | | |
-| Animation | Easy Keyframes *(widget)* | Ease / In / Out / Linear / Hold với influence tùy chỉnh | | | |
-| | Clone | Copy key tới playhead | Chọn key mới | Đảo ngược | |
-| | Easings Manager *(widget)* | Copy/Paste giá trị + easing | Chỉ easing | Chỉ giá trị | |
-| | Fix Keys Time | Đưa key lệch về đúng frame | | | |
-| | Loop In/Out | `loopOut("cycle")` | pingpong | offset | continue |
-| | Elastic / Bounce | Expression đàn hồi / nảy | | | |
-| Shapes | Extract Shapes | Tách group thành layer | Giữ gốc | | |
-| | Merge Shapes | Gộp shape layer vào layer trên cùng | Giữ nguồn | | |
-| | Nulls To Point | Null bám theo điểm path | Path đi theo null | | |
-| | Selector | Chọn mọi Path | Mọi Fill | Mọi Stroke | |
-| | Shapes From Vector | AI/PDF → Shape | Xóa nguồn | Xóa artboard | |
-| | Remove Artboards | Xóa group "Artboard" | | | |
-| Rig | Create Limb | Ống/tay chân rig bằng 2 null | | | |
-| | Position Trace | Vẽ quỹ đạo thành shape | Chỉ work area | | |
-| Layers | Add Null | 1 null ở giữa các layer | Null mặc định | Mỗi layer 1 null | |
-| | Get Colors | Gom màu vào controller | | | |
-| | Move Anchor *(widget)* | 9 vị trí, giữ nguyên hình | | Ô giữa: lệnh gốc (3D) | |
-| | Sequencer *(widget)* | Dàn layer/keyframe ↓ ↑ ngẫu nhiên | | | |
-| Render | Simple Proxy | Render proxy + gắn tự động | Gỡ proxy | Bật/tắt proxy | |
-| Custom | Custom Script | Chạy `.jsx` / `.jsxbin` / áp `.ffx` | | | |
-| | Custom Expression | Áp expression lên property | Xóa expression | | |
+Các tool tạo animation bằng expression đều thêm slider để chỉnh lại sau (Wiggle Freq/Amp, Spin, Fade, Counter…). Giữ **Alt / Shift / Ctrl** khi click để đổi chế độ; chữ nhỏ A/S/C cạnh tên tool cho biết tool đó có chế độ phụ nào.
 
 ## Cài đặt để phát triển
 
@@ -55,23 +56,23 @@ Extension cho **Adobe After Effects 2022+** (CEP). Gom script, widget và expres
      powershell -ExecutionPolicy Bypass -File scripts\install-dev-win.ps1
      ```
    Script bật `PlayerDebugMode` (cho phép chạy extension chưa ký) và link thư mục project vào thư mục `CEP/extensions`.
-3. Khởi động lại After Effects → `Window ▸ Extensions ▸ MenMen Workflow 1`.
-4. Debug panel: mở Chrome tới `http://localhost:8091` (panel 2–4 dùng cổng 8092–8094, khai báo trong `.debug`).
+3. Khởi động lại After Effects → `Window ▸ Extensions ▸ MenMen Workflow` (main panel). Các panel phụ ở `MenMen Panel 1–4`.
+4. Debug: mở Chrome tới `http://localhost:8090` (main panel); panel phụ 1–4 dùng cổng 8091–8094 (khai báo trong `.debug`).
 5. Sau khi sửa file trong `host/`: menu ☰ ▸ **Nạp lại host scripts**. Sau khi sửa `client/`: đóng/mở lại panel (hoặc F5 trong DevTools).
 
-**Xem trước giao diện không cần AE:** mở `client/index.html` bằng Chrome (`?panel=1…4`). Bridge sẽ chạy ở chế độ mock, tool chỉ được giả lập.
+**Xem trước giao diện không cần AE:** mở `client/index.html` bằng Chrome (`?panel=main` hoặc `?panel=1…4`). Bridge sẽ chạy ở chế độ mock, tool chỉ được giả lập.
 
 ## Cấu trúc
 
 ```
-CSXS/manifest.xml      4 panel, AE 22.0+, CSXS 9.0
+CSXS/manifest.xml      main panel + 4 panel phụ, AE 22.0+, CSXS 9.0
 client/                giao diện panel (HTML/CSS/JS thuần, không cần build)
   js/bridge.js         evalScript, events, file system (window.__adobe_cep__ / window.cep.fs)
-  js/tools.js          danh mục tool (tên, nhóm, icon, mô tả, phím bổ trợ)
-  js/store.js          cài đặt + layout mặc định, lưu file, đồng bộ panel
-  js/widgets.js        Easy Keyframes, Easings Manager, Sequencer, Move Anchor
+  js/tools.js          12 nhóm + 126 tool (tên, icon, mô tả, phím bổ trợ, tham số)
+  js/store.js          favorites, user panels, slot panel phụ, tham số; lưu file + đồng bộ
+  js/widgets.js        Keyframe Assistant, Easing Presets, Easings Manager, Offset Layers, Set Anchor
   js/ui.js             menu, dialog, toast
-  js/app.js            lưới, edit mode, layout, settings, thư viện tool
+  js/app.js            main panel, sheet nhóm, dock, panel phụ, add item, settings
 host/                  ExtendScript (ES3)
   main.jsx             MMW.load() nạp các module
   lib/core.jsx         MMW.run (undo group + "OK|"/"ERR|"), helper keyframe/expression
@@ -89,9 +90,10 @@ scripts/               cài đặt dev
        return "Thông báo hiển thị trên toast";   // lỗi: MMW.fail("…")
    };
    ```
-2. Khai báo trong `client/js/tools.js`:
+2. Khai báo trong `client/js/tools.js` (`cat` là một trong 12 nhóm; `params` tùy chọn sẽ tạo form):
    ```js
-   { id: 'myTool', name: 'My Tool', cat: 'layers', desc: '…', mods: { alt: '…' } }
+   { id: 'myTool', name: 'My Tool', cat: 'layers', desc: '…', mods: { alt: '…' },
+     params: [P.num('count', 'Số lượng', 3)] }
    ```
 3. Thêm icon (SVG 24×24) vào object `I` trong `tools.js` (tùy chọn).
 
@@ -116,8 +118,13 @@ ZXPSignCmd -sign menmen-workflow dist/MenMenWorkflow.zxp cert.p12 <password> -ts
 - Remove Artboards nhận diện artboard theo tên group có chứa "Artboard".
 - Simple Proxy dùng template "High Quality with Alpha"/"Lossless with Alpha" (theo tên tiếng Anh); AE ngôn ngữ khác sẽ dùng template mặc định.
 
+- Zoom viewer, Show/Hide Guides/Rulers/Grid dùng tên lệnh menu tiếng Anh; AE ngôn ngữ khác có thể báo không tìm thấy lệnh.
+- Panel phụ chỉ có 4 slot (CEP cần khai báo trước số panel trong manifest).
+
 ## Roadmap gợi ý
 
+- Phím tắt cho tool (qua thư mục Scripts của AE), tìm cả effect và script trong thư mục người dùng.
+- Icon tùy chỉnh (SVG) cho item của user panel.
 - Code editor (Monaco) + thư viện expression, đồng bộ với editor ngoài.
 - Thư viện theme, icon vector, Rive animation cho ô.
 - Widget: bảng màu (Collect Palette), easing presets có Speed Graph, Visualize Easings.

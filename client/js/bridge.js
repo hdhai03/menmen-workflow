@@ -4,9 +4,17 @@
   var cep = window.__adobe_cep__;
   var B = { inCEP: !!cep };
 
+  var qp = new URLSearchParams(location.search).get('panel') || 'main';
   B.extId = cep ? cep.getExtensionId()
-    : 'com.menmen.workflow.panel' + (new URLSearchParams(location.search).get('panel') || '1');
-  B.panelNo = B.extId.replace(/^.*panel/, '');
+    : (qp === 'main' ? 'com.menmen.workflow.main' : 'com.menmen.workflow.panel' + qp);
+  B.isMain = /\.main$/.test(B.extId);
+  B.panelNo = B.isMain ? '' : B.extId.replace(/^.*panel/, '');
+
+  // Mở (hoặc đưa lên trước) một panel phụ.
+  B.openPanel = function (extId) {
+    if (cep && cep.requestOpenExtension) { cep.requestOpenExtension(extId, ''); return true; }
+    return false;
+  };
 
   B.systemPath = function (type) {
     if (!cep) return '';

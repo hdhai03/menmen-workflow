@@ -13,7 +13,14 @@ MMW.load = function (root) {
         "layers.jsx",
         "rig.jsx",
         "render.jsx",
-        "custom.jsx"
+        "custom.jsx",
+        "selection.jsx",
+        "keyframes.jsx",
+        "layertools.jsx",
+        "comptools.jsx",
+        "expression.jsx",
+        "text.jsx",
+        "shapetools.jsx"
     ];
     var errs = [];
     for (var i = 0; i < files.length; i++) {
