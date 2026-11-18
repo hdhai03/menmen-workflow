@@ -111,7 +111,7 @@ ZXPSignCmd -sign menmen-workflow dist/MenMenWorkflow.zxp cert.p12 <password> -ts
 
 (Chạy từ thư mục cha của project. Không commit file `.p12`.)
 
-## Giới hạn đã biết (v0.1.0)
+## Giới hạn đã biết
 
 - Merge Shapes / Nulls To Point quy đổi transform của group ở dạng tĩnh (2D). Path nằm trong group có transform khác mặc định có thể bị lệch.
 - UnPreComp bỏ qua Time Remap, effect và opacity của layer precomp.
