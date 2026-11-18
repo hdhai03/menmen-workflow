@@ -47,7 +47,7 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 ### Rigs
 - **Area Effector** (Area Opacity / Scale / Position / Rotation / Color): an `Area Effector` null with Radius, Falloff, Invert Field and Show Field controls plus a dashed guide; layers react to their distance from it. Alt = new controller, Shift = remove the effect.
 - **Spot Blur** (spot.Blur setup): `spot.Blur` adjustment layer with **Compound Blur** reading `blur.Map` (white feathered circles = sharp). Drag the `spot.Blur_01…` guide circles; `spot.Blur_Controller` holds Blur Amount, Spot Size, Feather, Invert and Show Spot Guides. Helper layers are shy and the comp hides shy layers.
-- **Audio to Precomps**: copies the selected audio layers into every nested precomp (time-offset, locked, named `♪ …`); precomps with time remapping/stretch or used more than once are skipped. Shift = remove all synced audio.
+- **Audio to Precomps** (Universal Audio style): the selected audio goes into one audio comp (`♪ <comp> Audio`, in the `MenMen Audio` folder), added to every precomp inside the current comp, at any depth, as a **locked guide layer with audio on**, offset to play in sync. Guide layers are heard in previews but never rendered from a parent comp. Run it again to refresh the audio everywhere (new precomps get it too). Alt = also every other comp in the project; Shift = remove all shared audio. Precomps with time remap/stretch are skipped.
 
 ### MenMen Tools (Panel 1)
 `Window ▸ Extensions ▸ MenMen Tools` is the main tool panel, kept apart from user panels (its own row in the main panel; right-click ▸ **Reset to default layout**). Default layout, top to bottom:

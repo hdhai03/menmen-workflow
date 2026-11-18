@@ -281,63 +281,115 @@
         return "spot.Blur ready: drag the spot.Blur_0x guides; settings on " + ctrl.name;
     };
 
-    // ===================== Audio to Precomps =====================
-    // Copies the selected audio layers into every nested precomp (recursively), offset so they stay in sync.
-    // Shift: remove all audio added by this tool from the whole project.
+    // ===================== Audio to Precomps (Universal Audio style) =====================
+    // The selected audio layers go into one audio comp ("\u266A <comp> Audio"); that comp is added to
+    // every precomp nested in the current comp (any depth) as a locked GUIDE layer with audio on,
+    // offset so it plays in sync. Guide layers are heard in previews but never rendered from a parent.
+    // Running it again refreshes the audio comp (all precomps follow) and adds it to new precomps.
+    // Alt: also add it to every other comp in the project (starting at 0). Shift: remove everything.
     var AUDIO_TAG = "MenMen Audio";
+
+    function audioFolder() {
+        for (var i = 1; i <= app.project.numItems; i++) {
+            var it = app.project.item(i);
+            if (it instanceof FolderItem && it.name === AUDIO_TAG) return it;
+        }
+        return app.project.items.addFolder(AUDIO_TAG);
+    }
+    function findAudioComp(master) {
+        var key = AUDIO_TAG + ":" + master.id;
+        for (var i = 1; i <= app.project.numItems; i++) {
+            var it = app.project.item(i);
+            if (it instanceof CompItem && it.comment === key) return it;
+        }
+        return null;
+    }
+    // one guide layer playing `ac` in `comp`, whose time 0 sits at `offset` in the master comp
+    function placeAudio(comp, ac, offset) {
+        for (var l = 1; l <= comp.numLayers; l++) {
+            var E = comp.layer(l);
+            if (E.source === ac) {  // already there: just re-sync
+                var lk = E.locked; E.locked = false;
+                E.startTime = -offset; E.audioEnabled = true;
+                E.locked = lk;
+                return false;
+            }
+        }
+        var L = comp.layers.add(ac);
+        L.startTime = -offset;
+        L.name = ac.name;
+        L.comment = AUDIO_TAG;
+        L.guideLayer = true;      // heard in previews, never rendered from a parent comp
+        L.audioEnabled = true;
+        try { L.enabled = false; } catch (e) { /* audio-only source: no video switch */ }
+        L.label = 14;
+        L.moveToEnd();
+        L.locked = true;
+        return true;
+    }
 
     T.audioToPrecomps = function (o) {
         var i, k;
         if (o.shift) {
-            var removed = 0;
+            var removed = 0, comps = [];
             for (i = 1; i <= app.project.numItems; i++) {
                 var it = app.project.item(i);
                 if (!(it instanceof CompItem)) continue;
+                if (String(it.comment).indexOf(AUDIO_TAG + ":") === 0) { comps.push(it); continue; }
                 for (k = it.numLayers; k >= 1; k--) {
                     var L0 = it.layer(k);
                     if (L0.comment === AUDIO_TAG) { L0.locked = false; L0.remove(); removed++; }
                 }
             }
-            return "Removed " + removed + " synced audio layer(s).";
+            for (i = 0; i < comps.length; i++) comps[i].remove();
+            return "Removed " + removed + " audio layer(s) and " + comps.length + " audio comp(s).";
         }
-        var c = MMW.comp(), sel = MMW.selLayers(c), audio = [];
-        for (i = 0; i < sel.length; i++) if (sel[i] instanceof AVLayer && sel[i].hasAudio) audio.push(sel[i]);
-        if (!audio.length) MMW.fail("Select audio layers in the main comp.");
+        var c = MMW.comp(), sel = c.selectedLayers, audio = [];
+        for (i = 0; i < sel.length; i++) if (sel[i] instanceof AVLayer && sel[i].hasAudio && sel[i].comment !== AUDIO_TAG) audio.push(sel[i]);
+        if (!audio.length) MMW.fail("Select the audio layer(s) to share (in the main comp).");
 
-        var placed = 0, skipped = [], visited = {};
-        // offset: comp-time of the target comp's 0 relative to the main comp
+        // 1) the audio comp: same timing as the master, refreshed with the selected audio
+        var ac = findAudioComp(c);
+        if (!ac) {
+            ac = app.project.items.addComp("\u266A " + c.name + " Audio", c.width, c.height, c.pixelAspect, c.duration, c.frameRate);
+            ac.comment = AUDIO_TAG + ":" + c.id;
+            ac.parentFolder = audioFolder();
+        } else {
+            for (k = ac.numLayers; k >= 1; k--) { ac.layer(k).locked = false; ac.layer(k).remove(); }
+            ac.duration = c.duration;
+        }
+        for (i = audio.length - 1; i >= 0; i--) audio[i].copyToComp(ac);  // copyToComp keeps the timing
+        for (k = 1; k <= ac.numLayers; k++) ac.layer(k).audioEnabled = true;
+
+        // 2) every precomp nested in the master (any depth), offset so it plays in sync
+        var added = 0, synced = 0, skipped = [], visited = {};
+        visited[c.id] = true; visited[ac.id] = true;
         function walk(comp, offset, depth) {
             if (depth > 20) return;
             for (var l = 1; l <= comp.numLayers; l++) {
                 var P = comp.layer(l);
-                if (!(P.source instanceof CompItem) || P.comment === AUDIO_TAG) continue;
+                if (!(P.source instanceof CompItem) || P.source === ac || P.comment === AUDIO_TAG) continue;
                 var sub = P.source;
                 if (P.timeRemapEnabled || Math.abs(P.stretch - 100) > 0.001) { skipped.push(sub.name + " (time remap/stretch)"); continue; }
-                if (visited[sub.id]) { skipped.push(sub.name + " (used more than once)"); continue; }
+                if (visited[sub.id]) { skipped.push(sub.name + " (used more than once: synced to its first use)"); continue; }
                 visited[sub.id] = true;
                 var subOffset = offset + P.startTime;
-                for (var a = audio.length - 1; a >= 0; a--) {
-                    var before = {};
-                    for (var b = 1; b <= sub.numLayers; b++) before[sub.layer(b).id] = true;
-                    audio[a].copyToComp(sub);
-                    for (var f = 1; f <= sub.numLayers; f++) {
-                        var nl = sub.layer(f);
-                        if (before[nl.id]) continue;
-                        nl.startTime = audio[a].startTime - subOffset;
-                        nl.name = "\u266A " + audio[a].name;
-                        nl.comment = AUDIO_TAG;
-                        nl.label = 14;
-                        nl.moveToEnd();
-                        nl.locked = true;
-                        placed++;
-                        break;
-                    }
-                }
+                if (placeAudio(sub, ac, subOffset)) added++; else synced++;
                 walk(sub, subOffset, depth + 1);
             }
         }
         walk(c, 0, 0);
-        var msg = "Synced " + audio.length + " audio layer(s) into precomps (" + placed + " copies).";
+        // 3) Alt: every other comp in the project too (no timing link: starts at 0)
+        if (o.alt) {
+            for (i = 1; i <= app.project.numItems; i++) {
+                var cc = app.project.item(i);
+                if (!(cc instanceof CompItem) || visited[cc.id] || String(cc.comment).indexOf(AUDIO_TAG + ":") === 0) continue;
+                visited[cc.id] = true;
+                if (placeAudio(cc, ac, 0)) added++; else synced++;
+            }
+        }
+        var msg = ac.name + ": added to " + added + " comp(s)" + (synced ? ", updated in " + synced : "") + " as a guide layer with audio on.";
+        if (!added && !synced) msg = ac.name + " is ready, but this comp has no precomps" + (o.alt ? " and no other comps exist." : " (Alt: add it to every comp in the project).");
         if (skipped.length) msg += " Skipped: " + skipped.join(", ") + ".";
         return msg;
     };
