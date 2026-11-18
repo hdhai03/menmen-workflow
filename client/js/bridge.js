@@ -46,15 +46,15 @@
   };
 
   B.run = function (toolId, opts) {
-    var s = 'MMW.run(' + JSON.stringify(toolId) + ',' + JSON.stringify(opts || {}) + ')';
+    var s = '$.global.MMW.run(' + JSON.stringify(toolId) + ',' + JSON.stringify(opts || {}) + ')';
     return B.evalScript(s).then(B.parse);
   };
 
   B.loadHost = function () {
     if (!cep) return Promise.resolve({ ok: true, msg: 'mock' });
     var root = B.extPath.replace(/\\/g, '/');
-    var s = '(function(){try{$.evalFile(new File(' + JSON.stringify(root + '/host/main.jsx') + '));return MMW.load(' +
-      JSON.stringify(root) + ');}catch(e){return "ERR|"+e.message;}})()';
+    var s = '(function(){try{$.evalFile(new File(' + JSON.stringify(root + '/host/main.jsx') + '));return $.global.MMW.load(' +
+      JSON.stringify(root) + ');}catch(e){return "ERR|"+e.message+" (line "+e.line+")";}})()';
     return B.evalScript(s).then(B.parse);
   };
 

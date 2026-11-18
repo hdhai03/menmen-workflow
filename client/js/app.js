@@ -383,6 +383,7 @@
       { label: 'Back up settings…', onClick: exportSettings },
       { label: 'Restore settings…', onClick: importSettings },
       { label: 'Reload host scripts', onClick: loadHost },
+      { label: 'Diagnostics…', onClick: diagnostics },
       { label: 'About MenMen Workflow', onClick: about }
     ]), { minWidth: 210 });
   }
@@ -740,7 +741,7 @@
       } });
     }
     items.push({ label: 'Change content…', onClick: function () { contentPicker(r); } });
-    items.push({ label: 'Settings…', onClick: openSettings }, { label: 'Reload host scripts', onClick: loadHost });
+    items.push({ label: 'Settings…', onClick: openSettings }, { label: 'Reload host scripts', onClick: loadHost }, { label: 'Diagnostics…', onClick: diagnostics });
     U.menu(r.right - 190, r.bottom + 4, items, { minWidth: 190 });
   }
 
@@ -841,6 +842,40 @@
   }
   function scriptsEmpty() {
     return el('div', 'empty', 'No scripts yet. Put .jsx, .jsxbin or .ffx files in Documents/MenMen Workflow/Scripts (folder icon above), then click Refresh.');
+  }
+
+  // ============ diagnostics ============
+  // Checks every step between the panel and After Effects and shows a copyable report.
+  function diagnostics() {
+    var box = el('div', 'form');
+    var ta = el('textarea', 'input code'); ta.rows = 14; ta.readOnly = true; ta.value = 'Running checks…';
+    box.appendChild(ta);
+    U.dialog('Diagnostics', box, [{ label: 'Copy', onClick: function () { ta.select(); try { document.execCommand('copy'); } catch (e) { /* ignore */ } U.toast('Copied', true); return false; } },
+      { label: 'Close', primary: true }]);
+    var lines = [
+      'Panel: ' + B.extId,
+      'Inside After Effects (CEP): ' + (B.inCEP ? 'yes' : 'NO - preview mode'),
+      'Extension path: ' + (B.extPath || '(none)'),
+      'Settings file: ' + (S.file || '(none)'),
+      'Host load result: ' + (st.hostOk ? 'OK ' : 'FAILED ') + st.hostMsg
+    ];
+    var checks = [
+      ['ExtendScript reachable (1+1)', '1+1'],
+      ['After Effects version', 'app.version'],
+      ['typeof MMW', 'typeof MMW'],
+      ['MMW.load exists', 'typeof MMW !== "undefined" && typeof MMW.load'],
+      ['Tools loaded', '(function(){if(typeof MMW==="undefined"||!MMW.tools)return 0;var n=0;for(var k in MMW.tools)n++;return n;})()'],
+      ['main.jsx exists', 'new File(' + JSON.stringify((B.extPath || '').replace(/\\/g, '/') + '/host/main.jsx') + ').exists'],
+      ['core.jsx exists', 'new File(' + JSON.stringify((B.extPath || '').replace(/\\/g, '/') + '/host/lib/core.jsx') + ').exists'],
+      ['Active item', 'app.project.activeItem ? (app.project.activeItem instanceof CompItem ? "comp: " : "item: ") + app.project.activeItem.name : "none"'],
+      ['Test tool run (hostInfo)', 'typeof MMW !== "undefined" && MMW.run ? MMW.run("hostInfo",{}) : "MMW.run missing"']
+    ];
+    var i = 0;
+    (function next() {
+      if (i >= checks.length) { ta.value = lines.join('\n'); return; }
+      var c = checks[i++];
+      B.evalScript(c[1]).then(function (r) { lines.push(c[0] + ': ' + r); ta.value = lines.join('\n') + '\n…'; next(); });
+    })();
   }
 
   // ============ host & init ============
