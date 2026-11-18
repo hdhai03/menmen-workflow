@@ -75,7 +75,7 @@
   //  - once started, the drag continues anywhere in the panel; it ends on release, when the pointer
   //    leaves the panel or the panel loses focus (so a release outside AE's panel can't leave it stuck);
   //    release applies when Auto is on
-  // Detail strip under the graph: [Out ›] [○ ◇ □] [‹ In]; Apply / In / Out / Linear / Hold buttons at the bottom.
+  // Detail strip under the graph: [Out ›] [‹ In]; Apply / In / Out / Linear / Hold buttons at the bottom.
   // The two number boxes can be dragged sideways (scrub) or clicked to type.
   function graphEditor(d, ctx) {
     initCurve(d);
@@ -247,7 +247,7 @@
       return b;
     };
     var link = tool('Link', 'link', 'Keep Out and In equal (symmetric curve)', function () { var f = infl(); setInfl(f[0], f[0]); draw(); if (d.auto) autoApply(); });
-    var auto = tool('Auto', 'auto', 'On: applied to the selected keys as soon as you release, pick a preset or change a value. Off: use ○ / ◇ / □ to apply.');
+    var auto = tool('Auto', 'auto', 'On: applied to the selected keys as soon as you release, pick a preset or change a value. Off: use Apply / In / Out.');
     var rd = el('button', 'w-btn ge-tool', 'Read');
     rd.title = 'Read the curve from the selected keyframes';
     rd.addEventListener('click', function (e) {
@@ -260,7 +260,7 @@
     bar.append(tabs, el('span', 'spacer'), link, auto, rd);
     root.append(bar, box);
 
-    // ---- detail strip: [Out ›] [○ ◇ □] [‹ In] ----
+    // ---- detail strip: [Out ›] [‹ In] ----
     var strip = el('div', 'ge-strip');
     function scrubBox(cls, label, arrow, side) {
       var wrap = el('div', 'ge-sb ' + cls);
@@ -299,22 +299,7 @@
     }
     var outBox = scrubBox('ge-sb-out', 'Out', '<svg viewBox="0 0 8 12"><path d="M2 2l4 4-4 4"/></svg>', 'o');
     var inBox = scrubBox('ge-sb-in', 'In', '<svg viewBox="0 0 8 12"><path d="M6 2L2 6l4 4"/></svg>', 'i');
-    var modes = el('div', 'ge-modes');
-    [['ease', '<circle cx="8" cy="8" r="4.5"/>', 'Ease: apply this curve (Alt: In side only, Shift: Out side only)'],
-     ['linear', '<path d="M8 3l5 5-5 5-5-5z"/>', 'Linear keyframes'],
-     ['hold', '<rect x="3.5" y="3.5" width="9" height="9"/>', 'Hold keyframes']].forEach(function (m) {
-      var b = el('button', 'ge-mode' + (m[0] === (d.mode || 'ease') ? ' on' : ''), '<svg viewBox="0 0 16 16">' + m[1] + '</svg>');
-      b.title = m[2];
-      b.addEventListener('click', function (e) {
-        stop(e);
-        d.mode = m[0]; ctx.save();
-        modes.querySelectorAll('.ge-mode').forEach(function (x) { x.classList.toggle('on', x === b); });
-        if (m[0] === 'ease') apply(e.altKey ? 'in' : (e.shiftKey ? 'out' : 'both'), e);
-        else ctx.run('easyKeyframes', { mode: m[0] }, e);
-      });
-      modes.appendChild(b);
-    });
-    strip.append(outBox, modes, inBox);
+    strip.append(outBox, inBox);
     function paintStrip() {
       var f = infl();
       if (document.activeElement !== outBox.inp) outBox.inp.value = Math.round(f[0] * 100);
