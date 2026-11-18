@@ -15,6 +15,7 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 - **Sub panels** show one category or one user panel, as a list or a grid.
   - Category panels: hide the tools you don't use; "Unhide all" brings them back temporarily.
   - User panels: drag to reorder, right-click to edit / delete items.
+- **Layout view / Quick Panel**: sub panels can also show a compact grid of square cells (like a classic tool palette). Widgets work inline (Keyframe Assistant sliders, Copy/Paste keys, 3×3 anchor grid, Offset Layers); other tools are icon tiles. In edit mode, drag cells to reorder and drag the corner to resize (or right-click ▸ Size). A ready-made **Quick Panel** opens in MenMen Panel 1; create more with ☰ ▸ New quick panel.
 - **User panels** can hold: MenMen tools, Expressions, Scriptlets (ExtendScript), Script files (.jsx/.jsxbin), Presets (.ffx), Effects, Menu Commands, Dividers.
 - **Tools with parameters** open a small form that remembers the last values. **Widgets** (Keyframe Assistant, Easing Presets, Easings Manager, Offset Layers, Set Anchor Point) open in a dialog.
 - **Settings**:

@@ -9,12 +9,25 @@
 
   var uid = function () { return Math.random().toString(36).slice(2, 9); };
 
+  // Default contents of a Quick Panel (Layout view): inline widgets + one-click tools.
+  function quickItems() {
+    var it = function (tool, w, h) { var o = { id: uid(), type: 'tool', tool: tool }; if (w) { o.w = w; o.h = h; } return o; };
+    return [
+      it('easyKeyframes', 2, 2), it('easings', 2, 1), it('sequencer', 2, 1),
+      it('moveAnchor', 2, 2), it('addNull'), it('clone'), it('cloneMirror'), it('loop'),
+      it('elastic'), it('bounce'), it('fixKeysTime'), it('easingPresets'),
+      it('extractShapes'), it('mergeShapes'), it('nullsToPoint'), it('selectPaths'),
+      it('cropComp'), it('preCompose'), it('unPreComp'), it('positionTrace')
+    ];
+  }
+
   function defaults() {
     return {
       version: 2,
       theme: { style: 'color', iconSize: 'm', tooltips: true, followHost: true, accent: '#4f8cff' },
       favorites: ['clone', 'easyKeyframes', 'addNull', 'moveAnchor', 'sequencer'],
       userPanels: {
+        quick: { id: 'quick', name: 'Quick Panel', items: quickItems() },
         up1: { id: 'up1', name: 'User Panel 1', items: [
           { id: uid(), type: 'tool', tool: 'easingPresets' },
           { id: uid(), type: 'tool', tool: 'loop' },
@@ -24,10 +37,11 @@
           { id: uid(), type: 'effect', label: 'Gaussian Blur', effect: 'ADBE Gaussian Blur 2' }
         ] }
       },
-      upOrder: ['up1'],
+      upOrder: ['quick', 'up1'],
       hidden: {},        // { catId: [toolId,...] } - tools hidden in category panels
       params: {},        // { toolId: {...} } - last used parameters
-      slots: {},         // { extId: { kind: 'category'|'user', id, view: 'list'|'grid' } }
+      slots: { 'com.menmen.workflow.panel1': { kind: 'user', id: 'quick', view: 'layout' } },  // { extId: { kind, id, view: 'list'|'grid'|'layout' } }
+      quickAdded: true,
       main: { collapsedFav: false }
     };
   }
@@ -41,6 +55,11 @@
     s.upOrder = s.upOrder.filter(function (id) { return s.userPanels[id]; });
     Object.keys(s.userPanels).forEach(function (id) { if (s.upOrder.indexOf(id) < 0) s.upOrder.push(id); });
     // script:* favorites are registered later, once the host has listed the script library
+    if (!s.quickAdded && !s.userPanels.quick) {  // older settings: add the Quick Panel once
+      s.userPanels.quick = { id: 'quick', name: 'Quick Panel', items: quickItems() };
+      s.upOrder.unshift('quick');
+      s.quickAdded = true;
+    }
     s.favorites = s.favorites.filter(function (id) { return window.Tools.get(id) || /^script:/.test(id); });
     return s;
   }
@@ -145,6 +164,7 @@
     return u ? u.name : null;
   };
 
+  S.quickItems = quickItems;
   S.reset = function () { S.data = defaults(); S.save(true); };
   S.importJSON = function (txt) { S.data = normalize(JSON.parse(txt)); S.save(true); };
   S.exportJSON = function () { return JSON.stringify(S.data, null, 2); };

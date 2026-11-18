@@ -223,5 +223,58 @@
     return root;
   };
 
+  // ---------- Compact versions for Layout panels ----------
+  var MINI = {
+    ease: '<path d="M2 13C8 13 8 3 14 3"/>',
+    linear: '<path d="M2 13L14 3"/>',
+    hold: '<path d="M2 13H8V3h6"/>'
+  };
+  W.easyKeyframesCompact = function (d, ctx) {
+    if (d.inInf == null) d.inInf = 70;
+    if (d.outInf == null) d.outInf = 70;
+    if (d.inSpeed == null) d.inSpeed = 0;
+    if (d.outSpeed == null) d.outSpeed = 0;
+    var root = el('div', 'w wc-easy');
+    function slider(label, key, tip) {
+      var row = el('label', 'wc-slider');
+      row.title = tip;
+      var input = el('input'); input.type = 'range'; input.min = 1; input.max = 100; input.value = d[key];
+      var val = el('span', 'wc-val', String(Math.round(d[key])));
+      input.addEventListener('input', function () { d[key] = Number(input.value); val.textContent = input.value; });
+      input.addEventListener('change', function () { ctx.save(); });
+      row.append(el('span', 'wc-lbl', label), input, val);
+      return row;
+    }
+    root.append(slider('Out', 'outInf', 'Outgoing influence %'), slider('In', 'inInf', 'Incoming influence %'));
+    var btns = el('div', 'wc-btns');
+    [['ease', 'Ease (Alt: in only, Shift: out only)'], ['linear', 'Linear'], ['hold', 'Hold']].forEach(function (b) {
+      var x = el('button', 'w-btn wc-ico' + (b[0] === 'ease' ? ' w-primary' : ''), '<svg viewBox="0 0 16 16">' + MINI[b[0]] + '</svg>');
+      x.title = b[1];
+      x.addEventListener('click', function (e) {
+        stop(e);
+        var mode = b[0] === 'ease' ? (e.altKey ? 'in' : (e.shiftKey ? 'out' : 'ease')) : b[0];
+        ctx.run('easyKeyframes', { mode: mode, inInf: d.inInf, outInf: d.outInf, inSpeed: d.inSpeed, outSpeed: d.outSpeed, alt: false, shift: false }, e);
+      });
+      btns.appendChild(x);
+    });
+    root.appendChild(btns);
+    return root;
+  };
+  W.sequencerCompact = function (d, ctx) {
+    if (d.step == null) d.step = 2;
+    if (!d.order) d.order = 'down';
+    var ORD = { down: ['↓', 'Top to bottom'], up: ['↑', 'Bottom to top'], random: ['⤨', 'Random'] }, NEXT = { down: 'up', up: 'random', random: 'down' };
+    var root = el('div', 'w wc-seq');
+    var num = el('input', 'w-num'); num.type = 'number'; num.min = 0; num.value = d.step; num.title = 'Frames between items';
+    num.addEventListener('click', stop);
+    num.addEventListener('change', function () { d.step = Math.max(0, Number(num.value) || 0); ctx.save(); });
+    var ord = el('button', 'w-btn wc-ord', ORD[d.order][0]); ord.title = ORD[d.order][1] + ' (click to change)';
+    ord.addEventListener('click', function (e) { stop(e); d.order = NEXT[d.order]; ord.textContent = ORD[d.order][0]; ord.title = ORD[d.order][1]; ctx.save(); });
+    var go = el('button', 'w-btn w-primary', '▶'); go.title = 'Offset layers / keys';
+    go.addEventListener('click', function (e) { stop(e); ctx.run('sequencer', { step: d.step, order: d.order }, e); });
+    root.append(num, ord, go);
+    return root;
+  };
+
   window.Widgets = W;
 })();

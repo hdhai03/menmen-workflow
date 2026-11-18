@@ -119,6 +119,8 @@
     eyeOff: '<path d="M2 8s2.2-4 6-4 6 4 6 4-2.2 4-6 4-6-4-6-4z"/><path d="M3 13L13 3"/>',
     gear: '<circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/>',
     refresh: '<path d="M13 8a5 5 0 1 1-1.5-3.6"/><path d="M13 2.5v3h-3"/>',
+    layout: '<path d="M2.5 2.5h6v6h-6zM10.5 2.5h3v3h-3zM10.5 7.5h3v6h-3zM2.5 10.5h6v3h-6z"/>',
+    expand: '<path d="M9.5 2.5h4v4M13.5 2.5L9 7M6.5 13.5h-4v-4M2.5 13.5L7 9"/>',
     folder: '<path d="M2 4.5h4l1.5 1.5H14v7H2z"/>',
     star: '<path d="M8 1.8l1.8 3.8 4.1.5-3 2.8.8 4.1L8 11l-3.7 2 .8-4.1-3-2.8 4.1-.5z"/>'
   };
@@ -368,6 +370,7 @@
     U.menu(r.left, r.bottom + 4, [
       { label: 'Settings…', onClick: openSettings },
       { label: 'New user panel…', onClick: newUserPanel },
+      { label: 'New quick panel (layout)…', onClick: newQuickPanel },
       { label: 'Add New Item…', onClick: function () { addItemDialog(null); } },
       { label: 'Open Scripts folder', onClick: function (e) { exec('openScriptsFolder', { root: B.extPath }, e, 'Scripts'); } },
       { label: 'Refresh Scripts', onClick: function () { loadLibrary(true); } },
@@ -430,6 +433,7 @@
       { label: 'Edit…', disabled: it.type === 'divider', onClick: function () { itemForm(upId, it.type, it); } },
       { label: 'Move up', disabled: idx === 0, onClick: function () { u.items.splice(idx - 1, 0, u.items.splice(idx, 1)[0]); S.save(); render(); } },
       { label: 'Move down', disabled: idx === u.items.length - 1, onClick: function () { u.items.splice(idx + 1, 0, u.items.splice(idx, 1)[0]); S.save(); render(); } },
+      { header: 'Size in Layout view' }, { node: sizeChips(it) },
       '-',
       { label: 'Delete', danger: true, onClick: function () { u.items.splice(idx, 1); S.save(); render(); } }
     ]);
@@ -539,8 +543,11 @@
     head.appendChild(el('span', 'spacer'));
     if (slot) {
       var view = slot.view || 'list';
-      head.appendChild(svgBtn('', view === 'list' ? 'Grid view' : 'List view', view === 'list' ? ICONS.grid : ICONS.list, function () {
-        slot.view = view === 'list' ? 'grid' : 'list'; S.save(); render();
+      head.appendChild(svgBtn('', 'View: ' + view, view === 'list' ? ICONS.list : (view === 'grid' ? ICONS.grid : ICONS.layout), function (e) {
+        var r = e.currentTarget.getBoundingClientRect();
+        U.menu(r.left - 100, r.bottom + 4, [{ header: 'View' }].concat([['list', 'List'], ['grid', 'Grid'], ['layout', 'Layout (compact, inline widgets)']].map(function (v) {
+          return { label: v[1], hint: v[0] === view ? '✓' : '', onClick: function () { slot.view = v[0]; S.save(); render(); } };
+        })), { minWidth: 200 });
       }));
       if (slot.kind === 'category' && slot.id === 'scripts') scriptButtons().forEach(function (b) { head.appendChild(b); });
       if (slot.kind === 'user') head.appendChild(svgBtn(st.edit ? 'on' : '', 'Edit (drag to reorder)', ICONS.edit, function () { st.edit = !st.edit; render(); }));
@@ -555,6 +562,7 @@
     $app.appendChild(root);
 
     if (!slot) { body.appendChild(emptySub()); setTip(); return; }
+    if (slot.view === 'layout') { renderLayout(body, slot); setTip(); return; }
     var grid = slot.view === 'grid';
     var box = el('div', grid ? 'tile-grid' : 'row-list');
     body.appendChild(box);
@@ -602,6 +610,102 @@
     }
     setTip();
   }
+  // ============ LAYOUT VIEW (compact grid, inline widgets) ============
+  var INLINE = { easyKeyframes: 'easyKeyframesCompact', easings: 'easings', moveAnchor: 'moveAnchor', sequencer: 'sequencerCompact' };
+  var DEFAULT_SIZE = { easyKeyframes: [2, 2], easings: [2, 1], moveAnchor: [2, 2], sequencer: [2, 1] };
+  function cellSize(it) {
+    var t = it.type === 'tool' ? T.get(it.tool) : null, d = (t && t.widget && DEFAULT_SIZE[t.widget]) || [1, 1];
+    return [it.w || d[0], it.h || d[1]];
+  }
+  function sizeChips(it) {
+    var box = el('div', 'menu-sizes'), cur = cellSize(it);
+    [[1, 1], [2, 1], [3, 1], [1, 2], [2, 2], [3, 2], [4, 2], [4, 3]].forEach(function (sz) {
+      var b = el('button', 'size-chip' + (cur[0] === sz[0] && cur[1] === sz[1] ? ' on' : ''), sz[0] + '×' + sz[1]);
+      b.addEventListener('click', function () { it.w = sz[0]; it.h = sz[1]; S.save(); U.close(); render(); });
+      box.appendChild(b);
+    });
+    return box;
+  }
+  function renderLayout(body, slot) {
+    var grid = el('div', 'q-grid'), user = slot.kind === 'user', u = user ? S.data.userPanels[slot.id] : null;
+    body.appendChild(grid);
+    var items = user ? u.items : T.inCat(slot.id).filter(function (t) { return !S.isHidden(slot.id, t.id); })
+      .map(function (t) { return { type: 'tool', tool: t.id }; });
+    items.forEach(function (it, idx) { grid.appendChild(layoutCell(it, idx, u)); });
+    if (user) {
+      var add = el('button', 'q-cell q-tile q-add', '<svg viewBox="0 0 16 16" class="ico16">' + ICONS.plus + '</svg>');
+      add.title = 'Add item';
+      add.addEventListener('click', function () { addItemDialog(u.id); });
+      grid.appendChild(add);
+    } else if (slot.id === 'scripts' && !items.length) body.appendChild(scriptsEmpty());
+  }
+  function layoutCell(it, idx, u) {
+    if (it.type === 'divider') {
+      var dv = el('div', 'q-divider');
+      if (u) dv.addEventListener('contextmenu', function (e) { e.preventDefault(); itemMenu(u.id, it, e); });
+      return dv;
+    }
+    var t = it.type === 'tool' ? T.get(it.tool) : null, sz = cellSize(it), n;
+    if (t && t.widget && INLINE[t.widget]) {
+      n = el('div', 'q-cell q-widget wq-' + t.widget);
+      n.appendChild(W[INLINE[t.widget]](S.widgetData(t.id), { run: function (id, o, e) { return exec(id, o, e, t.name); }, save: function () { S.save(); } }));
+      var ex = svgBtn('q-expand', 'Open ' + t.name, ICONS.expand, function () { openWidget(t); });
+      n.appendChild(ex);
+      hoverTip(n, tipTool(t));
+    } else {
+      n = el('button', 'q-cell q-tile');
+      n.innerHTML = '<span class="tile-ico">' + itemIcon(it) + '</span>' + (sz[0] > 1 ? '<span class="q-lbl">' + esc(itemLabel(it)) + '</span>' : '');
+      n.addEventListener('click', function (e) { if (!st.edit) runItem(it, e); });
+      hoverTip(n, function () {
+        if (t) return tipTool(t);
+        return '<b>' + esc(itemLabel(it)) + '</b><span class="tip-desc">' + esc(itemDesc(it)) + '</span>';
+      });
+    }
+    if (t) catStyle(n, t.cat); else n.classList.add('custom');
+    n.style.gridColumn = 'span ' + sz[0];
+    n.style.gridRow = 'span ' + sz[1];
+    if (!u) return n;
+    n.addEventListener('contextmenu', function (e) { e.preventDefault(); itemMenu(u.id, it, e); });
+    if (st.edit) {
+      n.classList.add('editable'); n.draggable = true;
+      n.addEventListener('dragstart', function (e) { e.dataTransfer.setData('text/plain', String(idx)); n.classList.add('dragging'); });
+      n.addEventListener('dragend', function () { n.classList.remove('dragging'); });
+      n.addEventListener('dragover', function (e) { e.preventDefault(); n.classList.add('drop'); });
+      n.addEventListener('dragleave', function () { n.classList.remove('drop'); });
+      n.addEventListener('drop', function (e) {
+        e.preventDefault();
+        var from = Number(e.dataTransfer.getData('text/plain'));
+        if (isNaN(from) || from === idx) return;
+        u.items.splice(idx, 0, u.items.splice(from, 1)[0]); S.save(); render();
+      });
+      n.appendChild(svgBtn('del-x', 'Delete', ICONS.close, function () { u.items.splice(idx, 1); S.save(); render(); }));
+      var rs = el('div', 'q-resize'); rs.title = 'Drag to resize';
+      rs.addEventListener('mousedown', function (e) {
+        e.preventDefault(); e.stopPropagation(); n.draggable = false;
+        var unit = n.getBoundingClientRect().width / sz[0], sx = e.clientX, sy = e.clientY, w0 = sz[0], h0 = sz[1];
+        var mv = function (ev) {
+          it.w = Math.max(1, Math.min(6, w0 + Math.round((ev.clientX - sx) / unit)));
+          it.h = Math.max(1, Math.min(4, h0 + Math.round((ev.clientY - sy) / unit)));
+          n.style.gridColumn = 'span ' + it.w; n.style.gridRow = 'span ' + it.h;
+        };
+        var up = function () { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); S.save(); render(); };
+        document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+      });
+      n.appendChild(rs);
+    }
+    return n;
+  }
+  function newQuickPanel() {
+    U.prompt('New quick panel', 'Name', 'Quick Panel', function (v) {
+      var id = S.newUserPanel(v);
+      S.data.userPanels[id].items = S.quickItems();
+      S.save();
+      var slot = S.findSlot('user', id);
+      if (slot) { S.setSlot(slot.ext, 'user', id); S.data.slots[slot.ext].view = 'layout'; S.save(true); openSlot(slot.ext); }
+      render();
+    });
+  }
+
   function emptySub() {
     var w = el('div', 'sub-empty');
     w.innerHTML = '<div class="se-title">Empty panel</div><div class="muted">Choose what this panel shows, or click the Dock icon in the main panel.</div>';
