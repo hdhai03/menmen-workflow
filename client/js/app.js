@@ -111,9 +111,9 @@
   }
   var ICONS = {
     back: '<path d="M10 3L5 8l5 5"/>', close: '<path d="M4 4l8 8M12 4l-8 8"/>',
-    dock: '<rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/><path d="M2.5 6h11M8 9v3M6.5 10.5L8 12l1.5-1.5"/>',
+    dock: '<rect x="2.5" y="2.5" width="11" height="11"/><path d="M2.5 6h11M8 9v3M6.5 10.5L8 12l1.5-1.5"/>',
     menu: '<path d="M3 4.5h10M3 8h10M3 11.5h10"/>', edit: '<path d="M11.3 2.3l2.4 2.4-8.2 8.2H3.1v-2.4z"/>',
-    grid: '<rect x="2.5" y="2.5" width="4.5" height="4.5" rx="1"/><rect x="9" y="2.5" width="4.5" height="4.5" rx="1"/><rect x="2.5" y="9" width="4.5" height="4.5" rx="1"/><rect x="9" y="9" width="4.5" height="4.5" rx="1"/>',
+    grid: '<rect x="2.5" y="2.5" width="4.5" height="4.5"/><rect x="9" y="2.5" width="4.5" height="4.5"/><rect x="2.5" y="9" width="4.5" height="4.5"/><rect x="9" y="9" width="4.5" height="4.5"/>',
     list: '<path d="M5.5 4h8M5.5 8h8M5.5 12h8"/><circle cx="2.8" cy="4" r=".8"/><circle cx="2.8" cy="8" r=".8"/><circle cx="2.8" cy="12" r=".8"/>',
     plus: '<path d="M8 3v10M3 8h10"/>', search: '<circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/>',
     eyeOff: '<path d="M2 8s2.2-4 6-4 6 4 6 4-2.2 4-6 4-6-4-6-4z"/><path d="M3 13L13 3"/>',
