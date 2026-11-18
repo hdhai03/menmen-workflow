@@ -220,17 +220,18 @@
     return n;
   }
   // Fit the Quick Access tiles to the panel's columns; the cell spans enough whole rows.
-  function fitQA(c, cols, cell, gap) {
+  function fitQA(c, cols, cell, gap, half) {
     c.style.gridColumn = '1 / -1';
     var g = c.querySelector('.qa-grid'), h = c.querySelector('.qa-head'), e = c.querySelector('.qa-empty');
     if (!g) return;
-    var per = cols >= 10 ? 10 : (cols >= 4 ? 5 : Math.max(1, cols)), inner = c.clientWidth - 8;  // 10 = 1x10 / 2x5, no ragged last row
+    var inner = c.clientWidth - 8, t5 = (inner - gap * 4) / 5;
+    var per = cols >= 10 ? 10 : (t5 >= 24 ? 5 : Math.max(1, cols));  // 10 = 1x10 / 2x5, no ragged last row
     var tile = Math.max(16, Math.floor((inner - gap * (per - 1)) / per));
     g.style.gridTemplateColumns = 'repeat(' + per + ', ' + tile + 'px)';
     g.style.gridAutoRows = tile + 'px';
     var lines = Math.ceil(QA_MAX / per);
     var want = 8 + (h ? h.offsetHeight + 3 : 0) + (e ? e.offsetHeight + 3 : 0) + lines * tile + (lines - 1) * gap;
-    c.style.gridRow = 'span ' + Math.max(1, Math.ceil((want + gap) / (cell + gap)));
+    c.style.gridRow = 'span ' + Math.max(1, Math.ceil((want + gap) / (half + gap)));
   }
   // Re-order Quick Access after a run, but not while the pointer is over it (tiles would move under the cursor).
   var qaTimer = null;
@@ -313,6 +314,7 @@
   function widgetCtx(t) {
     return {
       run: function (id, o, e) { S.track(t.id); qaSoon(); return exec(id, o, e, t.name); },
+      query: function (id, o) { return B.run(id, o || {}); },  // silent: no toast, not counted
       save: function () { S.save(); },
       lib: {
         list: function () { return S.data.curves; },
@@ -343,7 +345,7 @@
     var head = el('header', 'm-head');
     head.innerHTML = '<span class="brand">MenMen</span>';
     var io = svgBtn('m-view' + (S.data.main.iconsOnly ? ' on' : ''), S.data.main.iconsOnly ? 'Show icons + names' : 'Icons only (narrow panel)',
-      S.data.main.iconsOnly ? ICONS.list : ICONS.grid, function () { S.data.main.iconsOnly = !S.data.main.iconsOnly; S.save(); sizeClasses(); render(); });
+      S.data.main.iconsOnly ? ICONS.list : ICONS.grid, toggleIconsOnly);
     head.appendChild(io);
     head.appendChild(svgBtn('m-menu', 'Menu', ICONS.menu, mainMenu));
     root.appendChild(head);
@@ -386,7 +388,7 @@
           r.insertAdjacentHTML('beforeend', '<span class="ri-cat">' + esc(T.cat(t.cat).name) + '</span>');
           res.appendChild(r);
         });
-      S.data.upOrder.forEach(function (uid) {
+      S.panelIds().forEach(function (uid) {
         S.data.userPanels[uid].items.forEach(function (it) {
           if (it.type === 'divider' || it.type === 'tool' || it.type === 'quickAccess') return;
           if (itemLabel(it).toLowerCase().indexOf(q) < 0) return;
@@ -407,6 +409,18 @@
     if (favs.length) favs.forEach(function (t) { fav.appendChild(toolTile(t, true)); });
     else fav.appendChild(el('div', 'fav-empty', '☆ Click the star next to a tool to pin it here'));
     body.appendChild(fav);
+
+    // MenMen Tools (Panel 1) - its own entry, apart from the user panels
+    if (S.data.userPanels.quick) {
+      var tr = el('button', 'm-row m-tools');
+      tr.innerHTML = '<span class="mr-ico">' + T.iconSvg('quickAccess') + '</span><span class="mr-name">' + esc(S.TOOLS_NAME) + '</span><span class="mr-count">P1</span>';
+      tr.title = S.TOOLS_NAME;
+      tr.addEventListener('click', openTools);
+      tr.addEventListener('contextmenu', function (e) { e.preventDefault(); toolsMenu(e); });
+      hoverTip(tr, '<b>' + esc(S.TOOLS_NAME) + '</b><span class="tip-desc">Your main tool panel (Window ▸ Extensions ▸ MenMen Tools) · click to open · right-click to reset the layout</span>');
+      body.appendChild(el('nav', 'm-list')).appendChild(tr);
+      body.appendChild(el('div', 'sep'));
+    }
 
     // categories
     var cats = el('nav', 'm-list');
@@ -480,11 +494,22 @@
   }
   function closeSheet() { st.sheet = null; var s = $app.querySelector('.sheet'); if (s) s.remove(); setTip(); }
 
+  // Icons only: the panel shrinks to the icon column (CEP can only resize floating panels; docked
+  // panels keep the width of their workspace frame - drag the frame edge in that case).
+  function toggleIconsOnly() {
+    var m = S.data.main, cep = window.__adobe_cep__;
+    m.iconsOnly = !m.iconsOnly;
+    if (m.iconsOnly) m.wideWidth = Math.max(150, window.innerWidth);
+    S.save(); sizeClasses(); render();
+    if (cep && cep.resizeContent) {
+      try { cep.resizeContent(m.iconsOnly ? 44 : (m.wideWidth || 190), window.innerHeight); } catch (err) { /* docked */ }
+    }
+  }
   function mainMenu(e) {
     var r = e.currentTarget.getBoundingClientRect();
     U.menu(r.left, r.bottom + 4, [
       { label: 'Settings…', onClick: openSettings },
-      { label: S.data.main.iconsOnly ? 'Show icons + names' : 'Icons only', onClick: function () { S.data.main.iconsOnly = !S.data.main.iconsOnly; S.save(); sizeClasses(); render(); } },
+      { label: S.data.main.iconsOnly ? 'Show icons + names' : 'Icons only', onClick: toggleIconsOnly },
       { label: 'New user panel…', onClick: newUserPanel },
       { label: 'New quick panel (layout)…', onClick: newQuickPanel },
       { label: 'Add New Item…', onClick: function () { addItemDialog(null); } },
@@ -529,7 +554,26 @@
       if (B.isMain) openSheet({ kind: 'user', id: id });
     });
   }
+  function resetToolsDialog() {
+    U.dialog('Reset ' + S.TOOLS_NAME + '?', el('p', null, 'Restore the default layout of ' + S.TOOLS_NAME + '. Items you added will be removed (usage counts are kept).'), [
+      { label: 'Cancel' }, { label: 'Reset', danger: true, onClick: function () { S.resetTools(); render(); } }]);
+  }
+  function openTools() {
+    if (!S.slot(S.TOOLS_SLOT)) { S.setSlot(S.TOOLS_SLOT, 'user', 'quick'); S.data.slots[S.TOOLS_SLOT].view = 'layout'; S.save(true); }
+    if (!B.openPanel(S.TOOLS_SLOT)) openSheet({ kind: 'user', id: 'quick' });  // preview: show it here
+  }
+  function toolsMenu(e) {
+    U.menu(e.clientX, e.clientY, [
+      { header: S.TOOLS_NAME },
+      { label: 'Open panel', onClick: openTools },
+      { label: 'Show here', onClick: function () { openSheet({ kind: 'user', id: 'quick' }); } },
+      { label: 'Add item…', onClick: function () { addItemDialog('quick'); } },
+      '-',
+      { label: 'Reset to default layout…', danger: true, onClick: resetToolsDialog }
+    ]);
+  }
   function userPanelMenu(id, e) {
+    if (id === 'quick') return toolsMenu(e);
     var u = S.data.userPanels[id];
     U.menu(e.clientX, e.clientY, [
       { header: u.name },
@@ -558,12 +602,11 @@
 
   // Step 1: choose the item type
   function addItemDialog(upId) {
-    if (!S.data.upOrder.length) S.newUserPanel('User Panel 1');
     var wrap = el('div', 'form');
     var target = el('label', 'field', '<span>Add to</span>');
     var sel = el('select', 'input');
-    S.data.upOrder.forEach(function (id) { var o = el('option', null, esc(S.data.userPanels[id].name)); o.value = id; sel.appendChild(o); });
-    sel.value = upId || S.data.upOrder[0];
+    S.panelIds().forEach(function (id) { var o = el('option', null, esc(S.data.userPanels[id].name)); o.value = id; sel.appendChild(o); });
+    sel.value = upId || S.panelIds()[0];
     target.appendChild(sel);
     wrap.appendChild(target);
     var types = el('div', 'type-list');
@@ -728,8 +771,9 @@
     setTip();
   }
   // ============ LAYOUT VIEW (compact grid, inline widgets) ============
-  var INLINE = { easyKeyframes: 'easyKeyframes', easings: 'easings', moveAnchor: 'moveAnchor', sequencer: 'sequencerCompact', align: 'align' };
-  var FULL_WIDTH = { easyKeyframes: true };  // full editor: spans the whole row, height fits its content
+  var INLINE = { diskCache: 'diskCache', addRow: 'addRow', alignRow: 'alignRow', easyKeyframes: 'easyKeyframes', easings: 'easings', moveAnchor: 'moveAnchor', sequencer: 'sequencerCompact', align: 'align' };
+  var FULL_WIDTH = { easyKeyframes: true };
+  var SLIM = { diskCache: true, addRow: true, alignRow: true };  // one full-width line  // full editor: spans the whole row, height fits its content
   var DEFAULT_SIZE = { easyKeyframes: [2, 2], easings: [2, 1], moveAnchor: [2, 2], sequencer: [2, 1], align: [2, 2] };
   function cellSize(it) {
     var t = it.type === 'tool' ? T.get(it.tool) : null, d = (t && t.widget && DEFAULT_SIZE[t.widget]) || [1, 1];
@@ -766,13 +810,18 @@
       var gap = 3, base = parseFloat(getComputedStyle(document.body).getPropertyValue('--qc')) || 46;
       var cols = Math.max(1, Math.floor((W + gap) / (base + gap)));
       var cell = Math.floor((W - gap * (cols - 1)) / cols);
+      // grid rows are half a cell: a 1-high cell spans 2 rows, slim one-line rows span 1
+      var half = Math.floor((cell - gap) / 2);
       grid.style.gridTemplateColumns = 'repeat(' + cols + ', ' + cell + 'px)';
-      grid.style.gridAutoRows = cell + 'px';
+      grid.style.gridAutoRows = half + 'px';
       Array.prototype.forEach.call(grid.children, function (c) {
+        if (c.classList.contains('q-add')) { c.style.gridRow = 'span 2'; return; }
         if (!c.dataset.w) return;
-        if (c.dataset.qa) return fitQA(c, cols, cell, gap);
-        if (c.dataset.full) return fitFull(c, cols, cell, gap);
+        if (c.dataset.slim) { c.style.gridColumn = '1 / -1'; c.style.gridRow = 'span ' + (half >= 22 ? 1 : 2); return; }
+        if (c.dataset.qa) return fitQA(c, cols, cell, gap, half);
+        if (c.dataset.full) return fitFull(c, cols, cell, gap, half);
         c.style.gridColumn = 'span ' + Math.min(cols, Number(c.dataset.w));
+        c.style.gridRow = 'span ' + 2 * Number(c.dataset.h || 1);
       });
       grid.classList.toggle('q-narrow', cols < 2);
     };
@@ -782,14 +831,14 @@
     if (window.ResizeObserver) new ResizeObserver(apply).observe(grid);
   }
   // Full-width widget: graph height ~ half the width (110-260px) + its toolbar rows, rounded up to whole cells.
-  function fitFull(c, cols, cell, gap) {
+  function fitFull(c, cols, cell, gap, half) {
     c.style.gridColumn = '1 / -1';
     var w = c.firstChild, g = c.querySelector('.ge-graph');
     if (!w || !g) return;
     var chrome = 10, kids = w.children;
     for (var i = 0; i < kids.length; i++) if (kids[i] !== g) chrome += kids[i].offsetHeight + 5;
     var want = chrome + Math.max(110, Math.min(260, c.clientWidth * 0.55));
-    var rows = Math.max(Number(c.dataset.h) || 1, Math.ceil((want + gap) / (cell + gap)));
+    var rows = Math.max(2 * (Number(c.dataset.h) || 0), Math.ceil((want + gap) / (half + gap)));
     c.style.gridRow = 'span ' + rows;
   }
   function layoutCell(it, idx, u) {
@@ -818,9 +867,11 @@
     }
     if (t) catStyle(n, t.cat); else if (it.type !== 'quickAccess') n.classList.add('custom');
     n.dataset.w = sz[0];
-    if (t && t.widget && FULL_WIDTH[t.widget]) { n.dataset.full = 1; n.dataset.h = it.h && it.h > 2 ? it.h : 0; n.classList.add('q-full'); }
+    if (t && t.widget && FULL_WIDTH[t.widget]) { n.dataset.full = 1; n.classList.add('q-full'); }
     n.style.gridColumn = 'span ' + sz[0];
-    n.style.gridRow = 'span ' + sz[1];
+    n.style.gridRow = 'span ' + 2 * sz[1];
+    n.dataset.h = sz[1];
+    if (t && t.widget && SLIM[t.widget]) { n.dataset.slim = 1; n.classList.add('q-slim'); }
     if (!u) return n;
     n.addEventListener('contextmenu', function (e) { e.preventDefault(); itemMenu(u.id, it, e); });
     if (st.edit) {
@@ -843,7 +894,7 @@
         var mv = function (ev) {
           it.w = Math.max(1, Math.min(6, w0 + Math.round((ev.clientX - sx) / unit)));
           it.h = Math.max(1, Math.min(4, h0 + Math.round((ev.clientY - sy) / unit)));
-          n.style.gridColumn = 'span ' + it.w; n.style.gridRow = 'span ' + it.h;
+          n.style.gridColumn = 'span ' + it.w; n.style.gridRow = 'span ' + 2 * it.h;
         };
         var up = function () { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); S.save(); render(); };
         document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
@@ -872,7 +923,7 @@
       b.addEventListener('click', function () { S.setSlot(B.extId, 'category', c.id); render(); });
       list.appendChild(b);
     });
-    S.data.upOrder.forEach(function (id) {
+    S.panelIds().forEach(function (id) {
       var b = el('button', 'chip user', '<span class="chip-ico">' + T.iconSvg('user') + '</span>' + esc(S.data.userPanels[id].name));
       b.addEventListener('click', function () { S.setSlot(B.extId, 'user', id); render(); });
       list.appendChild(b);
@@ -884,7 +935,7 @@
     var items = [{ header: 'Tool categories' }];
     T.CATS.forEach(function (c) { items.push({ label: c.name, onClick: function () { st.edit = false; S.setSlot(B.extId, 'category', c.id); render(); } }); });
     items.push({ header: 'User panels' });
-    S.data.upOrder.forEach(function (id) { items.push({ label: S.data.userPanels[id].name, onClick: function () { st.edit = false; S.setSlot(B.extId, 'user', id); render(); } }); });
+    S.panelIds().forEach(function (id) { items.push({ label: S.data.userPanels[id].name, onClick: function () { st.edit = false; S.setSlot(B.extId, 'user', id); render(); } }); });
     items.push('-', { label: 'Leave empty', onClick: function () { S.clearSlot(B.extId); render(); } });
     U.menu(r.left, r.bottom + 4, items, { minWidth: 190 });
   }
@@ -892,7 +943,8 @@
     var r = e.currentTarget.getBoundingClientRect(), slot = S.slot(B.extId), items = [];
     if (slot && slot.kind === 'user') {
       items.push({ label: 'Add item…', onClick: function () { addItemDialog(slot.id); } });
-      items.push({ label: 'Rename panel…', onClick: function () {
+      if (slot.id === 'quick') items.push({ label: 'Reset to default layout…', onClick: resetToolsDialog });
+      else items.push({ label: 'Rename panel…', onClick: function () {
         var u = S.data.userPanels[slot.id]; U.prompt('Rename', 'Name', u.name, function (v) { u.name = v; S.save(); render(); });
       } });
     }
@@ -979,7 +1031,7 @@
   function about() {
     var box = el('div', 'about');
     box.innerHTML = '<h3>MenMen Workflow</h3><p class="muted">v0.2.0 · ' + T.list.length + ' tools · 12 categories</p>' +
-      '<p>The main panel holds every tool; dock a category or user panel to MenMen Panel 1–4.</p><p class="muted small" id="hostInfo">Checking host…</p>';
+      '<p>The main panel holds every tool; MenMen Tools is Panel 1; dock categories or user panels to MenMen Panel 2–4.</p><p class="muted small" id="hostInfo">Checking host…</p>';
     U.dialog('About', box, [{ label: 'Close', primary: true }]);
     B.run('hostInfo').then(function (r) { var n = document.getElementById('hostInfo'); if (n) n.textContent = r.msg; });
   }

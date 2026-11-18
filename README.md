@@ -49,11 +49,19 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 - **Spot Blur**: draggable focus nulls; everything outside them is blurred by Compound Blur driven by an auto-built map comp (Max Blur, Spot Size, Feather, Blur Inside Spots on the controller).
 - **Audio to Precomps**: copies the selected audio layers into every nested precomp (time-offset, locked, named `♪ …`); precomps with time remapping/stretch or used more than once are skipped. Shift = remove all synced audio.
 
+### MenMen Tools (Panel 1)
+`Window ▸ Extensions ▸ MenMen Tools` is the main tool panel, kept apart from user panels (its own row in the main panel; right-click ▸ **Reset to default layout**). Default layout, top to bottom:
+- **Disk cache** meter (% of the max size set in Preferences ▸ Media & Disk Cache; click to refresh) + **Purge** (all memory caches; Alt = also empty the disk cache, AE asks to confirm).
+- **Graph Editor** (full), **Quick Access** (10 most used tools).
+- **Add** row: Solid (Alt: pick color), Adjustment, Null, Camera (Alt: with a 3D control null), Light, Text, Shape (Alt: empty) - added above the selected layer.
+- **Align** row: **To: Comp / To: Sel** switch + align left / center / right / top / middle / bottom.
+- Easings copy/paste, Offset Layers, anchor grid and one-click tools.
+
 ### Quick Access
 The Quick Panel has a **Quick Access** area under the Graph Editor that fills itself with your **10 most used tools** (by run count, then most recent). Every run counts: clicks in any panel, search, favorites, widgets. Tiles reorder after you move the mouse away, so they never jump under the cursor. Right-click a tile: **Pin to this panel** / **Remove from Quick Access**; right-click the area: **Reset usage counts** / **Delete this area**. Add it to any user panel with Add New Item ▸ Quick Access. Tools already shown as inline widgets in that panel are left out.
 
 ### Main panel + Panel 1
-Opening either the main panel (**MenMen Workflow**) or **MenMen Panel 1** (Quick Panel) opens the other one too (Settings ▸ Panels to turn it off). The main panel has two modes, switched with the button next to ☰ (or ☰ ▸ Icons only): **icons + names**, or **icons only**, a thin column that saves workspace; hover an icon to see its name.
+Opening either the main panel (**MenMen Workflow**) or **MenMen Tools** opens the other one too (Settings ▸ Panels to turn it off). The main panel has two modes, switched with the button next to ☰ (or ☰ ▸ Icons only): **icons + names**, or **icons only**, a thin column that saves workspace; hover an icon to see its name. A floating panel shrinks to the icon column by itself; a docked panel keeps its frame width (drag the frame edge), because CEP cannot resize docked panels.
 
 ### Graph Editor
 Easing ▸ **Graph Editor** edits one curve between two keyframes, inspired by the graph editors of Motion-style toolkits:
@@ -92,7 +100,7 @@ Expression-driven tools add sliders so you can tweak them later (Wiggle Freq/Amp
      powershell -ExecutionPolicy Bypass -File scripts\install-dev-win.ps1
      ```
    The script enables `PlayerDebugMode` (allows unsigned extensions) and links the project folder into `CEP/extensions`.
-3. Restart After Effects → `Window ▸ Extensions ▸ MenMen Workflow` (main panel). Sub panels are under `MenMen Panel 1–4`.
+3. Restart After Effects → `Window ▸ Extensions ▸ MenMen Workflow` (main panel). `MenMen Tools` opens with it; extra sub panels are under `MenMen Panel 2–4`.
 4. Debugging: open Chrome at `http://localhost:8090` (main panel); sub panels 1–4 use ports 8091–8094 (see `.debug`).
 5. After editing files in `host/`: menu ☰ ▸ **Reload host scripts**. After editing `client/`: close and reopen the panel (or press F5 in DevTools).
 

@@ -47,7 +47,7 @@
         <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle>
         <UI>
           <Type>Panel</Type>
-          <Menu>MenMen Panel 1</Menu>
+          <Menu>MenMen Tools</Menu>
           <Geometry>
             <Size><Height>360</Height><Width>300</Width></Size>
             <MinSize><Height>80</Height><Width>80</Width></MinSize>

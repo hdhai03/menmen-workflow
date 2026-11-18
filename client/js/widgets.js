@@ -514,5 +514,118 @@
     return root;
   };
 
+
+  // ---------- Slim rows for MenMen Tools (one full-width line each) ----------
+  // Labels show when the row is wide enough, otherwise icons only (title = name).
+  function autoCompact(root, minW) {
+    var fit = function () { var w = root.clientWidth; if (w) root.classList.toggle('icons', w < minW); };
+    requestAnimationFrame(fit);
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(root);
+  }
+  function fmtBytes(b) {
+    if (!b) return '0 GB';
+    var gb = b / 1073741824;
+    return gb >= 10 ? Math.round(gb) + ' GB' : gb >= 1 ? gb.toFixed(1) + ' GB' : Math.round(b / 1048576) + ' MB';
+  }
+
+  // Disk cache usage + Purge. Click the meter to refresh; Purge = memory, Alt+Purge = disk cache too.
+  var diskState = { t: 0, used: null, max: 0, path: '' }, diskViews = [];
+  function diskPaint() {
+    diskViews = diskViews.filter(function (v) { return document.body.contains(v.root) || !v.seen; });
+    diskViews.forEach(function (v) {
+      v.seen = true;
+      var s = diskState, pct = s.used != null && s.max ? Math.min(999, Math.round(s.used / s.max * 100)) : null;
+      v.val.textContent = pct != null ? pct + '%' : (s.used != null ? fmtBytes(s.used) : '–');
+      v.bar.style.width = (pct != null ? Math.min(100, pct) : 0) + '%';
+      v.root.classList.toggle('warn', pct != null && pct >= 80);
+      v.root.classList.toggle('full', pct != null && pct >= 95);
+      v.meter.title = 'Disk cache: ' + (s.used != null ? fmtBytes(s.used) : 'unknown') + (s.max ? ' of ' + fmtBytes(s.max) : '') +
+        (s.path ? '\n' + s.path : '') + '\nClick to refresh';
+    });
+  }
+  function diskRefresh(ctx, force) {
+    if (!force && Date.now() - diskState.t < 60000 && diskState.used != null) return diskPaint();
+    diskState.t = Date.now();
+    diskViews.forEach(function (v) { v.root.classList.add('busy'); });
+    (ctx.query || ctx.run)('diskCacheInfo', {}).then(function (r) {
+      diskViews.forEach(function (v) { v.root.classList.remove('busy'); });
+      var p = r && r.ok ? String(r.msg).split('|') : [];
+      if (p.length >= 2 && !isNaN(Number(p[0]))) { diskState.used = Number(p[0]); diskState.max = Number(p[1]) || 0; diskState.path = p.slice(2).join('|'); }
+      diskPaint();
+    });
+  }
+  W.diskCache = function (d, ctx) {
+    var root = el('div', 'w w-row w-disk');
+    var meter = el('button', 'wd-meter', '<span class="wd-dot"></span><span class="wd-lbl">Disk cache</span><span class="wd-val">–</span><span class="wd-track"><i></i></span>');
+    var purge = el('button', 'w-btn wd-purge', '<svg viewBox="0 0 16 16"><path d="M8.5 1.5L3.5 9h4l-1 5.5 5-7.5h-4z"/></svg><span>Purge</span>');
+    purge.title = 'Purge all memory caches · Alt: also empty the disk cache (After Effects asks to confirm)';
+    var v = { root: root, meter: meter, val: meter.querySelector('.wd-val'), bar: meter.querySelector('i'), ctx: ctx };
+    diskViews.push(v);
+    meter.addEventListener('click', function (e) { stop(e); diskRefresh(ctx, true); });
+    purge.addEventListener('click', function (e) {
+      stop(e);
+      ctx.run('purgeCache', {}, e).then(function () { setTimeout(function () { diskRefresh(ctx, true); }, 1500); });
+    });
+    root.append(meter, purge);
+    autoCompact(root, 170);
+    setTimeout(function () { diskRefresh(ctx, false); }, 50);
+    return root;
+  };
+  setInterval(function () { if (diskViews.length && diskViews[0].ctx) diskRefresh(diskViews[0].ctx, true); }, 300000);
+
+  // Add: Solid / Adjustment / Null / Camera / Light / Text / Shape (above the top selected layer)
+  var ADD = [
+    ['solid', 'Solid', 'Solid (comp size) · Alt: pick the color', '<rect x="2.5" y="3.5" width="11" height="9" fill="currentColor" stroke="none" opacity=".85"/>'],
+    ['adjustment', 'Adj', 'Adjustment layer', '<circle cx="8" cy="8" r="5.5"/><path d="M8 2.5v11A5.5 5.5 0 0 0 8 2.5z" fill="currentColor"/>'],
+    ['null', 'Null', 'Null object', '<rect x="3" y="3" width="10" height="10"/><path d="M3 3l10 10"/>'],
+    ['camera', 'Cam', '3D camera · Alt: with a control null (rig)', '<rect x="1.5" y="5" width="9" height="7"/><path d="M10.5 7.5l4-2v6l-4-2"/>'],
+    ['light', 'Light', 'Point light', '<circle cx="8" cy="7" r="3.5"/><path d="M6.5 12.5h3M7 14.5h2"/>'],
+    ['text', 'Text', 'Text layer', '<path d="M3 4V3h10v1M8 3v10M6 13h4"/>'],
+    ['shape', 'Shape', 'Shape layer with a rectangle · Alt: empty shape layer', '<path d="M8 2l6 10H2z"/>']
+  ];
+  W.addRow = function (d, ctx) {
+    var root = el('div', 'w w-row w-add');
+    root.appendChild(el('span', 'wr-lbl', 'Add'));
+    ADD.forEach(function (a) {
+      var b = el('button', 'w-btn wr-btn wa-' + a[0] + (/^(solid|adjustment|camera)$/.test(a[0]) ? ' wr-main' : ''), '<svg viewBox="0 0 16 16">' + a[3] + '</svg><span>' + a[1] + '</span>');
+      b.title = a[2];
+      b.addEventListener('click', function (e) { stop(e); ctx.run('addLayer', { kind: a[0] }, e); });
+      root.appendChild(b);
+    });
+    // wide: every label · medium: Solid / Adj / Cam keep labels · narrow: icons only
+    var fit = function () {
+      var w = root.clientWidth; if (!w) return;
+      root.classList.toggle('mid', w < 400 && w >= 230);
+      root.classList.toggle('icons', w < 230);
+    };
+    requestAnimationFrame(fit);
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(root);
+    return root;
+  };
+
+  // Align row: To: Comp / To: Sel switch + 6 align buttons
+  W.alignRow = function (d, ctx) {
+    if (!d.to) d.to = 'comp';
+    var root = el('div', 'w w-row w-alrow');
+    var to = el('button', 'w-btn wr-to');
+    var paint = function () {
+      to.innerHTML = '<span class="wr-to-k">To:</span> ' + (d.to === 'comp' ? 'Comp' : 'Sel');
+      to.classList.toggle('on', d.to === 'comp');
+      to.title = 'Aligning to the ' + (d.to === 'comp' ? 'composition' : 'selection bounds') + ' – click to switch';
+    };
+    paint();
+    to.addEventListener('click', function (e) { stop(e); d.to = d.to === 'comp' ? 'selection' : 'comp'; paint(); ctx.save(); });
+    root.appendChild(to);
+    [['left', 'Align left'], ['hcenter', 'Align horizontal centers'], ['right', 'Align right'],
+     ['top', 'Align top'], ['vcenter', 'Align vertical centers'], ['bottom', 'Align bottom']].forEach(function (a) {
+      var b = el('button', 'w-btn wr-btn wr-ico', '<svg viewBox="0 0 16 16">' + AL[a[0]] + '</svg>');
+      b.title = a[1];
+      b.addEventListener('click', function (e) { stop(e); ctx.run('alignLayers', { where: a[0], to: d.to }, e); });
+      root.appendChild(b);
+    });
+    autoCompact(root, 150);
+    return root;
+  };
+
   window.Widgets = W;
 })();

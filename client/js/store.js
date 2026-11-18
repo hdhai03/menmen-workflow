@@ -7,14 +7,16 @@
   var SYNC = 'com.menmen.workflow.sync';
   var SLOTS = ['com.menmen.workflow.panel1', 'com.menmen.workflow.panel2', 'com.menmen.workflow.panel3', 'com.menmen.workflow.panel4'];
 
+  var TOOLS_NAME = 'MenMen Tools', TOOLS_SLOT = 'com.menmen.workflow.panel1';
   var uid = function () { return Math.random().toString(36).slice(2, 9); };
 
-  // Default contents of a Quick Panel (Layout view): inline widgets + one-click tools.
+  // Default contents of MenMen Tools (Panel 1, Layout view): slim rows, inline widgets, one-click tools.
+  // Also used for new quick panels and for "Reset to default".
   function quickItems() {
     var it = function (tool, w, h) { var o = { id: uid(), type: 'tool', tool: tool }; if (w) { o.w = w; o.h = h; } return o; };
     return [
-      it('easyKeyframes', 2, 2), { id: uid(), type: 'quickAccess' }, it('easings', 2, 1), it('sequencer', 2, 1),
-      it('moveAnchor', 2, 2), it('align', 2, 2), it('addNull'), it('clone'), it('cloneMirror'), it('loop'),
+      it('diskCache'), it('easyKeyframes', 2, 2), { id: uid(), type: 'quickAccess' }, it('addRow'), it('alignRow'),
+      it('easings', 2, 1), it('sequencer', 2, 1), it('moveAnchor', 2, 2), it('addNull'), it('clone'), it('cloneMirror'), it('loop'),
       it('elastic'), it('bounce'), it('fixKeysTime'), it('easingPresets'),
       it('extractShapes'), it('mergeShapes'), it('nullsToPoint'), it('selectPaths'),
       it('cropComp'), it('preCompose'), it('unPreComp'), it('positionTrace')
@@ -27,7 +29,7 @@
       theme: { style: 'color', iconSize: 'm', tooltips: true, followHost: true, accent: '#4f8cff' },
       favorites: ['clone', 'easyKeyframes', 'addNull', 'moveAnchor', 'sequencer'],
       userPanels: {
-        quick: { id: 'quick', name: 'Quick Panel', items: quickItems() },
+        quick: { id: 'quick', name: TOOLS_NAME, items: quickItems(), fixed: true },
         up1: { id: 'up1', name: 'User Panel 1', items: [
           { id: uid(), type: 'tool', tool: 'easingPresets' },
           { id: uid(), type: 'tool', tool: 'loop' },
@@ -37,7 +39,7 @@
           { id: uid(), type: 'effect', label: 'Gaussian Blur', effect: 'ADBE Gaussian Blur 2' }
         ] }
       },
-      upOrder: ['quick', 'up1'],
+      upOrder: ['up1'],  // user panels only - MenMen Tools ('quick') is listed on its own
       hidden: {},        // { catId: [toolId,...] } - tools hidden in category panels
       params: {},        // { toolId: {...} } - last used parameters
       slots: { 'com.menmen.workflow.panel1': { kind: 'user', id: 'quick', view: 'layout' } },  // { extId: { kind, id, view: 'list'|'grid'|'layout' } }
@@ -45,6 +47,7 @@
       curves: [],        // saved Graph Editor curves [{ name, bz: [x1,y1,x2,y2] }]
       usage: {},         // { toolId: { n: run count, t: last run } } - feeds Quick Access
       qaAdded: true,
+      rowsAdded: true,
       main: { collapsedFav: false, iconsOnly: false, together: true }
     };
   }
@@ -57,14 +60,29 @@
     if (!Array.isArray(s.curves)) s.curves = [];
     if (!s.usage || typeof s.usage !== 'object') s.usage = {};
     ['userPanels', 'hidden', 'params', 'slots', 'main'].forEach(function (k) { if (!s[k] || typeof s[k] !== 'object') s[k] = d[k]; });
-    s.upOrder = s.upOrder.filter(function (id) { return s.userPanels[id]; });
-    Object.keys(s.userPanels).forEach(function (id) { if (s.upOrder.indexOf(id) < 0) s.upOrder.push(id); });
+    s.upOrder = s.upOrder.filter(function (id) { return s.userPanels[id] && id !== 'quick'; });
+    Object.keys(s.userPanels).forEach(function (id) { if (id !== 'quick' && s.upOrder.indexOf(id) < 0) s.upOrder.push(id); });
     // script:* favorites are registered later, once the host has listed the script library
     if (!s.quickAdded && !s.userPanels.quick) {  // older settings: add the Quick Panel once
-      s.userPanels.quick = { id: 'quick', name: 'Quick Panel', items: quickItems() };
-      s.upOrder.unshift('quick');
+      s.userPanels.quick = { id: 'quick', name: TOOLS_NAME, items: quickItems(), fixed: true };
       s.quickAdded = true;
     }
+    if (!s.userPanels.quick) s.userPanels.quick = { id: 'quick', name: TOOLS_NAME, items: quickItems(), fixed: true };
+    var tp = s.userPanels.quick;
+    tp.fixed = true;
+    if (!tp.name || tp.name === 'Quick Panel') tp.name = TOOLS_NAME;
+    if (!s.rowsAdded) {  // older settings: add the slim rows (disk cache, add layer, align) once
+      var has = function (tool) { return tp.items.some(function (x) { return x.type === 'tool' && x.tool === tool; }); };
+      var after = 0;
+      tp.items.forEach(function (x, i) { if (x.type === 'quickAccess' || (x.type === 'tool' && x.tool === 'easyKeyframes')) after = i + 1; });
+      var add = [];
+      if (!has('addRow')) add.push({ id: uid(), type: 'tool', tool: 'addRow' });
+      if (!has('alignRow')) add.push({ id: uid(), type: 'tool', tool: 'alignRow' });
+      tp.items.splice.apply(tp.items, [after, 0].concat(add));
+      if (!has('diskCache')) tp.items.unshift({ id: uid(), type: 'tool', tool: 'diskCache' });
+      if (!s.slots[TOOLS_SLOT]) s.slots[TOOLS_SLOT] = { kind: 'user', id: 'quick', view: 'layout' };
+    }
+    s.rowsAdded = true;
     if (!s.qaAdded && s.userPanels.quick) {  // older settings: add Quick Access under the Graph Editor once
       var qi = s.userPanels.quick.items, at = 0;
       for (var i = 0; i < qi.length; i++) if (qi[i].type === 'tool' && qi[i].tool === 'easyKeyframes') { at = i + 1; break; }
@@ -165,7 +183,8 @@
       var s = S.data.slots[SLOTS[i]];
       if (s && s.kind === kind && s.id === id) return { ext: SLOTS[i], existing: true };
     }
-    for (i = 0; i < SLOTS.length; i++) if (!S.data.slots[SLOTS[i]]) return { ext: SLOTS[i], existing: false };
+    if (kind === 'user' && id === 'quick') return { ext: TOOLS_SLOT, existing: false };
+    for (i = 0; i < SLOTS.length; i++) if (SLOTS[i] !== TOOLS_SLOT && !S.data.slots[SLOTS[i]]) return { ext: SLOTS[i], existing: false };
     return null;
   };
   S.contentName = function (slot) {
@@ -176,6 +195,9 @@
   };
 
   S.quickItems = quickItems;
+  S.TOOLS_NAME = TOOLS_NAME; S.TOOLS_SLOT = TOOLS_SLOT;
+  S.panelIds = function () { return (S.data.userPanels.quick ? ['quick'] : []).concat(S.data.upOrder); };
+  S.resetTools = function () { S.data.userPanels.quick.items = quickItems(); S.save(true); };
   // ----- usage (Quick Access) -----
   S.track = function (id) {
     if (!id || !window.Tools.get(id)) return;
