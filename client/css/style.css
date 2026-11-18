@@ -634,4 +634,3 @@ body.ge-dragging, body.ge-dragging * { cursor: move !important; user-select: non
 .cb-link svg { width: 15px; height: 15px; fill: currentColor; stroke: currentColor; stroke-width: 0; }
 .cb-link svg rect, .cb-link svg circle[fill="none"] { stroke-width: 1.5; }
 .cb-link:hover { color: var(--text); background: var(--surface-2); }
-body.native .ge-tool.on { background: var(--text); border-color: var(--text); color: var(--bg); }

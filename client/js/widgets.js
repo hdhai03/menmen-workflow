@@ -205,9 +205,6 @@
       docUp = function () { endDrag(); };
       document.addEventListener('mousemove', docMove, true);
       document.addEventListener('mouseup', docUp, true);
-      window.addEventListener('mouseup', docUp, true);
-      window.addEventListener('pointerup', docUp, true);
-      box.addEventListener('mouseup', docUp);
       document.documentElement.addEventListener('mouseleave', docUp);
       draw();
     }
@@ -239,7 +236,6 @@
         }
         setHandle(drag.i, x, v, d.link || e.altKey);
         drag.moved = true;
-        applyWhenIdle();
         return draw();
       }
       // incremental: each move adds its own delta to the current curve, so hitting 0 % / 100 % has no
@@ -257,16 +253,11 @@
       var cur = infl();
       setInfl(cur[0] + dx + dy, cur[1] - dx + dy);
       drag.moved = true;
-      applyWhenIdle();
       draw();
     }
     function endDrag() {
       if (document.pointerLockElement === box) { try { document.exitPointerLock(); } catch (x) { /* ignore */ } }
-      if (docMove) {
-        document.removeEventListener('mousemove', docMove, true); document.removeEventListener('mouseup', docUp, true);
-        window.removeEventListener('mouseup', docUp, true); window.removeEventListener('pointerup', docUp, true); box.removeEventListener('mouseup', docUp);
-      }
-      clearTimeout(idleT);
+      if (docMove) { document.removeEventListener('mousemove', docMove, true); document.removeEventListener('mouseup', docUp, true); }
       document.documentElement.removeEventListener('mouseleave', docUp);
       docMove = docUp = null;
       document.body.classList.remove('ge-dragging');
@@ -335,25 +326,15 @@
       status.textContent = msg; status.className = 'ge-status show ' + (ok ? 'ok' : 'warn');
       clearTimeout(statusT); statusT = setTimeout(function () { status.className = 'ge-status'; }, ok ? 900 : 2200);
     }
-    var lastApplied = '', idleT = null;
-    function autoApply(force) {
+    function autoApply() {
       clearTimeout(autoT);
       autoT = setTimeout(function () {
-        var key = d.bz.map(function (v) { return v.toFixed(4); }).join(',');
-        if (!force && key === lastApplied) return;  // same curve: nothing to do
-        lastApplied = key;
         (ctx.query || ctx.run)('easingPreset', { bezier: d.bz.slice(), side: 'both', alt: false, shift: false }).then(function (r) {
           if (!r) return;
           if (r.ok) note('Applied', true);
-          else { lastApplied = ''; note(/select|keyframe/i.test(r.msg) ? 'Select keyframes to apply' : r.msg, false); }
+          else note(/select|keyframe/i.test(r.msg) ? 'Select keyframes to apply' : r.msg, false);
         });
       }, 60);
-    }
-    // while dragging: when the mouse rests ~0.3 s, apply already (AE does not always deliver the release)
-    function applyWhenIdle() {
-      if (!d.auto) return;
-      clearTimeout(idleT);
-      idleT = setTimeout(function () { if (drag) autoApply(); }, 300);
     }
     function setCurve(bz) {
       d.bz = bz.slice();
