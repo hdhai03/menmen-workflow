@@ -227,7 +227,7 @@
     var root = el('div', 'main');
     // header
     var head = el('header', 'm-head');
-    head.innerHTML = '<span class="logo">M</span><span class="brand">MenMen</span>';
+    head.innerHTML = '<span class="brand">MenMen</span>';
     head.appendChild(svgBtn('m-menu', 'Menu', ICONS.menu, mainMenu));
     root.appendChild(head);
     // search
@@ -698,7 +698,7 @@
   }
   function about() {
     var box = el('div', 'about');
-    box.innerHTML = '<div class="about-logo">M</div><h3>MenMen Workflow</h3><p class="muted">v0.2.0 · ' + T.list.length + ' tools · 12 categories</p>' +
+    box.innerHTML = '<h3>MenMen Workflow</h3><p class="muted">v0.2.0 · ' + T.list.length + ' tools · 12 categories</p>' +
       '<p>The main panel holds every tool; dock a category or user panel to MenMen Panel 1–4.</p><p class="muted small" id="hostInfo">Checking host…</p>';
     U.dialog('About', box, [{ label: 'Close', primary: true }]);
     B.run('hostInfo').then(function (r) { var n = document.getElementById('hostInfo'); if (n) n.textContent = r.msg; });
