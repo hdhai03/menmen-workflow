@@ -19,10 +19,25 @@ MMW.run = function (id, opts) {
     }
 };
 
+// The comp to work on. app.project.activeItem can be empty while a CEP panel has focus,
+// so fall back to the active viewer, then to a single comp selected in the Project panel.
 MMW.comp = function () {
     var c = app.project.activeItem;
-    if (!(c && c instanceof CompItem)) MMW.fail("Open (activate) a composition first.");
-    return c;
+    if (c && c instanceof CompItem) return c;
+    try {
+        var v = app.activeViewer;
+        if (v && v.type === ViewerType.VIEWER_COMPOSITION) {
+            v.setActive();
+            c = app.project.activeItem;
+            if (c && c instanceof CompItem) return c;
+        }
+    } catch (e) {}
+    var sel = app.project.selection, found = null;
+    for (var i = 0; i < sel.length; i++) {
+        if (sel[i] instanceof CompItem) { if (found) { found = null; break; } found = sel[i]; }
+    }
+    if (found) return found;
+    MMW.fail("Open (activate) a composition first.");
 };
 
 MMW.selLayers = function (c, min) {

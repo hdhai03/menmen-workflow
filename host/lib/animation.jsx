@@ -14,6 +14,7 @@
         var inSpd = Number(o.inSpeed) || 0, outSpd = Number(o.outSpeed) || 0;
         for (var i = 0; i < list.length; i++) {
             var p = list[i].prop;
+            if (!p.isInterpolationTypeValid(KeyframeInterpolationType.BEZIER)) continue; // e.g. Source Text: hold only
             for (var j = 0; j < list[i].keys.length; j++) {
                 var k = list[i].keys[j];
                 if (mode === "linear") {

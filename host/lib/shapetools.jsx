@@ -105,18 +105,18 @@
         var c = MMW.comp(), list = shapeLayers(c);
         for (var i = 0; i < list.length; i++) {
             var L = list[i];
-            L.property(ROOT).addProperty("ADBE Vector Filter - Trim");
+            var trimIdx = L.property(ROOT).addProperty("ADBE Vector Filter - Trim").propertyIndex;
             var fxp = L.property("ADBE Effect Parade");
             if (!fxp.property("Trim Start")) MMW.addEffect(L, "ADBE Slider Control", "Trim Start").property(1).setValue(0);
             if (!fxp.property("Trim End")) MMW.addEffect(L, "ADBE Slider Control", "Trim End").property(1).setValue(100);
             if (!fxp.property("Trim Offset")) MMW.addEffect(L, "ADBE Angle Control", "Trim Offset");
-            var root = L.property(ROOT), tr = null;
-            for (var k = root.numProperties; k >= 1; k--) if (root.property(k).matchName === "ADBE Vector Filter - Trim") { tr = root.property(k); break; }
+            // re-resolve by index: adding effects invalidates the earlier reference
+            var tr = L.property(ROOT).property(trimIdx);
             tr.property("ADBE Vector Trim Start").expression = "clamp(effect(\"Trim Start\")(1),0,100)";
             tr.property("ADBE Vector Trim End").expression = "clamp(effect(\"Trim End\")(1),0,100)";
             tr.property("ADBE Vector Trim Offset").expression = "effect(\"Trim Offset\")(1)";
         }
-        return "Trim Paths controller -> " + list.length + " layer.";
+        return "Trim Paths controller -> " + list.length + " layer(s).";
     };
 
     // Converts masks into a shape layer (keeps transforms & mask keyframes). Alt: delete the original masks.

@@ -18,6 +18,8 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 - **Layout view / Quick Panel**: sub panels can also show a compact grid of square cells (like a classic tool palette). Widgets work inline (Keyframe Assistant sliders, Copy/Paste keys, 3×3 anchor grid, Offset Layers); other tools are icon tiles. In edit mode, drag cells to reorder and drag the corner to resize (or right-click ▸ Size). A ready-made **Quick Panel** opens in MenMen Panel 1; create more with ☰ ▸ New quick panel.
 - **User panels** can hold: MenMen tools, Expressions, Scriptlets (ExtendScript), Script files (.jsx/.jsxbin), Presets (.ffx), Effects, Menu Commands, Dividers.
 - **Tools with parameters** open a small form that remembers the last values. **Widgets** (Keyframe Assistant, Easing Presets, Easings Manager, Offset Layers, Set Anchor Point) open in a dialog.
+- **Responsive**: below ~220px wide secondary labels hide; below ~130px the main panel becomes an icon column (search expands on click); short panels hide the help bar; Layout cells always fill the panel width; dialogs and the speed graph shrink to fit.
+- **Diagnostics…** (☰ menu) checks the CEP ↔ ExtendScript connection step by step and gives a copyable report.
 - **Settings**:
   - icon style: Mono / Color / Solid,
   - icon size: S / M / L,

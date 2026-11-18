@@ -38,11 +38,17 @@
 
   // ============ run tools / items ============
   function mods(e) { return e ? { alt: !!e.altKey, shift: !!e.shiftKey, ctrl: !!(e.ctrlKey || e.metaKey) } : {}; }
+  var busy = 0;
   function exec(hostId, opts, e, label) {
+    busy++;
+    document.body.classList.add('busy');
+    if ($tip) $tip.innerHTML = '<span class="tip-run">Running ' + esc(label || hostId) + '…</span>';
+    var done = function () { if (--busy <= 0) { busy = 0; document.body.classList.remove('busy'); setTip(); } };
     return B.run(hostId, Object.assign(mods(e), opts || {})).then(function (r) {
+      done();
       U.toast((label ? label + ': ' : '') + (r.msg || (r.ok ? 'Done' : 'Error')), r.ok);
       return r;
-    });
+    }, function (err) { done(); U.toast('Error: ' + err, false); });
   }
   function runTool(t, e) {
     if (t.widget) return openWidget(t);
@@ -633,12 +639,33 @@
     var items = user ? u.items : T.inCat(slot.id).filter(function (t) { return !S.isHidden(slot.id, t.id); })
       .map(function (t) { return { type: 'tool', tool: t.id }; });
     items.forEach(function (it, idx) { grid.appendChild(layoutCell(it, idx, u)); });
+    fitLayout(grid);
     if (user) {
       var add = el('button', 'q-cell q-tile q-add', '<svg viewBox="0 0 16 16" class="ico16">' + ICONS.plus + '</svg>');
       add.title = 'Add item';
       add.addEventListener('click', function () { addItemDialog(u.id); });
       grid.appendChild(add);
     } else if (slot.id === 'scripts' && !items.length) body.appendChild(scriptsEmpty());
+  }
+  // Square cells that exactly fill the panel width; spans wider than the column count are clamped.
+  function fitLayout(grid) {
+    var apply = function () {
+      var W = grid.clientWidth;
+      if (!W) return;
+      var gap = 3, base = parseFloat(getComputedStyle(document.body).getPropertyValue('--qc')) || 46;
+      var cols = Math.max(1, Math.floor((W + gap) / (base + gap)));
+      var cell = Math.floor((W - gap * (cols - 1)) / cols);
+      grid.style.gridTemplateColumns = 'repeat(' + cols + ', ' + cell + 'px)';
+      grid.style.gridAutoRows = cell + 'px';
+      Array.prototype.forEach.call(grid.children, function (c) {
+        if (!c.dataset.w) return;
+        c.style.gridColumn = 'span ' + Math.min(cols, Number(c.dataset.w));
+      });
+      grid.classList.toggle('q-narrow', cols < 2);
+    };
+    apply();
+    requestAnimationFrame(apply);
+    if (window.ResizeObserver) new ResizeObserver(apply).observe(grid);
   }
   function layoutCell(it, idx, u) {
     if (it.type === 'divider') {
@@ -663,6 +690,7 @@
       });
     }
     if (t) catStyle(n, t.cat); else n.classList.add('custom');
+    n.dataset.w = sz[0];
     n.style.gridColumn = 'span ' + sz[0];
     n.style.gridRow = 'span ' + sz[1];
     if (!u) return n;
@@ -891,7 +919,15 @@
     applyTheme();
     if (B.isMain) renderMain(); else renderSub();
   }
+  // Responsive size classes: w-xs (< 130px), w-sm (< 220px), h-sm (< 260px tall).
+  function sizeClasses() {
+    var w = window.innerWidth, h = window.innerHeight, b = document.body;
+    b.classList.toggle('w-xs', w < 130);
+    b.classList.toggle('w-sm', w < 220);
+    b.classList.toggle('h-sm', h < 260);
+  }
   function checkOrientation() {
+    sizeClasses();
     var h = B.isMain && window.innerWidth > window.innerHeight * 1.6 && window.innerHeight < 160;
     if (h !== st.horizontal) { st.horizontal = h; applyTheme(); }
   }
