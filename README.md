@@ -82,8 +82,9 @@ Settings ▸ Appearance ▸ **AE native look**: every icon becomes AE's neutral 
 ### Quick Access
 The Quick Panel has a **Quick Access** area under the Graph Editor that fills itself with your **10 most used tools** (by run count, then most recent). Every run counts: clicks in any panel, search, favorites, widgets. Tiles reorder after you move the mouse away, so they never jump under the cursor. Right-click a tile: **Pin to this panel** / **Remove from Quick Access**; right-click the area: **Reset usage counts** / **Delete this area**. Add it to any user panel with Add New Item ▸ Quick Access. Tools already shown as inline widgets in that panel are left out.
 
-### Main panel + Panel 1
-Opening either the main panel (**MenMen Workflow**) or **MenMen Tools** opens the other one too (Settings ▸ Panels to turn it off). The main panel has two modes, switched with the button next to ☰ (or ☰ ▸ Icons only): **icons + names**, or **icons only**, a thin column that saves workspace; hover an icon to see its name. The content always follows the panel frame: drag the panel edge narrow once (down to ~40 px) and After Effects keeps that width in your workspace. Extensions cannot resize a docked panel themselves.
+### Main panel + Panel 1 + MenMen Bar
+Opening either the main panel (**MenMen Workflow**) or **MenMen Tools** opens the other one too (Settings ▸ Panels to turn it off).
+**Icons only**: the button next to ☰ (or ☰ ▸ Icons only) switches to **MenMen Bar**, a separate panel that is just the icon column. Its manifest limits it to 34-52 px wide, so the frame is only as wide as the icons (an extension cannot resize a docked frame itself). The same button in the bar switches back to the full panel with names. The first time, dock the bar where you want it; After Effects remembers the place. It is also in `Window ▸ Extensions ▸ MenMen Bar`.
 
 ### Graph Editor
 Easing ▸ **Graph Editor** (also full width at the top of MenMen Tools) edits one ease between two keyframes.

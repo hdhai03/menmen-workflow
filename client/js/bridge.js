@@ -6,8 +6,9 @@
 
   var qp = new URLSearchParams(location.search).get('panel') || 'main';
   B.extId = cep ? cep.getExtensionId()
-    : (qp === 'main' ? 'com.menmen.workflow.main' : 'com.menmen.workflow.panel' + qp);
-  B.isMain = /\.main$/.test(B.extId);
+    : (qp === 'main' ? 'com.menmen.workflow.main' : qp === 'bar' ? 'com.menmen.workflow.bar' : 'com.menmen.workflow.panel' + qp);
+  B.isBar = /\.bar$/.test(B.extId) || qp === 'bar';  // MenMen Bar: the main panel as an icon column only
+  B.isMain = /\.main$/.test(B.extId) || B.isBar;
   B.panelNo = B.isMain ? '' : B.extId.replace(/^.*panel/, '');
 
   // Opens (or brings to front) a sub panel.

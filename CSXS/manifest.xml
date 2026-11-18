@@ -8,6 +8,7 @@
     <Extension Id="com.menmen.workflow.panel3" Version="0.3.0" />
     <Extension Id="com.menmen.workflow.panel4" Version="0.3.0" />
     <Extension Id="com.menmen.workflow.timer" Version="0.3.0" />
+    <Extension Id="com.menmen.workflow.bar" Version="0.3.0" />
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>
@@ -119,6 +120,25 @@
           <Geometry>
             <Size><Height>340</Height><Width>260</Width></Size>
             <MinSize><Height>90</Height><Width>140</Width></MinSize>
+          </Geometry>
+        </UI>
+      </DispatchInfo>
+    </Extension>
+    <!-- MenMen Bar: the tool icons as a single column. MaxSize keeps the frame as narrow as the icons. -->
+    <Extension Id="com.menmen.workflow.bar">
+      <DispatchInfo>
+        <Resources>
+          <MainPath>./client/index.html</MainPath>
+          <ScriptPath>./host/main.jsx</ScriptPath>
+        </Resources>
+        <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle>
+        <UI>
+          <Type>Panel</Type>
+          <Menu>MenMen Bar</Menu>
+          <Geometry>
+            <Size><Height>600</Height><Width>44</Width></Size>
+            <MinSize><Height>80</Height><Width>34</Width></MinSize>
+            <MaxSize><Height>4000</Height><Width>52</Width></MaxSize>
           </Geometry>
         </UI>
       </DispatchInfo>

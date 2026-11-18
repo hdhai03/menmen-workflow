@@ -372,8 +372,9 @@
     // header
     var head = el('header', 'm-head');
     head.innerHTML = '<span class="brand">MenMen</span>';
-    var io = svgBtn('m-view' + (S.data.main.iconsOnly ? ' on' : ''), S.data.main.iconsOnly ? 'Show icons + names' : 'Icons only (narrow panel)',
-      S.data.main.iconsOnly ? ICONS.list : ICONS.grid, toggleIconsOnly);
+    var iconMode = B.isBar || (!B.inCEP && S.data.main.iconsOnly);
+    var io = svgBtn('m-view' + (iconMode ? ' on' : ''), iconMode ? 'Show icons + names (MenMen Workflow)' : 'Icons only (MenMen Bar: a narrow icon column)',
+      iconMode ? ICONS.list : ICONS.grid, toggleIconsOnly);
     head.appendChild(io);
     head.appendChild(svgBtn('m-menu', 'Menu', ICONS.menu, mainMenu));
     root.appendChild(head);
@@ -525,17 +526,25 @@
   // Icons only. The panel's frame belongs to After Effects: an extension cannot resize a docked
   // panel (resizeContent only resized the page inside the frame, so icons got clipped). The content
   // always follows the real frame width; drag the frame edge once and AE keeps it in the workspace.
+  // Icons only = switch to the MenMen Bar panel (its manifest MaxSize keeps the frame as narrow as
+  // the icons; an extension cannot resize a docked frame itself) and close this one. The bar's
+  // button switches back to the full panel. Outside AE (preview) the page just toggles its layout.
+  var cep = window.__adobe_cep__;
   function toggleIconsOnly() {
-    var m = S.data.main;
-    m.iconsOnly = !m.iconsOnly;
+    if (cep && cep.requestOpenExtension && cep.closeExtension) {
+      S.data.main.iconsOnly = !B.isBar; S.save(true);
+      B.openPanel(B.isBar ? 'com.menmen.workflow.main' : 'com.menmen.workflow.bar');
+      setTimeout(function () { cep.closeExtension(); }, 150);
+      return;
+    }
+    S.data.main.iconsOnly = !S.data.main.iconsOnly;
     S.save(); sizeClasses(); render();
-    if (m.iconsOnly && window.innerWidth > 80) U.toast('Icons only: drag the panel edge to make it narrow – After Effects remembers the width', true);
   }
   function mainMenu(e) {
     var r = e.currentTarget.getBoundingClientRect();
     U.menu(r.left, r.bottom + 4, [
       { label: 'Settings…', onClick: openSettings },
-      { label: S.data.main.iconsOnly ? 'Show icons + names' : 'Icons only', onClick: toggleIconsOnly },
+      { label: B.isBar ? 'Show icons + names (MenMen Workflow)' : 'Icons only (MenMen Bar)', onClick: toggleIconsOnly },
       { label: 'New user panel…', onClick: newUserPanel },
       { label: 'New quick panel (layout)…', onClick: newQuickPanel },
       { label: 'Add New Item…', onClick: function () { addItemDialog(null); } },
@@ -1037,7 +1046,6 @@
       accent,
       el('div', 'sec', 'Panels'),
       mainToggle('Open the main panel and Panel 1 together', 'together'),
-      mainToggle('Main panel: icons only', 'iconsOnly'),
       el('div', 'sec', 'Data'), data
     );
     if (S.file) form.appendChild(el('div', 'muted small', 'Settings file: ' + esc(S.file)));
@@ -1147,7 +1155,7 @@
   // Responsive size classes: w-xs (< 130px), w-sm (< 220px), h-sm (< 260px tall).
   function sizeClasses() {
     var w = window.innerWidth, h = window.innerHeight, b = document.body;
-    var io = B.isMain && S.data && S.data.main && S.data.main.iconsOnly;
+    var io = B.isBar || (!B.inCEP && B.isMain && S.data && S.data.main && S.data.main.iconsOnly);
     b.classList.toggle('icons-only', !!io);
     b.classList.toggle('w-xs', w < 130 || !!io);
     b.classList.toggle('w-sm', w < 220);
@@ -1168,7 +1176,7 @@
   loadHost();
   // Main panel + Panel 1 (Quick Panel) open together: each one opens the other once when it starts.
   if (B.inCEP && S.data.main.together !== false) {
-    var partner = B.isMain ? S.SLOTS[0] : (B.panelNo === '1' ? 'com.menmen.workflow.main' : null);
+    var partner = B.isBar ? null : B.isMain ? S.SLOTS[0] : (B.panelNo === '1' ? 'com.menmen.workflow.main' : null);
     if (partner) setTimeout(function () { B.openPanel(partner); }, 400);
   }
   window.MMWApp = { render: render, state: st, dock: dock };
