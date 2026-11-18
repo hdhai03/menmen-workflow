@@ -25,7 +25,8 @@ $.global.MMW.load = function (root) {
         "expression.jsx",
         "text.jsx",
         "shapetools.jsx",
-        "rigs.jsx"
+        "rigs.jsx",
+        "motiontools.jsx"
     ];
     var errs = [];
     for (var i = 0; i < files.length; i++) {

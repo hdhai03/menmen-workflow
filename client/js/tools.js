@@ -101,7 +101,12 @@
     preset: '<path d="M4 4h10l6 6v10H4z"/><path d="M14 4v6h6M8 15l2.5-3 2 2 3.5-4"/>',
     divider: '<path d="M3 12h18"/>',
     metronome: '<path d="M8 21h8l-3-17h-2z"/><path d="M12 15l6-9"/><circle cx="18" cy="6" r="1.5"/>',
-    area: '<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="10" stroke-dasharray="2.5 2.5"/>',
+    alignIco: '<path d="M4 3v18"/><rect x="7" y="6" width="12" height="4"/><rect x="7" y="14" width="8" height="4"/>',
+    arrange: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
+    stare: '<circle cx="6" cy="12" r="3"/><path d="M9 12h9M15 9l3 3-3 3"/><circle cx="20" cy="12" r="1.5"/>',
+    orbit: '<circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="9" ry="5"/><circle cx="20" cy="10" r="1.6"/>',
+    trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+        area: '<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="10" stroke-dasharray="2.5 2.5"/>',
     spotBlur: '<circle cx="9" cy="10" r="4"/><circle cx="16" cy="15" r="3"/><path d="M3 3h18v18H3z" stroke-dasharray="1.5 3"/>',
     audio: '<path d="M9 18V5l10-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>'
   };
@@ -148,6 +153,10 @@
     { id: 'parentToAbove', name: 'Parent to Above Layer', cat: 'layers', icon: 'parent', desc: 'Parents each layer to the layer directly above it.' },
     { id: 'parentChain', name: 'Parent in Selection Order', cat: 'layers', icon: 'parent', desc: 'Creates a parent chain in selection order.' },
     { id: 'unparent', name: 'Unparent', cat: 'layers', icon: 'parent', desc: 'Removes the parent of the selected layers.' },
+    { id: 'align', name: 'Align & Distribute', cat: 'layers', widget: 'align', icon: 'alignIco', desc: 'Align layers left / center / right / top / middle / bottom to the selection or the comp (one layer = comp), and distribute 3+ layers evenly.' },
+    { id: 'arrangeGrid', name: 'Arrange Grid', cat: 'layers', icon: 'arrange', desc: 'Arranges the selected layers in a centered grid of equal cells (layer order).',
+      params: [P.num('cols', 'Columns (0 = auto)', 0, { min: 0 }), P.num('gap', 'Gap (px)', 40)] },
+    { id: 'stare', name: 'Stare', cat: 'layers', icon: 'stare', desc: 'Layers always rotate to face a target: the last selected layer, or a new Stare Target null. Their Rotation becomes an offset.', mods: { shift: 'Remove' } },
     { id: 'sequencer', name: 'Offset Layers', cat: 'layers', widget: 'sequencer', desc: 'Offsets layers or keyframes in sequence (down / up / random).' },
     { id: 'duplicateLayers', name: 'Duplicate Layers', cat: 'layers', icon: 'duplicate', desc: 'Duplicates layers several times.',
       params: [P.num('count', 'Copies', 3, { min: 1, max: 200 })] },
@@ -183,7 +192,7 @@
     { id: 'loop', name: 'Key Looper', cat: 'keyframes', desc: 'Adds loopOut("cycle").', mods: { alt: 'pingpong', ctrl: 'continue', shift: 'offset' } },
 
     // ---------------- Easing ----------------
-    { id: 'easyKeyframes', name: 'Keyframe Assistant', cat: 'easing', widget: 'easyKeyframes', desc: 'Speed graph editor: drag the handles left/right for influence, up/down for speed (Shift = influence only, double-click = reset).' },
+    { id: 'easyKeyframes', name: 'Graph Editor', cat: 'easing', widget: 'easyKeyframes', desc: 'Value / speed graph: drag the handles freely (overshoot allowed), Shift = influence only, Alt or Link = mirror. Built-in and saved curves, Read from keys, Apply / In / Out / Linear / Hold.' },
     { id: 'easingPresets', name: 'Easing Presets', cat: 'easing', widget: 'easingPresets', icon: 'curvePreset', desc: 'Sine, Quad, Cubic, Quart, Quint, Expo, Circ, Back – In / Out / InOut.' },
     { id: 'easings', name: 'Easings Manager', cat: 'easing', widget: 'easings', desc: 'Copy / paste values and easing.', mods: { alt: 'Easing only', shift: 'Values only' } },
     { id: 'copyKeyEasing', name: 'Copy Key Easing', cat: 'easing', host: 'easingsCopy', opts: { alt: true }, icon: 'easings', desc: 'Copies the easing of the selected keys.' },
@@ -196,6 +205,8 @@
     { id: 'preCompose', name: 'Pre-Compose', cat: 'composition', desc: 'Pre-composes the selected layers (Move all attributes).', mods: { alt: 'Leave attributes (1 layer)' } },
     { id: 'unPreComp', name: 'Decompose', cat: 'composition', desc: 'Moves the layers of a precomp into the current comp.', mods: { alt: 'Keep the precomp layer' } },
     { id: 'compDuplicator', name: 'Duplicate Comps', cat: 'composition', desc: 'Duplicates comps + nested comps and fixes comp("…") expressions.', mods: { alt: 'Put into a new folder' } },
+    { id: 'cropToLayer', name: 'Crop Comp to Layer', cat: 'composition', icon: 'cropComp', desc: 'Crops the active comp to the bounds of the selected layer(s); layers using this comp stay in place.' },
+    { id: 'trash', name: 'Trash Disabled', cat: 'composition', icon: 'trash', desc: 'Removes disabled effects and disabled expressions from the selected layers (or the whole comp).', mods: { alt: 'Whole comp' } },
     { id: 'batchCompSettings', name: 'Batch Comp Settings', cat: 'composition', icon: 'cat-composition', desc: 'Changes size / fps / duration of many comps (empty = unchanged).',
       params: [P.num('width', 'Width (px)', ''), P.num('height', 'Height (px)', ''), P.num('fps', 'Frame rate', ''), P.num('duration', 'Duration (seconds)', '')] },
     { id: 'audioToPrecomps', name: 'Audio to Precomps', cat: 'composition', icon: 'audio', desc: 'Copies the selected audio layers into every nested precomp, in sync, so you can hear them while working inside precomps.', mods: { shift: 'Remove all synced audio from the project' } },
@@ -304,6 +315,8 @@
     { id: 'areaPosition', name: 'Area Position', cat: 'animation', host: 'areaEffector', opts: { mode: 'position' }, icon: 'area', desc: 'Layers near the controller are pushed by Offset X / Y / Z.', mods: { alt: 'New controller', shift: 'Remove effect' } },
     { id: 'areaRotation', name: 'Area Rotation', cat: 'animation', host: 'areaEffector', opts: { mode: 'rotation' }, icon: 'area', desc: 'Layers near the controller rotate by the Rotation slider.', mods: { alt: 'New controller', shift: 'Remove effect' } },
     { id: 'areaColor', name: 'Area Color', cat: 'animation', host: 'areaEffector', opts: { mode: 'color' }, icon: 'area', desc: 'Layers blend from Color Outside to Color Inside near the controller (Fill effect).', mods: { alt: 'New controller', shift: 'Remove effect' } },
+    { id: 'orbit', name: 'Orbit', cat: 'animation', icon: 'orbit', desc: 'Selected layers orbit around a new Orbit Center null (Speed slider, optional Face Center).', mods: { shift: 'Remove' },
+      params: [P.num('speed', 'Speed (deg/s)', 45)] },
     { id: 'createLimb', name: 'Bend / Limb Rig', cat: 'animation', desc: 'A bendable hose/limb driven by 2 nulls.' },
     { id: 'positionTrace', name: 'Position Trace', cat: 'animation', desc: 'Draws the motion path as a shape.', mods: { alt: 'Work area only' } }
   ];

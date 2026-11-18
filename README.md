@@ -28,26 +28,35 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
   - Back up / Restore / Reset.
 - Settings are saved to `<userData>/MenMenWorkflow/settings.json` and synced across all panels.
 
-### 138 tools in 12 categories
+### 145 tools in 12 categories
 | Category | Tools |
 |---|---|
 | Selection (23) | Select Nulls / 3D / Lights (Alt: cameras) / Precomps / Shape / Text / Audio / Guide / Adjustment, Inverse, Every Nth, Odd/Even, Above, Below, Children, Parents, Hierarchy, Random, At Frame, Matching Property, All Paths / Fills / Strokes |
-| Layers (17) | Parent to Null, Parent to First / Above / Selection Order, Unparent, Offset Layers, Duplicate, Rename, Layer Colors, Lock All, Shy, Solo (Timeline), Visibility, Reset Transform, Trim, Set Anchor Point, Collect Colors |
+| Layers (20) | Align & Distribute, Arrange Grid, Stare, Parent to Null, Parent to First / Above / Selection Order, Unparent, Offset Layers, Duplicate, Rename, Layer Colors, Lock All, Shy, Solo (Timeline), Visibility, Reset Transform, Trim, Set Anchor Point, Collect Colors |
 | Keyframes (12) | Clone, Clone & Mirror, Align to Playhead / In-Out / Left-Right, Offset, Time-Reverse, Snap to Frames, Clean, Copy/Paste Values, Key Looper |
-| Easing (6) | Keyframe Assistant (speed graph editor), Easing Presets (Sine…Back × In/Out/InOut), Easings Manager, Copy/Paste Easing, Reverse Easing |
-| Composition (11) | Auto Crop, Auto Trim, Pre-Compose, Decompose, Duplicate Comps, Batch Comp Settings, Audio to Precomps, Spot Blur, Black/Gray/White BG |
+| Easing (6) | Graph Editor (value + speed graph), Easing Presets (Sine…Back × In/Out/InOut), Easings Manager, Copy/Paste Easing, Reverse Easing |
+| Composition (13) | Auto Crop, Crop Comp to Layer, Trash Disabled, Auto Trim, Pre-Compose, Decompose, Duplicate Comps, Batch Comp Settings, Audio to Precomps, Spot Blur, Black/Gray/White BG |
 | Project (6) | Project Cleanup, Organize Project, Folder Structure, Reveal Project Folder, Reveal Layer Source, Proxy Manager |
 | Guides (11) | Guides Around / Center / Edge / Anchor, Grid System, Clear, Copy, Paste, Show/Hide, Lock, Snap |
 | View (6) | Zoom 100% / 50%, Solo (Viewer), Rulers, Grid, Save Screenshot |
 | Expression (7) | Expression Editor, Enable / Disable / Remove, Remove Broken, Bake, Find & Replace |
 | Shapes (15) | Separate Shapes, Merge, Null Controllers for Points, Shapes from Vector, Remove Artboards, Mask → Shape, Cap/Join Round/Miter/Bevel, Toggle Fill/Stroke, Reverse Path, Reset Shape Transforms, Rectangle / Circle Wizard, Trim Paths Controller |
 | Text (5) | Find & Replace Text, Lorem Ipsum, Typewriter, Number Counter, Text Box Generator |
-| Animation (19) | Overshoot, Bounce, Wiggle, Spin, Auto Fader, Blinker, Stop Motion, Beat Switch Layers, Beat Markers, Metronome Click, Beat Counter, Metronome Controller, Area Opacity / Scale / Position / Rotation / Color, Bend / Limb Rig, Position Trace |
+| Animation (20) | Orbit, Overshoot, Bounce, Wiggle, Spin, Auto Fader, Blinker, Stop Motion, Beat Switch Layers, Beat Markers, Metronome Click, Beat Counter, Metronome Controller, Area Opacity / Scale / Position / Rotation / Color, Bend / Limb Rig, Position Trace |
 
 ### Rigs
 - **Area Effector** (Area Opacity / Scale / Position / Rotation / Color): an `Area Effector` null with Radius, Falloff, Invert Field and Show Field controls plus a dashed guide; layers react to their distance from it. Alt = new controller, Shift = remove the effect.
 - **Spot Blur**: draggable focus nulls; everything outside them is blurred by Compound Blur driven by an auto-built map comp (Max Blur, Spot Size, Feather, Blur Inside Spots on the controller).
 - **Audio to Precomps**: copies the selected audio layers into every nested precomp (time-offset, locked, named `♪ …`); precomps with time remapping/stretch or used more than once are skipped. Shift = remove all synced audio.
+
+### Graph Editor
+Easing ▸ **Graph Editor** edits one curve between two keyframes, inspired by the graph editors of Motion-style toolkits:
+- **Value graph** (default): a cubic-bezier curve with two handles you drag freely; pull a handle outside the box for overshoot. **Speed graph** shows the same curve as AE's speed graph.
+- Shift = influence only (full ease), Alt or **Link** = mirrored handles, double-click = reset.
+- Type or paste `cubic-bezier(x1, y1, x2, y2)`; **Read** loads the curve from the selected keyframes.
+- Built-in curves plus your own (**+** saves, right-click deletes); click a curve to load it, double-click to load and apply.
+- **Apply** / **In** / **Out** / **Linear** / **Hold**. Applies to each pair of selected keys, or to both sides of a single selected key.
+- A compact version sits in the Quick Panel (Alt+Apply = In only, Shift+Apply = Out only).
 
 ### Metronome
 One `Metronome` null drives the beat tools (BPM, Beats per Bar, Start Time, Mode, Beats/Frames per Step, Step, Random Order):

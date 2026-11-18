@@ -63,8 +63,8 @@
       d.appendChild(f);
     }
     overlay.appendChild(d);
-    var first = d.querySelector('input, textarea, select');
-    if (first) setTimeout(function () { first.focus(); }, 30);
+    var first = d.querySelector('.form input:not([type=range]):not([type=checkbox]), .form textarea, .form select');
+    if (first) setTimeout(function () { first.focus(); }, 30);  // forms only, never widgets
     return d;
   }
 

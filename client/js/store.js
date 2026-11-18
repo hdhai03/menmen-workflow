@@ -14,7 +14,7 @@
     var it = function (tool, w, h) { var o = { id: uid(), type: 'tool', tool: tool }; if (w) { o.w = w; o.h = h; } return o; };
     return [
       it('easyKeyframes', 2, 2), it('easings', 2, 1), it('sequencer', 2, 1),
-      it('moveAnchor', 2, 2), it('addNull'), it('clone'), it('cloneMirror'), it('loop'),
+      it('moveAnchor', 2, 2), it('align', 2, 2), it('addNull'), it('clone'), it('cloneMirror'), it('loop'),
       it('elastic'), it('bounce'), it('fixKeysTime'), it('easingPresets'),
       it('extractShapes'), it('mergeShapes'), it('nullsToPoint'), it('selectPaths'),
       it('cropComp'), it('preCompose'), it('unPreComp'), it('positionTrace')
@@ -42,6 +42,7 @@
       params: {},        // { toolId: {...} } - last used parameters
       slots: { 'com.menmen.workflow.panel1': { kind: 'user', id: 'quick', view: 'layout' } },  // { extId: { kind, id, view: 'list'|'grid'|'layout' } }
       quickAdded: true,
+      curves: [],        // saved Graph Editor curves [{ name, bz: [x1,y1,x2,y2] }]
       main: { collapsedFav: false }
     };
   }
@@ -51,6 +52,7 @@
     if (!s || typeof s !== 'object' || s.version !== 2) return d;
     s.theme = Object.assign({}, d.theme, s.theme || {});
     ['favorites', 'upOrder'].forEach(function (k) { if (!Array.isArray(s[k])) s[k] = d[k]; });
+    if (!Array.isArray(s.curves)) s.curves = [];
     ['userPanels', 'hidden', 'params', 'slots', 'main'].forEach(function (k) { if (!s[k] || typeof s[k] !== 'object') s[k] = d[k]; });
     s.upOrder = s.upOrder.filter(function (id) { return s.userPanels[id]; });
     Object.keys(s.userPanels).forEach(function (id) { if (s.upOrder.indexOf(id) < 0) s.upOrder.push(id); });

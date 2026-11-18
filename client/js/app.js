@@ -221,10 +221,26 @@
     var lastClick = null;
     dlg.querySelector('.btn.primary').addEventListener('mousedown', function (ev) { lastClick = { altKey: ev.altKey, shiftKey: ev.shiftKey, ctrlKey: ev.ctrlKey, metaKey: ev.metaKey }; });
   }
+  // Context handed to widgets: run a host tool, persist state, and the saved-curve library.
+  function widgetCtx(t) {
+    return {
+      run: function (id, o, e) { return exec(id, o, e, t.name); },
+      save: function () { S.save(); },
+      lib: {
+        list: function () { return S.data.curves; },
+        save: function (bz, done) {
+          U.prompt('Save curve', 'Name', 'Curve ' + (S.data.curves.length + 1), function (v) {
+            S.data.curves.push({ name: v, bz: bz }); S.save(); if (done) done();
+          });
+        },
+        remove: function (i) { S.data.curves.splice(i, 1); S.save(); }
+      }
+    };
+  }
   function openWidget(t) {
     var data = S.widgetData(t.id);
     var body = el('div', 'widget-host');
-    body.appendChild(W[t.widget](data, { run: function (id, o, e) { return exec(id, o, e, t.name); }, save: function () { S.save(); } }));
+    body.appendChild(W[t.widget](data, widgetCtx(t)));
     var dlg = U.dialog(t.name, body, []);
     catStyle(dlg, t.cat).classList.add('tool-dialog', 'widget-dialog', 'wd-' + t.widget);
     var tip = el('div', 'dlg-tip muted small', esc(t.desc) + (t.mods ? ' · ' + Object.keys(t.mods).map(function (k) { return MOD[k] + ': ' + esc(t.mods[k]); }).join(' · ') : ''));
@@ -618,8 +634,8 @@
     setTip();
   }
   // ============ LAYOUT VIEW (compact grid, inline widgets) ============
-  var INLINE = { easyKeyframes: 'easyKeyframesCompact', easings: 'easings', moveAnchor: 'moveAnchor', sequencer: 'sequencerCompact' };
-  var DEFAULT_SIZE = { easyKeyframes: [2, 2], easings: [2, 1], moveAnchor: [2, 2], sequencer: [2, 1] };
+  var INLINE = { easyKeyframes: 'easyKeyframesCompact', easings: 'easings', moveAnchor: 'moveAnchor', sequencer: 'sequencerCompact', align: 'align' };
+  var DEFAULT_SIZE = { easyKeyframes: [2, 2], easings: [2, 1], moveAnchor: [2, 2], sequencer: [2, 1], align: [2, 2] };
   function cellSize(it) {
     var t = it.type === 'tool' ? T.get(it.tool) : null, d = (t && t.widget && DEFAULT_SIZE[t.widget]) || [1, 1];
     return [it.w || d[0], it.h || d[1]];
@@ -676,7 +692,7 @@
     var t = it.type === 'tool' ? T.get(it.tool) : null, sz = cellSize(it), n;
     if (t && t.widget && INLINE[t.widget]) {
       n = el('div', 'q-cell q-widget wq-' + t.widget);
-      n.appendChild(W[INLINE[t.widget]](S.widgetData(t.id), { run: function (id, o, e) { return exec(id, o, e, t.name); }, save: function () { S.save(); } }));
+      n.appendChild(W[INLINE[t.widget]](S.widgetData(t.id), widgetCtx(t)));
       var ex = svgBtn('q-expand', 'Open ' + t.name, ICONS.expand, function () { openWidget(t); });
       n.appendChild(ex);
       hoverTip(n, tipTool(t));

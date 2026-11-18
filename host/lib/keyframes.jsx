@@ -137,43 +137,72 @@
     };
     MMW.EASE_CURVES = CURVES;
 
-    // o.curve: a CURVES name, or o.bezier = [x1,y1,x2,y2]. Applied to each selected key pair.
+    // Applies a value-graph curve (cubic-bezier x1,y1,x2,y2 between two keys) to the selected keys.
+    // o.curve: a CURVES name, or o.bezier = [x1,y1,x2,y2]. o.side: "both" | "out" | "in".
+    // Segments: every pair of consecutive selected keys. A property with a single selected key gets the
+    // curve on its outgoing segment (to the next key) and incoming segment (from the previous key).
     T.easingPreset = function (o) {
         var bz = o.bezier || CURVES[o.curve];
         if (!bz) MMW.fail("Unknown easing: " + o.curve);
-        var x1 = Math.max(0.001, bz[0]), y1 = bz[1], x2 = Math.min(0.999, bz[2]), y2 = bz[3];
+        var side = o.side || "both";
+        var x1 = Math.max(0.001, Math.min(1, Number(bz[0]))), y1 = Number(bz[1]);
+        var x2 = Math.max(0, Math.min(0.999, Number(bz[2]))), y2 = Number(bz[3]);
         var s1 = y1 / x1, s2 = (1 - y2) / (1 - x2);
         var inf1 = Math.max(0.1, Math.min(100, x1 * 100)), inf2 = Math.max(0.1, Math.min(100, (1 - x2) * 100));
         var c = MMW.comp(), list = MMW.keyProps(c), n = 0;
+
+        function applySeg(p, a, b) {
+            if (p.keyTime(b) - p.keyTime(a) <= 0) return;
+            if (!p.isInterpolationTypeValid(KeyframeInterpolationType.BEZIER)) return;
+            var dims = p.keyOutTemporalEase(a).length, outE = [], inE = [];
+            for (var d = 0; d < dims; d++) {
+                var avg = MMW.segAvgSpeed(p, a, b, d);
+                outE.push(new KeyframeEase(avg * s1, inf1));
+                inE.push(new KeyframeEase(avg * s2, inf2));
+            }
+            if (side !== "in") {
+                p.setTemporalEaseAtKey(a, p.keyInTemporalEase(a), outE);
+                p.setInterpolationTypeAtKey(a, p.keyInInterpolationType(a), KeyframeInterpolationType.BEZIER);
+            }
+            if (side !== "out") {
+                p.setTemporalEaseAtKey(b, inE, p.keyOutTemporalEase(b));
+                p.setInterpolationTypeAtKey(b, KeyframeInterpolationType.BEZIER, p.keyOutInterpolationType(b));
+            }
+            n++;
+        }
         for (var i = 0; i < list.length; i++) {
             var p = list[i].prop, ks = list[i].keys;
-            if (ks.length < 2) continue;
-            for (var j = 0; j < ks.length - 1; j++) {
-                var a = ks[j], b = ks[j + 1];
-                var dt = p.keyTime(b) - p.keyTime(a);
-                if (dt <= 0) continue;
-                var va = p.keyValue(a), vb = p.keyValue(b), dims = p.keyOutTemporalEase(a).length;
-                var outE = [], inE = [];
-                for (var d = 0; d < dims; d++) {
-                    var avg;
-                    if (dims === 1 && va instanceof Array) {
-                        var sum = 0;
-                        for (var q = 0; q < va.length; q++) sum += (vb[q] - va[q]) * (vb[q] - va[q]);
-                        avg = Math.sqrt(sum) / dt;               // spatial: speed along the path
-                    } else {
-                        avg = ((va instanceof Array) ? (vb[d] - va[d]) : (vb - va)) / dt;
-                    }
-                    outE.push(new KeyframeEase(avg * s1, inf1));
-                    inE.push(new KeyframeEase(avg * s2, inf2));
-                }
-                p.setTemporalEaseAtKey(a, p.keyInTemporalEase(a), outE);
-                p.setTemporalEaseAtKey(b, inE, p.keyOutTemporalEase(b));
-                p.setInterpolationTypeAtKey(a, p.keyInInterpolationType(a), KeyframeInterpolationType.BEZIER);
-                p.setInterpolationTypeAtKey(b, KeyframeInterpolationType.BEZIER, p.keyOutInterpolationType(b));
-                n++;
+            if (ks.length === 1) {
+                var k = ks[0];
+                if (k < p.numKeys) applySeg(p, k, k + 1);
+                if (k > 1) applySeg(p, k - 1, k);
+                continue;
             }
+            for (var j = 0; j < ks.length - 1; j++) applySeg(p, ks[j], ks[j + 1]);
         }
-        if (!n) MMW.fail("Select at least 2 consecutive keyframes on the same property.");
-        return "Easing " + (o.curve || "custom") + " -> " + n + " segment(s).";
+        if (!n) MMW.fail("Select keyframes (two consecutive keys, or one key with a neighbour).");
+        return "Easing " + (o.curve || "custom") + (side !== "both" ? " (" + side + ")" : "") + " -> " + n + " segment(s).";
+    };
+
+    // Reads the curve between the first two selected keys (or a single key and the next one) and
+    // returns it as "x1,y1,x2,y2" (cubic-bezier, value graph).
+    T.readEase = function () {
+        var c = MMW.comp(), list = MMW.keyProps(c);
+        for (var i = 0; i < list.length; i++) {
+            var p = list[i].prop, ks = list[i].keys, a = ks[0], b = ks.length > 1 ? ks[1] : a + 1;
+            if (b > p.numKeys || !p.isInterpolationTypeValid(KeyframeInterpolationType.BEZIER)) continue;
+            var avg = MMW.segAvgSpeed(p, a, b, 0);
+            var oe = p.keyOutTemporalEase(a)[0], ie = p.keyInTemporalEase(b)[0];
+            var x1 = oe.influence / 100, x2 = 1 - ie.influence / 100;
+            if (p.keyOutInterpolationType(a) === KeyframeInterpolationType.LINEAR) { x1 = 1 / 3; }
+            if (p.keyInInterpolationType(b) === KeyframeInterpolationType.LINEAR) { x2 = 2 / 3; }
+            var r1 = avg ? oe.speed / avg : 0, r2 = avg ? ie.speed / avg : 0;
+            if (p.keyOutInterpolationType(a) === KeyframeInterpolationType.LINEAR) r1 = 1;
+            if (p.keyInInterpolationType(b) === KeyframeInterpolationType.LINEAR) r2 = 1;
+            var y1 = x1 * r1, y2 = 1 - (1 - x2) * r2;
+            var f = function (v) { return Math.round(v * 1000) / 1000; };
+            return f(x1) + "," + f(y1) + "," + f(x2) + "," + f(y2);
+        }
+        MMW.fail("Select a keyframe that has a following keyframe.");
     };
 })();
