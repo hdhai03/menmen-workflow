@@ -51,6 +51,7 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 
 ### MenMen Tools (Panel 1)
 `Window ▸ Extensions ▸ MenMen Tools` is the main tool panel, kept apart from user panels (its own row in the main panel; right-click ▸ **Reset to default layout**). Default layout, top to bottom:
+- **Contact**: Facebook / Instagram / Behance of the author (opens in the browser).
 - **Disk cache** meter (% of the max size set in Preferences ▸ Media & Disk Cache; click to refresh) + **Purge** (all memory caches; Alt = also empty the disk cache, AE asks to confirm).
 - **Graph Editor** (full), **Quick Access** (10 most used tools).
 - **Add** row: Solid (Alt: pick color), Adjustment, Null, Camera (Alt: with a 3D control null), Light, Text, Shape (Alt: empty) - added above the selected layer.

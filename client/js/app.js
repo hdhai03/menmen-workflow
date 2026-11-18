@@ -758,6 +758,7 @@
     $app.appendChild(root);
 
     if (!slot) { body.appendChild(emptySub()); setTip(); return; }
+    if (slot.kind === 'user' && slot.id === 'quick') body.appendChild(contactBar());  // MenMen Tools: Contact on top
     if (slot.view === 'layout') { renderLayout(body, slot); setTip(); return; }
     var grid = slot.view === 'grid';
     var box = el('div', grid ? 'tile-grid' : 'row-list');
@@ -823,6 +824,25 @@
       box.appendChild(b);
     });
     return box;
+  }
+  // Contact row at the top of MenMen Tools: the author's Facebook / Instagram / Behance
+  var CONTACT = [
+    ['Facebook', 'https://www.facebook.com/hoangduchaii/', '<path d="M13.5 8.5H11V7.2c0-.6.3-1 1-1h1.5V4h-2c-2 0-3 1.2-3 3v1.5H7v2.2h1.5V16H11v-5.3h2z"/>'],
+    ['Instagram', 'https://www.instagram.com/___.1ah/', '<rect x="3.5" y="3.5" width="13" height="13" rx="3.5" fill="none"/><circle cx="10" cy="10" r="3" fill="none"/><circle cx="13.8" cy="6.2" r=".9"/>'],
+    ['Behance', 'https://www.behance.net/hoangduchaii', '<path d="M2.5 5.5h3.6c1.5 0 2.4.7 2.4 1.9 0 .8-.4 1.3-1 1.6.9.3 1.4.9 1.4 1.9 0 1.4-1.1 2.2-2.7 2.2H2.5zm1.7 1.4v1.8h1.6c.6 0 1-.3 1-.9s-.4-.9-1-.9zm0 3.1v2.1h1.8c.7 0 1.1-.4 1.1-1s-.4-1.1-1.1-1.1z"/><path d="M11.8 6h3.7v.9h-3.7z"/><path d="M13.7 8.1c-1.6 0-2.6 1.1-2.6 2.6 0 1.6 1 2.6 2.7 2.6 1.2 0 2-.6 2.3-1.6h-1.3c-.2.4-.5.6-1 .6-.8 0-1.2-.5-1.3-1.2h3.7c.2-1.8-.8-3-2.5-3zm-1.2 2.1c.1-.6.5-1 1.2-1s1 .4 1.1 1z"/>']
+  ];
+  function contactBar() {
+    var bar = el('div', 'contact-bar', '<span class="cb-lbl">Contact</span>');
+    var links = el('div', 'cb-links');
+    CONTACT.forEach(function (c) {
+      var a = el('button', 'cb-link', '<svg viewBox="0 0 20 20">' + c[2] + '</svg>');
+      a.title = c[0] + ' – ' + c[1];
+      a.addEventListener('click', function (e) { e.stopPropagation(); B.openURL(c[1]); });
+      hoverTip(a, '<b>' + c[0] + '</b><span class="tip-desc">' + esc(c[1]) + '</span>');
+      links.appendChild(a);
+    });
+    bar.appendChild(links);
+    return bar;
   }
   function renderLayout(body, slot) {
     var grid = el('div', 'q-grid'), user = slot.kind === 'user', u = user ? S.data.userPanels[slot.id] : null;
