@@ -363,7 +363,7 @@
     };
     var link = tool('Link', 'link', 'Keep Out and In equal (symmetric curve)', function () { var f = infl(); setInfl(f[0], f[0]); draw(); if (d.auto) autoApply(); });
     var auto = tool('Auto', 'auto', 'On: applied to the selected keys as soon as you release, pick a preset or change a value. Off: use Apply / In / Out.');
-    var rd = el('button', 'w-btn ge-tool', 'Read');
+    var rd = el('button', 'w-btn ge-tool ge-act', 'Read');  // an action, not a toggle
     rd.title = 'Read the curve from the selected keyframes';
     rd.addEventListener('click', function (e) {
       ctx.run('readEase', {}, e).then(function (r) {

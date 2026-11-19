@@ -63,3 +63,5 @@ body.native .tm-switch:checked::after { background: var(--bg); }
 .tm-link { align-self: flex-start; color: var(--muted); font-size: calc(var(--fs) - 1px); text-decoration: underline; }
 .tm-link:hover { color: var(--text); }
 @media (max-width: 250px) { .tm-grid3 { grid-template-columns: 1fr; } }
+.tm-phase.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+body.native .tm-phase.on { background: var(--act-bg); border-color: var(--act-edge); color: var(--act-text); }

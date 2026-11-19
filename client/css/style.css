@@ -668,3 +668,21 @@ body.ge-dragging, body.ge-dragging * { cursor: move !important; user-select: non
 .wq-sequencer .w-stagger { height: 100%; justify-content: center; }
 .widget-dialog .stg-f, .widget-dialog .stg-btn { height: 26px; }
 .wq-sequencer .q-expand, .wq-easings .q-expand { display: none; }  /* same UI as the dialog; the corner button covered Step / Paste */
+
+/* ---------- Stronger contrast between active and inactive buttons ---------- */
+/* colour look: selected tabs / options use the accent */
+.seg-btn.on, .w-segbtn.on { background: var(--accent); color: #fff; font-weight: 600; }
+.wr-opt.on, .wr-to.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.wr-to.on .wr-to-k { color: rgba(255, 255, 255, .75); }
+.icon-btn.on { background: rgba(var(--accent-rgb), .32); color: #fff; }
+/* AE native look: no colour, so active = clearly lighter fill + bright text + light edge; inactive text dimmer */
+body.native { --act-bg: rgba(255, 255, 255, .26); --act-edge: rgba(255, 255, 255, .5); --act-text: #fff; --idle-text: #8a8a8a; }
+body.native.light { --act-bg: rgba(0, 0, 0, .2); --act-edge: rgba(0, 0, 0, .45); --act-text: #000; --idle-text: #6a6a6a; }
+body.native .seg-btn, body.native .w-segbtn, body.native .ge-tool, body.native .wr-opt, body.native .wr-to, body.native .tm-phase { color: var(--idle-text); }
+body.native .seg-btn.on, body.native .w-segbtn.on, body.native .ge-tool.on, body.native .wr-opt.on, body.native .wr-to.on,
+body.native .icon-btn.on, body.native .size-chip.on, body.native .tm-phase.on, body.native .m-view.on {
+  background: var(--act-bg); border-color: var(--act-edge); color: var(--act-text); font-weight: 600;
+}
+body.native .seg-btn.on { box-shadow: inset 0 0 0 1px var(--act-edge); }
+body.native .wr-to.on .wr-to-k { color: var(--act-text); opacity: .7; }
+body.native .ge-tool.ge-act { color: var(--text); }
