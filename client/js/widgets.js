@@ -500,30 +500,58 @@
   };
 
   // ---------- Sequencer ----------
-  W.sequencer = function (d, ctx) {
-    if (d.step == null) d.step = 2;
-    if (!d.order) d.order = 'down';
-    var root = el('div', 'w w-row w-seq');
-    var num = el('input', 'w-num'); num.type = 'number'; num.min = 0; num.step = 1; num.value = d.step;
-    num.title = 'Frames between items';
-    num.addEventListener('click', stop);
-    num.addEventListener('change', function () { d.step = Math.max(0, Number(num.value) || 0); ctx.save(); });
-    var seg = el('div', 'w-seg');
-    [['down', '↓', 'Top to bottom'], ['up', '↑', 'Bottom to top'], ['random', '⤨', 'Random']].forEach(function (o) {
-      var b = el('button', 'w-segbtn' + (d.order === o[0] ? ' on' : ''), o[1]);
-      b.title = o[2];
-      b.addEventListener('click', function (e) {
-        stop(e); d.order = o[0]; ctx.save();
-        seg.querySelectorAll('.w-segbtn').forEach(function (x) { x.classList.remove('on'); });
-        b.classList.add('on');
-      });
-      seg.appendChild(b);
+  // [Num: n] [Step: n] + align to playhead / top -> bottom / bottom -> top / random (click = run)
+  // Num = frames between steps, Step = layers per step (every Step layers move on by Num frames)
+  function scrubField(label, get, set, title) {
+    var w = el('label', 'stg-f', '<span>' + label + ':</span>');
+    var inp = el('input', 'stg-in'); inp.type = 'text'; inp.spellcheck = false; inp.title = title + ' – drag sideways or click to type';
+    inp.value = get();
+    w.appendChild(inp);
+    inp.addEventListener('click', stop);
+    inp.addEventListener('mousedown', function (e) {
+      if (document.activeElement === inp) return;
+      e.preventDefault(); e.stopPropagation();
+      var x0 = e.clientX, v0 = get(), moved = false;
+      var mv = function (ev) {
+        if (Math.abs(ev.clientX - x0) > 2) moved = true;
+        if (moved) { set(v0 + Math.round((ev.clientX - x0) / 6)); inp.value = get(); }
+      };
+      var up = function () {
+        document.removeEventListener('mousemove', mv, true); document.removeEventListener('mouseup', up, true);
+        if (!moved) { inp.focus(); inp.select(); }
+      };
+      document.addEventListener('mousemove', mv, true); document.addEventListener('mouseup', up, true);
     });
-    var go = el('button', 'w-btn w-accent', '▶');
-    go.title = 'Sequence';
-    go.addEventListener('click', function (e) { stop(e); ctx.run('sequencer', { step: d.step, order: d.order }, e); });
-    var f = el('span', 'w-unit', 'f');
-    root.append(num, f, seg, go);
+    inp.addEventListener('keydown', function (e) {
+      e.stopPropagation();
+      if (e.key === 'Enter') inp.blur();
+      else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); set(get() + (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1)); inp.value = get(); }
+    });
+    inp.addEventListener('change', function () { var v = parseInt(inp.value, 10); if (!isNaN(v)) set(v); inp.value = get(); });
+    return w;
+  }
+  var STAGGER = [
+    ['align', 'Align the layers (or their first keys) to the playhead', '<path d="M2.5 1.5v13" stroke-dasharray="1.6 1.4"/><path d="M5 4h8M5 8h5.5M5 12h7"/>'],
+    ['down', 'Offset from top to bottom', '<path d="M1.5 3.5h5M5 8h5M8.5 12.5h6"/>'],
+    ['up', 'Offset from bottom to top', '<path d="M8.5 3.5h6M5 8h5M1.5 12.5h5"/>'],
+    ['random', 'Offset in random order', '<path d="M6 3.5h6M1.5 8h5M8 12.5h6.5"/>']
+  ];
+  W.sequencer = function (d, ctx) {
+    if (d.step == null) d.step = 1;
+    if (d.group == null) d.group = 1;
+    var root = el('div', 'w w-stagger');
+    var fields = el('div', 'stg-fields');
+    fields.append(
+      scrubField('Num', function () { return d.step; }, function (v) { d.step = Math.max(0, Math.min(999, v)); ctx.save(); }, 'Frames between steps'),
+      scrubField('Step', function () { return d.group; }, function (v) { d.group = Math.max(1, Math.min(999, v)); ctx.save(); }, 'Layers per step (every Step layers move on by Num frames)'));
+    var btns = el('div', 'stg-btns');
+    STAGGER.forEach(function (o) {
+      var b = el('button', 'stg-btn stg-' + o[0], '<svg viewBox="0 0 16 16">' + o[2] + '</svg>');
+      b.title = o[1];
+      b.addEventListener('click', function (e) { stop(e); ctx.run('sequencer', { step: d.step, group: d.group, order: o[0] }, e); });
+      btns.appendChild(b);
+    });
+    root.append(fields, btns);
     return root;
   };
 
@@ -585,21 +613,7 @@
   };
 
   // ---------- Compact versions for Layout panels ----------
-  W.sequencerCompact = function (d, ctx) {
-    if (d.step == null) d.step = 2;
-    if (!d.order) d.order = 'down';
-    var ORD = { down: ['↓', 'Top to bottom'], up: ['↑', 'Bottom to top'], random: ['⤨', 'Random'] }, NEXT = { down: 'up', up: 'random', random: 'down' };
-    var root = el('div', 'w wc-seq');
-    var num = el('input', 'w-num'); num.type = 'number'; num.min = 0; num.value = d.step; num.title = 'Frames between items';
-    num.addEventListener('click', stop);
-    num.addEventListener('change', function () { d.step = Math.max(0, Number(num.value) || 0); ctx.save(); });
-    var ord = el('button', 'w-btn wc-ord', ORD[d.order][0]); ord.title = ORD[d.order][1] + ' (click to change)';
-    ord.addEventListener('click', function (e) { stop(e); d.order = NEXT[d.order]; ord.textContent = ORD[d.order][0]; ord.title = ORD[d.order][1]; ctx.save(); });
-    var go = el('button', 'w-btn w-primary', '▶'); go.title = 'Offset layers / keys';
-    go.addEventListener('click', function (e) { stop(e); ctx.run('sequencer', { step: d.step, order: d.order }, e); });
-    root.append(num, ord, go);
-    return root;
-  };
+  W.sequencerCompact = function (d, ctx) { return W.sequencer(d, ctx); };  // same layout in MenMen Tools
 
   // ---------- Align / Distribute ----------
   var AL = {

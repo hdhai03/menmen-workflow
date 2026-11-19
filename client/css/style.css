@@ -652,3 +652,19 @@ body.ge-dragging, body.ge-dragging * { cursor: move !important; user-select: non
 .wq-easings .ecp-btn svg { width: 15px; height: 15px; }
 .ecp-lbl { word-break: normal; overflow-wrap: anywhere; }
 .wq-easings .ecp-lbl { font-size: calc(var(--fs) - 2.5px); -webkit-line-clamp: 3; line-height: 1.15; }
+
+/* ---------- Stagger (Offset Layers): [Num] [Step] + 4 icon buttons ---------- */
+.w-stagger { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.stg-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+.stg-f { display: flex; align-items: center; gap: 3px; height: 20px; padding: 0 5px; background: var(--bg); border: 1px solid var(--line-2); min-width: 0; cursor: ew-resize; }
+.stg-f > span { color: var(--muted); font-size: calc(var(--fs) - 1.5px); flex: none; }
+.stg-in { flex: 1; min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; color: var(--text); font: 600 calc(var(--fs) - .5px)/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; cursor: ew-resize; padding: 0; }
+.stg-in:focus { cursor: text; }
+.stg-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+.stg-btn { height: 20px; display: grid; place-items: center; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line-2); }
+.stg-btn:hover { color: var(--text); background: var(--surface-3); }
+.stg-btn:active { transform: scale(.96); }
+.stg-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.wq-sequencer .w-stagger { height: 100%; justify-content: center; }
+.widget-dialog .stg-f, .widget-dialog .stg-btn { height: 26px; }
+.wq-sequencer .q-expand, .wq-easings .q-expand { display: none; }  /* same UI as the dialog; the corner button covered Step / Paste */

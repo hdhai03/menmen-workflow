@@ -140,10 +140,14 @@
     // ---------------- Sequencer ----------------
     // o.step: frames between items; o.order: "down" | "up" | "random".
     // With selected keyframes -> offsets keyframes per layer, otherwise -> offsets layers.
+    // Stagger. o.step = Num (frames between steps), o.group = Step (layers per step: every Step layers
+    // move on by Num frames), o.order = "down" | "up" | "random" | "align" (align = to the playhead).
+    // With keyframes selected the keys move, otherwise the layers (in points).
     T.sequencer = function (o) {
         var c = MMW.comp(), layers = MMW.sortByIndex(MMW.selLayers(c));
-        var step = (o.step === undefined ? 2 : Number(o.step)) * c.frameDuration;
-        var order = o.order || "down";
+        var num = o.step === undefined ? 1 : Number(o.step), step = num * c.frameDuration;
+        var group = Math.max(1, Math.round(Number(o.group) || 1));
+        var order = o.order || "down", align = order === "align";
         if (order === "up") layers.reverse();
         if (order === "random") {
             for (var r = layers.length - 1; r > 0; r--) {
@@ -151,6 +155,7 @@
                 layers[r] = layers[j]; layers[j] = tmp;
             }
         }
+        function slot(pos) { return Math.floor(pos / group); }
         var keyed = MMW.keyProps(c, false);
         if (keyed.length) {
             var minT = {}, i, base = 1e9;
@@ -158,7 +163,7 @@
             var nk = 0;
             for (i = 0; i < keyed.length; i++) {
                 var pos = MMW.indexOf(layers, keyed[i].layer);
-                var target = base + pos * step;
+                var target = align ? c.time : base + slot(pos) * step;
                 // keep the spacing between properties of the same layer
                 var lid = keyed[i].layer.index;
                 if (minT[lid] === undefined) {
@@ -169,17 +174,18 @@
                 MMW.moveKeys(keyed[i].prop, keyed[i].keys, function (d) { return d.t + delta; });
                 nk += keyed[i].keys.length;
             }
-            return "Offset " + nk + " keyframe(s) across " + layers.length + " layer(s).";
+            return align ? "Aligned " + nk + " keyframe(s) to the playhead." : "Offset " + nk + " keyframe(s) across " + layers.length + " layer(s).";
         }
-        if (layers.length < 2) MMW.fail("Select at least 2 layers (or some keyframes).");
+        if (!align && layers.length < 2) MMW.fail("Select at least 2 layers (or some keyframes).");
         var start = 1e9;
         for (var a = 0; a < layers.length; a++) start = Math.min(start, layers[a].inPoint);
         for (var b = 0; b < layers.length; b++) {
             var L = layers[b], lk = L.locked;
             L.locked = false;
-            L.startTime += (start + b * step) - L.inPoint;
+            L.startTime += (align ? c.time : start + slot(b) * step) - L.inPoint;
             L.locked = lk;
         }
-        return "Offset " + layers.length + " layer(s) by " + (o.step === undefined ? 2 : o.step) + " frame(s) each.";
+        if (align) return "Aligned " + layers.length + " layer(s) to the playhead.";
+        return "Offset " + layers.length + " layer(s) by " + num + " frame(s)" + (group > 1 ? " every " + group + " layers." : " each.");
     };
 })();

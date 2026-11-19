@@ -167,7 +167,7 @@
     { id: 'arrangeGrid', name: 'Arrange Grid', cat: 'layers', icon: 'arrange', desc: 'Arranges the selected layers in a centered grid of equal cells (layer order).',
       params: [P.num('cols', 'Columns (0 = auto)', 0, { min: 0 }), P.num('gap', 'Gap (px)', 40)] },
     { id: 'stare', name: 'Stare', cat: 'layers', icon: 'stare', desc: 'Layers always rotate to face a target: the last selected layer, or a new Stare Target null. Their Rotation becomes an offset.', mods: { shift: 'Remove' } },
-    { id: 'sequencer', name: 'Offset Layers', cat: 'layers', widget: 'sequencer', desc: 'Offsets layers or keyframes in sequence (down / up / random).' },
+    { id: 'sequencer', name: 'Offset Layers', cat: 'layers', widget: 'sequencer', desc: 'Stagger: Num = frames between steps, Step = layers per step. Icons: align to the playhead / top to bottom / bottom to top / random. Moves the selected keyframes, or the layers when no keys are selected.' },
     { id: 'duplicateLayers', name: 'Duplicate Layers', cat: 'layers', icon: 'duplicate', desc: 'Duplicates layers several times.',
       params: [P.num('count', 'Copies', 3, { min: 1, max: 200 })] },
     { id: 'renameLayers', name: 'Rename Layers', cat: 'layers', icon: 'rename', desc: 'Batch rename: new name + number, find/replace, prefix/suffix.',
