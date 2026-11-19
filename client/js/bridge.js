@@ -30,6 +30,7 @@
       if (!cep) {
         console.log('[mock evalScript]', script);
         setTimeout(function () { var m = /MMW\.run\("(\w+)"/.exec(script);
+        if (m && m[1] === 'easingsCopy') return resolve('OK|Copied 3 keyframe(s).');
         if (m && m[1] === 'diskCacheInfo') return resolve('OK|' + Math.round(13.4 * 1073741824) + '|' + 30 * 1073741824 + '|(preview) disk cache folder');
         resolve('OK|(preview) called ' + (m ? m[1] : 'host')); }, 60);
         return;

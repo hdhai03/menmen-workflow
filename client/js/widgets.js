@@ -476,13 +476,26 @@
   W.easyKeyframes = function (d, ctx) { return graphEditor(d, ctx); };
 
   // ---------- Easings Manager ----------
+  // "N keys copied" + Copy (dashed diamond) / Paste (filled diamond with a check) icon buttons
   W.easings = function (d, ctx) {
-    var root = el('div', 'w w-row');
-    var c = el('button', 'w-btn w-big', '<span>Copy</span>');
-    var p = el('button', 'w-btn w-big w-accent', '<span>Paste</span>');
-    c.addEventListener('click', function (e) { stop(e); ctx.run('easingsCopy', {}, e); });
+    if (d.copied == null) d.copied = 0;
+    var root = el('div', 'w w-row w-ease-cp');
+    var lbl = el('div', 'ecp-lbl');
+    var paint = function () { lbl.textContent = d.copied + (d.copied === 1 ? ' key' : ' keys') + ' copied'; root.classList.toggle('has', d.copied > 0); };
+    var c = el('button', 'ecp-btn ecp-copy', '<svg viewBox="0 0 16 16"><path d="M8 1.8L14.2 8 8 14.2 1.8 8z"/></svg>');
+    var p = el('button', 'ecp-btn ecp-paste', '<svg viewBox="0 0 16 16"><path class="ecp-fill" d="M8 1.2L14.8 8 8 14.8 1.2 8z"/><path class="ecp-check" d="M5.2 8.2l1.9 1.9 3.8-3.9"/></svg>');
+    c.title = 'Copy keyframes (easing + values) · Alt: easing only · Shift: values only';
+    p.title = 'Paste onto the selected keyframes · Alt: easing only · Shift: values only';
+    c.addEventListener('click', function (e) {
+      stop(e);
+      ctx.run('easingsCopy', {}, e).then(function (r) {
+        var m = r && r.ok && /(\d+)/.exec(r.msg || '');
+        if (m) { d.copied = Number(m[1]); ctx.save(); paint(); }
+      });
+    });
     p.addEventListener('click', function (e) { stop(e); ctx.run('easingsPaste', {}, e); });
-    root.append(c, p);
+    root.append(lbl, c, p);
+    paint();
     return root;
   };
 
