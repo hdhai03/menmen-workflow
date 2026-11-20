@@ -67,12 +67,31 @@
       setPhase(long ? 'long' : 'short', finished && s.autoBreaks);
     } else setPhase('pomo', finished && s.autoPomos);
   }
+  // Every phase that ended by `now`: the next one starts exactly when the previous one ended (not when
+  // the panel noticed - hidden panels run their timers late), and several phases are caught up when
+  // the panel was hidden or closed. Stops at a phase that does not auto-start. Returns phases ended.
+  function advancePomo(now) {
+    var n = 0, s = st.settings;
+    while (st.pomo.running && now >= st.pomo.end && n < 1000) {
+      var endedAt = st.pomo.end, next, auto;
+      if (st.pomo.phase === 'pomo') {
+        st.pomo.count++;
+        next = st.pomo.count % Math.max(1, s.interval) === 0 ? 'long' : 'short';
+        auto = s.autoBreaks;
+      } else { next = 'pomo'; auto = s.autoPomos; }
+      st.pomo.phase = next; st.pomo.remaining = null;
+      if (auto) st.pomo.end = endedAt + phaseMs(next);   // keeps running, in rhythm
+      else st.pomo.running = false;
+      n++;
+    }
+    if (n) save();
+    return n;
+  }
   var flashT = null;
   function finished(which) {
     beep(3);
     $.classList.add('tm-flash'); clearTimeout(flashT); flashT = setTimeout(function () { $.classList.remove('tm-flash'); }, 2400);
-    if (which === 'pomo') nextPhase(true);
-    else { st.count.running = false; st.count.remaining = 0; save(); }
+    if (which !== 'pomo') { st.count.running = false; st.count.remaining = 0; save(); }
   }
 
   // ---------------- UI ----------------
@@ -194,7 +213,7 @@
   }
   function tick() {
     var changed = false;
-    if (st.pomo.running && Date.now() >= st.pomo.end) { st.pomo.running = false; st.pomo.remaining = 0; finished('pomo'); changed = true; }
+    if (st.pomo.running && Date.now() >= st.pomo.end && advancePomo(Date.now())) { finished('pomo'); changed = true; }
     if (st.count.running && Date.now() >= st.count.end) { finished('count'); changed = true; }
     if (changed) build(); else if (!document.hidden) paint();  // hidden panel: only watch for the end
   }
@@ -264,7 +283,7 @@
   theme();
   sizeClass();
   // a timer that ran out while the panel was closed: finish it now
-  if (st.pomo.running && Date.now() >= st.pomo.end) { st.pomo.running = false; st.pomo.remaining = 0; nextPhase(true); }
+  advancePomo(Date.now());
   if (st.count.running && Date.now() >= st.count.end) { st.count.running = false; st.count.remaining = 0; save(); }
   build();
   // 4 updates/s while a timer runs, 1/s when idle
