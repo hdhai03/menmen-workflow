@@ -841,8 +841,65 @@
       hoverTip(a, '<b>' + c[0] + '</b><span class="tip-desc">' + esc(c[1]) + '</span>');
       links.appendChild(a);
     });
+    var up = el('button', 'cb-link cb-update', '<svg viewBox="0 0 20 20"><path d="M10 3.5v9M6.3 9l3.7 3.7L13.7 9" fill="none"/><path d="M4 15.5h12" fill="none"/></svg><i class="cb-dot"></i>');
+    up.addEventListener('click', function (e) { e.stopPropagation(); updateNow(true); });
+    hoverTip(up, function () {
+      var c = window.Updater && Updater.cached();
+      return '<b>Update</b><span class="tip-desc">' + (c ? 'Version ' + esc(c.latest) + ' is available (you have ' + esc(c.current) + '). Click to update.'
+        : 'Version ' + esc(window.Updater ? Updater.local() : '') + '. Click to check GitHub for a newer version.') + '</span>';
+    });
+    links.appendChild(up);
     bar.appendChild(links);
+    paintUpdate(bar);
     return bar;
+  }
+
+  // ============ updates (client/js/update.js) ============
+  function paintUpdate(root) {
+    var c = window.Updater && Updater.cached();
+    (root || document).querySelectorAll('.cb-update').forEach(function (b) { b.classList.toggle('has-update', !!c); });
+  }
+  function noteList(notes) {
+    if (!notes || !notes.length) return '';
+    return '<ul class="up-notes">' + notes.slice(0, 12).map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
+  }
+  // The "update available" question: Later / Update now. Installing shows progress in the same dialog.
+  function askUpdate(r) {
+    var body = el('div', 'up-box');
+    body.innerHTML = '<div class="up-head">Version <b>' + esc(r.latest) + '</b> is available<span class="muted"> · you have ' + esc(r.current) + '</span></div>' +
+      noteList(r.notes) + '<div class="up-status muted small">' + (r.git ? 'This copy is a git checkout: it is updated with git pull.' :
+      'Your own scripts (library folder, Documents/MenMen Workflow/Scripts) and settings are kept.') + '</div>' +
+      '<div class="up-btns"><button class="btn up-later">Later</button><button class="btn primary up-go">Update now</button></div>';
+    var dlg = U.dialog('MenMen Workflow update', body, []);
+    dlg.classList.add('up-dialog');
+    var status = body.querySelector('.up-status'), go = body.querySelector('.up-go'), later = body.querySelector('.up-later');
+    later.addEventListener('click', function () { U.close(); });
+    go.addEventListener('click', function () {
+      go.disabled = later.disabled = true; go.textContent = 'Updating…';
+      status.classList.remove('up-err');
+      status.textContent = r.git ? 'Running git pull…' : 'Downloading from GitHub and installing…';
+      Updater.install().then(function (res) {
+        status.textContent = 'Updated to ' + res.version + '. Reloading the panels… If something looks off, restart After Effects.';
+        go.textContent = 'Done';
+        setTimeout(function () { B.emit('com.menmen.workflow.updated', { version: res.version }); location.reload(); }, 1200);
+      }, function (err) {
+        status.textContent = err.message; status.classList.add('up-err');
+        go.disabled = later.disabled = false; go.textContent = 'Try again';
+      });
+    });
+  }
+  // Button: check now (shows the result). Startup: quiet unless a newer version exists.
+  function updateNow(manual) {
+    if (!window.Updater) return;
+    if (!B.inCEP && manual) { U.toast('Preview mode: updates work inside After Effects', false); return; }
+    var p = manual ? Updater.check() : Updater.startupCheck();
+    if (manual) U.toast('Checking for updates…', true);
+    p.then(function (r) {
+      paintUpdate();
+      if (!r) return;
+      if (r.available) askUpdate(r);
+      else if (manual) U.toast('You have the latest version (' + r.current + ')', true);
+    }, function (err) { if (manual) U.toast('Update check failed: ' + err.message, false); });
   }
   function renderLayout(body, slot) {
     var grid = el('div', 'q-grid'), user = slot.kind === 'user', u = user ? S.data.userPanels[slot.id] : null;
@@ -1198,6 +1255,11 @@
   if (B.inCEP && S.data.main.together !== false) {
     var partner = B.isBar ? null : B.isMain ? S.SLOTS[0] : (B.panelNo === '1' ? 'com.menmen.workflow.main' : null);
     if (partner) setTimeout(function () { B.openPanel(partner); }, 400);
+  }
+  // Updates: one panel checks GitHub a few seconds after AE starts (MenMen Tools first), the others only show the badge.
+  if (B.inCEP && !B.isBar) {
+    setTimeout(function () { updateNow(false); }, B.isMain ? 4000 : 2500);
+    B.on('com.menmen.workflow.updated', function () { setTimeout(function () { location.reload(); }, 300); });
   }
   window.MMWApp = { render: render, state: st, dock: dock };
 })();

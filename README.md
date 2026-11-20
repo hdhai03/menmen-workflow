@@ -85,6 +85,12 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
   - Speed is a few seconds per frame on the CPU, so a whole clip takes a while; the dialog shows the time left and can be cancelled. Video maps ease their black/white range from frame to frame to limit flicker.
   - Files: PNGs in *MenMen Depth* next to the saved project (Desktop when unsaved).
 
+### Updates
+- **Update** button (arrow, right of the Contact icons in MenMen Tools). A few seconds after After Effects starts, one panel checks GitHub (`version.json` on the main branch); when a newer version exists the button gets a dot and a dialog asks **Later** / **Update now**. The button also checks on demand.
+- Update now downloads the main branch zip and copies it over the installed extension folder (macOS: curl + ditto, Windows: PowerShell + robocopy). Files are only added or replaced, so your scripts in `library/` and `Documents/MenMen Workflow/Scripts`, and your settings, are kept. A git checkout is updated with `git pull --ff-only`. The panels reload afterwards; restart After Effects if something looks off.
+- An extension installed for all users (read-only folder) cannot update itself: reinstall it in the user extensions folder.
+- **Publishing an update:** push the changes to main, then raise `version` in `version.json` (and list the changes in `notes`). Users are only offered a version higher than theirs.
+
 ### AE native look
 Settings ▸ Appearance ▸ **AE native look**: every icon becomes AE's neutral gray, no category colors and no colored button backgrounds (selection = a lighter gray, like AE). Surfaces are stepped from AE's own panel color, the font is AE's UI font and highlights use AE's highlight color, so the panels blend in with the rest of After Effects (light and dark brightness both work).
 
