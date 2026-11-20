@@ -3,11 +3,19 @@ MMW.VERSION = "0.3.0";
 
 MMW.fail = function (msg) { throw new Error(msg); };
 
+// Read-only calls: they change nothing in the project, so they skip the undo group.
+MMW.READ_ONLY = { diskCacheInfo: 1, exportInfo: 1, readEase: 1, hostInfo: 1, listLibrary: 1, openScriptsFolder: 1,
+    revealFile: 1, removeFolder: 1, gifFrames: 1, exportPng: 1, purgeCache: 1, revealProjectFolder: 1, revealLayerSource: 1 };
+
 // Runs a tool inside an undo group and returns "OK|msg" or "ERR|msg" to the panel.
 MMW.run = function (id, opts) {
     var fn = MMW.tools[id];
     if (!fn) return "ERR|Tool not found: " + id;
     opts = opts || {};
+    if (MMW.READ_ONLY[id]) {
+        try { var q = fn(opts); return "OK|" + (q === undefined || q === null ? "" : q); }
+        catch (e0) { return "ERR|" + e0.message + (e0.line ? " (line " + e0.line + ")" : ""); }
+    }
     app.beginUndoGroup("MenMen: " + id);
     try {
         var r = fn(opts);

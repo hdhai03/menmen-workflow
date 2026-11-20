@@ -133,7 +133,8 @@
   };
 
   var timer = null;
-  S.save = function (immediate) {
+  var pending = null;
+  S.save = function (immediate, delay) {
     clearTimeout(timer);
     var go = function () {
       var json = JSON.stringify(S.data, null, 2);
@@ -141,11 +142,14 @@
       try { localStorage.setItem(LS_KEY, json); } catch (e) { /* ignore */ }
       B.emit(SYNC, { from: B.extId, t: Date.now() });
     };
-    if (immediate) go(); else timer = setTimeout(go, 200);
+    if (immediate) { pending = null; go(); }
+    else { pending = go; timer = setTimeout(function () { pending = null; go(); }, delay || 200); }
   };
   // Another panel saved. fn(onlyUsage): onlyUsage = nothing but run counts changed, so the panel
   // can refresh Quick Access instead of rebuilding everything (graph, widgets, disk meter...).
   var snap = function () { var u = S.data.usage; S.data.usage = null; var j = JSON.stringify(S.data); S.data.usage = u; return j; };
+  // a delayed save still waiting when the panel closes / reloads is written right away
+  window.addEventListener('beforeunload', function () { if (pending) { clearTimeout(timer); var g = pending; pending = null; g(); } });
   S.onExternalChange = function (fn) {
     B.on(SYNC, function (d) {
       if (d && d.from === B.extId) return;
@@ -234,7 +238,7 @@
     if (!id || !window.Tools.get(id)) return;
     var u = S.data.usage[id] || (S.data.usage[id] = { n: 0, t: 0 });
     u.n++; u.t = Date.now();
-    S.save();
+    S.save(false, 1500);  // run counts: one write after a burst of clicks, not one per click
   };
   // Most used tools: run count, then most recent. exclude = { toolId: true }
   S.topUsed = function (limit, exclude) {

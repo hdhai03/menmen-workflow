@@ -34,9 +34,14 @@
         return [new Folder(root + "/library"), new Folder(Folder.myDocuments.fsName + "/MenMen Workflow/Scripts")];
     };
     // o.root: extension path. Returns a JSON array [{name, path, src}].
+    // Cached per AE session: the folders are listed again only when one of them changed
+    // (its modification time) or o.force (Refresh Scripts).
     T.listLibrary = function (o) {
-        var dirs = MMW.libraryFolders(o.root), out = [];
+        var dirs = MMW.libraryFolders(o.root), out = [], sig = "";
         if (!dirs[1].exists) dirs[1].create();
+        for (var s = 0; s < dirs.length; s++) sig += dirs[s].fsName + ":" + (dirs[s].exists && dirs[s].modified ? dirs[s].modified.getTime() : 0) + ";";
+        var C = $.global.__mmwLibCache;
+        if (!o.force && C && C.sig === sig) return C.json;
         for (var i = 0; i < dirs.length; i++) {
             if (!dirs[i].exists) continue;
             var files = dirs[i].getFiles();
@@ -48,7 +53,9 @@
                     ",\"src\":" + MMW.quote(i === 0 ? "bundled" : "user") + "}");
             }
         }
-        return "[" + out.join(",") + "]";
+        var json = "[" + out.join(",") + "]";
+        $.global.__mmwLibCache = { sig: sig, json: json };
+        return json;
     };
     // Opens the user scripts folder (Alt: the bundled library folder).
     T.openScriptsFolder = function (o) {

@@ -1102,14 +1102,14 @@
 
   // ============ script library ============
   var DEMO_SCRIPTS = [];  // preview mode: no script files
+  var lastLib = '[]';
   function loadLibrary(notify) {
-    if (!B.inCEP) { T.registerScripts(DEMO_SCRIPTS); render(); return; }
-    B.run('listLibrary', { root: B.extPath }).then(function (r) {
+    if (!B.inCEP) { var demo = JSON.stringify(DEMO_SCRIPTS); if (demo !== lastLib) { lastLib = demo; T.registerScripts(DEMO_SCRIPTS); render(); } return; }
+    B.run('listLibrary', { root: B.extPath, force: !!notify }).then(function (r) {
       if (!r.ok) return U.toast('Could not list scripts: ' + r.msg, false);
       var list = [];
       try { list = JSON.parse(r.msg || '[]'); } catch (e) { return U.toast('Could not read the script list', false); }
-      T.registerScripts(list);
-      render();
+      if (r.msg !== lastLib) { lastLib = r.msg; T.registerScripts(list); render(); }  // unchanged list: no rebuild
       if (notify) U.toast(list.length + ' script(s) found', true);
     });
   }

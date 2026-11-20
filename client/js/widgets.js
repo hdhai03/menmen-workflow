@@ -134,6 +134,13 @@
     }
 
     // ---- drawing ----
+    // during a drag, many mouse events can arrive per frame (1000 Hz mice): draw once per frame
+    var drawQueued = false;
+    function drawSoon() {
+      if (drawQueued) return;
+      drawQueued = true;
+      requestAnimationFrame(function () { drawQueued = false; draw(); });
+    }
     function draw() {
       var r = box.getBoundingClientRect();
       W_ = Math.max(80, Math.round(r.width) || 300); H_ = Math.max(50, Math.round(r.height) || 180);
@@ -241,7 +248,7 @@
         }
         setHandle(drag.i, x, v, d.link || e.altKey);
         drag.moved = true;
-        return draw();
+        return drawSoon();
       }
       // incremental: each move adds its own delta to the current curve, so hitting 0 % / 100 % has no
       // dead zone - reversing the mouse responds at once (locked: movementX/Y, else client deltas)
@@ -258,7 +265,7 @@
       var cur = infl();
       setInfl(cur[0] + dx + dy, cur[1] - dx + dy);
       drag.moved = true;
-      draw();
+      drawSoon();
     }
     function endDrag() {
       if (document.pointerLockElement === box) { try { document.exitPointerLock(); } catch (x) { /* ignore */ } }
