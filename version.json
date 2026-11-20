@@ -1,9 +1,9 @@
 {
-  "version": "0.4.3",
+  "version": "0.4.4",
   "date": "2026-11-20",
   "notes": [
-    "Depth Map: a still image layer is read straight from its file (no After Effects render)",
-    "Depth Map: rendered frames are read from disk once After Effects has finished writing them; a frame that never appears now stops with a clear message after 60 s",
-    "Depth Map: the model runs in the background with a live status; Cancel stops at once"
+    "Depth Map (whole layer): several frames are processed at once on different CPU cores - about 3x faster on a 4-core machine",
+    "Depth Map: a still image layer is read straight from its file; rendered frames are read once After Effects has finished writing them",
+    "Depth Map: live status for every step; Cancel stops at once"
   ]
 }

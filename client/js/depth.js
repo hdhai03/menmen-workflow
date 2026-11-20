@@ -108,6 +108,7 @@
             run: function (data, dims) {
               return new Promise(function (ok, no) { var id = next++; jobs[id] = [ok, no]; w.postMessage({ type: 'run', id: id, data: data, dims: dims }, [data.buffer]); });
             },
+            more: function () { return workerSession(wasm, model); },
             kill: function () {  // Cancel: stop the worker now, the next run starts a fresh one
               w.terminate();
               Object.keys(jobs).forEach(function (id) { jobs[id][1](new Error('Cancelled')); });
@@ -360,7 +361,7 @@
       stop(e);
       if (busy) {
         cancel = true; go.textContent = 'Cancelling…';
-        if (live && live.kill) { live.s.kill(); delete sessions[live.key]; }
+        if (live && live.kill) { live.s.kill(); delete sessions[live.key]; live.extra.forEach(function (x) { x.kill(); }); }
         return;
       }
       if (!info) return;
@@ -370,62 +371,81 @@
       // frames go next to the output (not the system temp folder, which AE and the panel may see differently on macOS)
       var stamp = Date.now(), tmp = info.dir ? info.dir + '/MenMenDepth_' + stamp : '';
       var out = info.dir ? info.dir + '/' + info.safe + '_' + stamp : '';
-      var short = DETAIL[d.detail], invert = !!d.invert, sess, prev = null, done = 0, t0 = Date.now(), BATCH = 1, preview = [];
+      var short = DETAIL[d.detail], invert = !!d.invert, sess, prev = null, done = 0, t0 = Date.now(), preview = [];
       var ids = { compId: info.compId, index: info.index, kind: info.kind }, tempId = 0, prepped = false;
       var hostOk = function (r, what) { if (!r || !r.ok) throw new Error(r ? r.msg : what + ' failed'); return r.msg; };
       var cleanup = function () { if (!prepped) return Promise.resolve(); prepped = false; return ctx.query('depthCleanup', ids); };
-      var check = function () { if (cancel) throw new Error('Cancelled'); };
+      var failed = false, check = function () { if (cancel || failed) throw new Error('Cancelled'); };
       var pngDone = function (p) { return ctx.query('depthReady', { path: p }).then(function (r) { return !!(r && r.ok && r.msg === '1'); }); };
 
       session(d.model, function (f, text) { progress(f * 0.1, text); }).then(function (s) {
-        sess = s; live = { s: s, key: d.model, kill: !!s.kill }; modelNote();
+        sess = s; live = { s: s, key: d.model, kill: !!s.kill, extra: [] }; modelNote();
         check();
         if (!B.inCEP || info.file) return;
         progress(0.1, 'Preparing the render…');
         return ctx.query('depthPrep', ids).then(function (r) { tempId = Number(hostOk(r, 'Prepare')) || 0; prepped = true; });
       }).then(function () {
-        var i = 0;
-        var step = function () {
+        // Video: several model workers work on different frames at once (one CPU core each); AE renders the
+        // frames one after another meanwhile. Results are finished (range easing, PNG, save) in frame order.
+        var cores = navigator.hardwareConcurrency || 4;
+        var lanes = t.length > 1 && sess.more ? Math.max(1, Math.min(t.length, d.model === 'best' ? 2 : 4, cores - 1)) : 1;
+        var pool = [sess], next = 0, finish = Promise.resolve(), single = t.length === 1;
+        var extra = [];
+        for (var k = 1; k < lanes; k++) extra.push(sess.more().then(function (x) { pool.push(x); live.extra.push(x); return x; }, function () { return null; }));
+        var ahead = Promise.resolve();  // AE renders one frame at a time, in order
+        function render(idx) {
+          var name = 'f' + ('00000' + idx).slice(-5) + '.png';
+          if (info.file) return loadImage(fileUrl(info.file));
+          if (!B.inCEP) return fakeFrame(idx, t.length);
+          var job = ahead.then(function () {
+            check();
+            return ctx.query('depthFrames', Object.assign({ tempId: tempId, dir: tmp, from: idx, times: [t[idx]] }, ids)).then(function (r) { hostOk(r, 'Render'); });
+          }).then(function () { return waitPng(tmp + '/' + name, check, pngDone); });
+          ahead = job.catch(function () {});
+          return job;
+        }
+        function status(lbl) {
+          var f = 0.1 + 0.85 * done / t.length;
+          if (single) return stage(f, 'Frame 1 / 1: ' + lbl);
+          var eta = done ? ', ' + Math.round((Date.now() - t0) / done * (t.length - done) / 1000) + ' s left' : '';
+          stage(f, done + ' / ' + t.length + ' frames done (' + pool.length + ' at once' + eta + ')');
+        }
+        function lane(worker) {
+          if (next >= t.length) return Promise.resolve();
+          var idx = next++, name = 'f' + ('00000' + idx).slice(-5) + '.png';
           check();
-          if (i >= t.length) return null;
-          var to = Math.min(t.length - 1, i + BATCH - 1), slice = t.slice(i, to + 1);
-          var render = B.inCEP && !info.file ? ctx.query('depthFrames', Object.assign({ tempId: tempId, dir: tmp, from: i, times: slice }, ids)).then(function (r) { hostOk(r, 'Render'); }) : Promise.resolve();
-          return render.then(function () {
-            var chain = Promise.resolve();
-            slice.forEach(function (tt, k) {
-              var idx = i + k, name = 'f' + ('00000' + idx).slice(-5) + '.png';
-              chain = chain.then(function () {
-                check();
-                var eta = done ? ' (' + Math.round((Date.now() - t0) / done * (t.length - done) / 1000) + ' s left)' : '';
-                var f = 0.1 + 0.85 * done / t.length, lbl = 'Frame ' + (idx + 1) + ' / ' + t.length + eta + ': ';
-                stage(f, lbl + (info.file ? 'reading the image' : 'After Effects renders it'));
-                var src = info.file ? loadImage(fileUrl(info.file)) : B.inCEP ? waitPng(tmp + '/' + name, check, pngDone) : fakeFrame(idx, t.length);
-                return src.then(function (img) {
-                  check();
-                  stage(f, lbl + 'depth model' + (sess.worker ? '' : ' (the panel pauses)'));
-                  return predict(sess, img, short);
-                }).then(function (dep) {
-                  check();
-                  stage(f, lbl + 'saving');
-                  var r = range(dep.data);
-                  if (prev) {  // video: ease the range from frame to frame so the map does not flicker
-                    r = { lo: prev.lo + (r.lo - prev.lo) * 0.25, hi: prev.hi + (r.hi - prev.hi) * 0.25 };
-                    if (r.hi <= r.lo) r.hi = r.lo + 1e-6;
-                  }
-                  prev = r;
-                  var png = toPng(dep, r, info.w, info.h, invert);
-                  if (out) {
-                    if (!B.fs.writeBase64(out + '/depth_' + ('00000' + idx).slice(-5) + '.png', png)) throw new Error('Cannot write ' + out);
-                    B.fs.remove(tmp + '/' + name);
-                  } else if (preview.length < 1) preview.push(png);
-                  done++;
-                });
-              });
+          status(info.file ? 'reading the image' : 'After Effects renders it');
+          return render(idx).then(function (img) {
+            check();
+            status('depth model' + (worker.worker ? '' : ' (the panel pauses)'));
+            return predict(worker, img, short);
+          }).then(function (dep) {
+            finish = finish.then(function () {  // in frame order: the range easing needs the previous frame
+              check();
+              status('saving');
+              var r = range(dep.data);
+              if (prev) {  // video: ease the range from frame to frame so the map does not flicker
+                r = { lo: prev.lo + (r.lo - prev.lo) * 0.25, hi: prev.hi + (r.hi - prev.hi) * 0.25 };
+                if (r.hi <= r.lo) r.hi = r.lo + 1e-6;
+              }
+              prev = r;
+              var png = toPng(dep, r, info.w, info.h, invert);
+              if (out) {
+                if (!B.fs.writeBase64(out + '/depth_' + ('00000' + idx).slice(-5) + '.png', png)) throw new Error('Cannot write ' + out);
+                if (B.inCEP && !info.file) B.fs.remove(tmp + '/' + name);
+              } else if (preview.length < 1) preview.push(png);
+              done++;
+              status('');
             });
-            return chain;
-          }).then(function () { i = to + 1; return step(); });
-        };
-        return step();
+            return lane(worker);
+          });
+        }
+        var runs = [lane(sess)];
+        extra.forEach(function (p) { runs.push(p.then(function (x) { return x ? lane(x) : null; })); });
+        return Promise.all(runs).then(function () { return finish; }, function (err) {
+          failed = true;  // stop the other workers too
+          return finish.catch(function () {}).then(function () { throw err; });
+        });
       }).then(function () {
         var secs = ((Date.now() - t0) / 1000).toFixed(1);
         if (!out) {  // preview: show the first map
@@ -446,6 +466,7 @@
         if (out && cancel) ctx.query('removeFolder', { dir: out });
         return cleanup();
       }).then(function () {
+        if (live) live.extra.forEach(function (x) { if (x.kill) x.kill(); });  // extra workers only live for one run
         busy = false; live = null; go.textContent = 'Generate Depth Map'; root.classList.remove('busy');
         if (tmp) ctx.query('removeFolder', { dir: tmp });
       });
