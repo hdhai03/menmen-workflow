@@ -81,7 +81,7 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 - **Depth Map** (View ▸ Depth Map, also in MenMen Tools): select one layer, choose **First frame**, **Current frame** or **Whole layer**, then **Generate**. The depth map (near = white, far = black; *Invert* flips it) is imported right above the layer, into the project folder *MenMen Depth*.
   - Footage and precomp layers: the layer's source is rendered at full source size and the depth layer is parented to the layer, so it follows its animation exactly. Text, shape and solid layers: the comp is rendered with only that layer soloed.
   - Whole layer gives a PNG sequence at the comp frame rate, starting where the layer starts; a single frame gives a still as long as the layer.
-  - Runs on this computer with **Depth Anything V2 Small** (Apache-2.0) and ONNX Runtime Web (MIT, client/lib). The model downloads once to : **Fast** (8-bit, 27 MB) or **Best** (32-bit, 99 MB). *Detail* sets the model input (364 / 518 / 742 px on the short side): lower is faster.
+  - Runs on this computer with **Depth Anything V2 Small** (Apache-2.0) and ONNX Runtime Web (MIT, client/lib). The model downloads once to `<userData>/MenMenWorkflow/depth`: **Fast** (8-bit, 27 MB) or **Best** (32-bit, 99 MB). *Detail* sets the model input (364 / 518 / 742 px on the short side): lower is faster.
   - Speed is a few seconds per frame on the CPU, so a whole clip takes a while; the dialog shows the time left and can be cancelled. Video maps ease their black/white range from frame to frame to limit flicker.
   - Files: PNGs in *MenMen Depth* next to the saved project (Desktop when unsaved).
 
