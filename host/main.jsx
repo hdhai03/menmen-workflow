@@ -34,6 +34,7 @@ $.global.MMW.load = function (root, force) {
         "depth.jsx"
     ];
     var errs = [], sig = root, i, k, n = 0;
+    M.root = root;
     for (i = 0; i < files.length; i++) {
         var sf = new File(root + "/host/lib/" + files[i]);
         sig += "|" + (sf.exists && sf.modified ? sf.modified.getTime() : 0);

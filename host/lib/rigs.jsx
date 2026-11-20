@@ -219,26 +219,44 @@
             spots.push(s);
         }
 
-        // blur.Map: a white solid in this comp with one feathered round mask per spot (Add). Mask paths follow
-        // the spot guides by expression, size and feather come from the controller. Compound Blur reads a
-        // layer with its masks and effects (transforms ignored), so no precomp and no comp-name links.
-        var map = c.layers.addSolid([1, 1, 1], nm("blur.Map"), W, H, c.pixelAspect, c.duration);
-        var masks = map.property("ADBE Mask Parade");
-        for (i = 0; i < nSpots; i++) {
-            var mk = masks.addProperty("ADBE Mask Atom");
-            mk.name = spots[i].name;
-            mk.maskMode = MaskMode.ADD;
-            var shp = new Shape(), p = spots[i].transform.position.value, r = (Number(o.size) || 240) / 2, kk = r * 0.5523;
-            shp.vertices = [[p[0], p[1] - r], [p[0] + r, p[1]], [p[0], p[1] + r], [p[0] - r, p[1]]];
-            shp.inTangents = [[-kk, 0], [0, -kk], [kk, 0], [0, kk]];
-            shp.outTangents = [[kk, 0], [0, kk], [-kk, 0], [0, -kk]];
-            shp.closed = true;
-            mk.property("ADBE Mask Shape").setValue(shp);
-            mk.property("ADBE Mask Shape").expression =
-                "var L=thisComp.layer(" + q(spots[i].name) + "), C=" + CT + ";\n" +
-                "var p=fromComp(L.toComp(L.anchorPoint)), r=Math.max(0.5, C.effect(\"Spot Size\")(1)/2), k=r*0.5523;\n" +
-                "createPath([[p[0],p[1]-r],[p[0]+r,p[1]],[p[0],p[1]+r],[p[0]-r,p[1]]], [[-k,0],[0,-k],[k,0],[0,k]], [[k,0],[0,k],[-k,0],[0,-k]], true);";
-            mk.property("ADBE Mask Feather").expression = "var f=Math.max(0," + CT + ".effect(\"Feather\")(1));[f,f];";
+        // blur.Map: a white solid with one feathered round mask per spot (Add); the mask paths follow the
+        // spot guides by expression, size and feather come from the controller.
+        // Compound Blur must read the map with "Effects & Masks", a choice scripts cannot set: it comes from
+        // the preset presets/Compound Blur (Effects & Masks).ffx (saved from AE with that choice). Without the
+        // preset the masked solid goes into a precomp, whose "Source" already includes the masks.
+        var preset = MMW.root ? new File(MMW.root + "/presets/Compound Blur (Effects & Masks).ffx") : null;
+        var usePreset = !!(preset && preset.exists);
+        function maskedSolid(comp, ref) {  // ref: expression for the comp holding the spots
+            var L = comp.layers.addSolid([1, 1, 1], usePreset ? nm("blur.Map") : "blur.Map", W, H, c.pixelAspect, c.duration);
+            var masks = L.property("ADBE Mask Parade");
+            for (var j = 0; j < nSpots; j++) {
+                var mk = masks.addProperty("ADBE Mask Atom");
+                mk.name = spots[j].name;
+                mk.maskMode = MaskMode.ADD;
+                var shp = new Shape(), p = spots[j].transform.position.value, r = (Number(o.size) || 240) / 2, kk = r * 0.5523;
+                shp.vertices = [[p[0], p[1] - r], [p[0] + r, p[1]], [p[0], p[1] + r], [p[0] - r, p[1]]];
+                shp.inTangents = [[-kk, 0], [0, -kk], [kk, 0], [0, kk]];
+                shp.outTangents = [[kk, 0], [0, kk], [-kk, 0], [0, -kk]];
+                shp.closed = true;
+                mk.property("ADBE Mask Shape").setValue(shp);
+                mk.property("ADBE Mask Shape").expression =
+                    "var L=" + ref + ".layer(" + q(spots[j].name) + "), C=" + ref + ".layer(" + q(ctrl.name) + ");\n" +
+                    "var p=fromComp(L.toComp(L.anchorPoint)), r=Math.max(0.5, C.effect(\"Spot Size\")(1)/2), k=r*0.5523;\n" +
+                    "createPath([[p[0],p[1]-r],[p[0]+r,p[1]],[p[0],p[1]+r],[p[0]-r,p[1]]], [[-k,0],[0,-k],[k,0],[0,k]], [[k,0],[0,k],[-k,0],[0,-k]], true);";
+                mk.property("ADBE Mask Feather").expression = "var f=Math.max(0," + ref + ".layer(" + q(ctrl.name) + ").effect(\"Feather\")(1));[f,f];";
+            }
+            return L;
+        }
+        var map;
+        if (usePreset) {
+            map = maskedSolid(c, "thisComp");
+        } else {
+            var mapComp = app.project.items.addComp(c.name + " blur.Map", W, H, c.pixelAspect, c.duration, c.frameRate);
+            mapComp.parentFolder = c.parentFolder;
+            mapComp.bgColor = [0, 0, 0];
+            maskedSolid(mapComp, "comp(" + q(c.name) + ")");
+            map = c.layers.add(mapComp);
+            map.name = nm("blur.Map");
         }
         map.enabled = false;
         map.label = 8;
@@ -247,8 +265,15 @@
         var adj = c.layers.addSolid([0, 0, 0], nm("spot.Blur"), W, H, c.pixelAspect, c.duration);
         adj.adjustmentLayer = true;
         adj.label = 8;
-        var fx = adj.property("ADBE Effect Parade").addProperty("ADBE Compound Blur");
-        fx = adj.property("ADBE Effect Parade").property(fx.propertyIndex);
+        var fx = null, parade = adj.property("ADBE Effect Parade");
+        if (usePreset) {
+            for (i = 1; i <= c.numLayers; i++) c.layer(i).selected = false;
+            adj.selected = true;
+            try { adj.applyPreset(preset); } catch (eP) {}
+            for (i = 1; i <= parade.numProperties; i++) if (parade.property(i).matchName === "ADBE Compound Blur") fx = parade.property(i);
+        }
+        if (!fx) fx = parade.property(parade.addProperty("ADBE Compound Blur").propertyIndex);
+        var fxIndex = fx.propertyIndex;
         fx.property(1).setValue(map.index);                                                    // Blur Layer
         fx.property(2).expression = CT + ".effect(\"Blur Amount\")(1);";                        // Maximum Blur
         fx.property(4).expression = CT + ".effect(\"Invert (blur inside spots)\")(1)==1?0:1;";  // Invert Blur: white = sharp
@@ -259,7 +284,7 @@
         ctrl.moveToBeginning();
         map.moveToEnd();
         // Compound Blur keeps its layer link through re-ordering; set it again by name to be safe
-        try { fx.property(1).setValue(c.layer(map.name).index); } catch (e1) {}
+        try { adj.property("ADBE Effect Parade").property(fxIndex).property(1).setValue(c.layer(map.name).index); } catch (e1) {}
         map.locked = true; map.shy = true;
         adj.locked = true; adj.shy = true;
         c.hideShyLayers = true;

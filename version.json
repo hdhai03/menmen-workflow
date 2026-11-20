@@ -1,8 +1,7 @@
 {
-  "version": "0.4.6",
+  "version": "0.4.7",
   "date": "2026-11-20",
   "notes": [
-    "Spot Blur: the blur map is rebuilt as a blur.Map layer in the same comp with one feathered round mask per spot (no separate precomp), so it follows the spots reliably and survives renaming or duplicating the comp",
-    "Installed version shown in a box left of the Update button"
+    "Spot Blur: the blur map is read correctly again. Compound Blur reads a precomp blur.Map (its Source contains the masks), or, with presets/Compound Blur (Effects & Masks).ffx installed, a masked solid in the same comp with Effects & Masks"
   ]
 }
