@@ -36,14 +36,6 @@
     function srcTime(L, t) {
         try { return L.sourceTime(t); } catch (e) { return (t - L.startTime) * 100 / (L.stretch || 100); }
     }
-    function waitFile(file, ms) {
-        var t = 0, last = -1;
-        while (t < ms) {
-            if (file.exists && file.length > 0) { if (file.length === last) return true; last = file.length; }
-            $.sleep(15); t += 15;
-        }
-        return file.exists && file.length > 0;
-    }
 
     // Selected layer info for the dialog (JSON)
     T.depthInfo = function () {
@@ -101,7 +93,7 @@
                 st = Math.max(0, Math.min(st, tc.duration - 1 / tc.frameRate));
                 tc.saveFrameToPng(st, f);
             } else c.saveFrameToPng(o.times[i], f);
-            if (!waitFile(f, 20000)) MMW.fail("After Effects did not write " + f.fsName);
+            // no waiting here: newer AE writes the file only after this script returns (the panel waits for it)
         }
         return o.times.length;
     };

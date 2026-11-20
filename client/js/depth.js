@@ -139,6 +139,20 @@
     gOut.drawImage(cD, 0, 0, outW, outH);
     return cOut.toDataURL('image/png').split(',')[1];
   }
+  // AE writes the PNG after the script returns (saveFrameToPng is asynchronous in newer versions),
+  // so the panel waits until the file is complete: it ends with the IEND chunk.
+  function waitPng(path, check) {
+    var t0 = Date.now();
+    return new Promise(function (res, rej) {
+      (function poll() {
+        try { if (check) check(); } catch (e) { return rej(e); }
+        var b64 = B.fs.readBase64(path);
+        if (b64 && b64.length > 40 && atob(b64.slice(-16)).indexOf('IEND') >= 0) return res('data:image/png;base64,' + b64);
+        if (Date.now() - t0 > 120000) return rej(new Error('After Effects did not write ' + path));
+        setTimeout(poll, b64 ? 40 : 80);
+      })();
+    });
+  }
   function loadImage(src) {
     return new Promise(function (res, rej) {
       var img = new Image();
@@ -148,7 +162,7 @@
     });
   }
 
-  window.Depth = { MODELS: MODELS, DETAIL: DETAIL, session: session, predict: predict, range: range, toPng: toPng, loadImage: loadImage, inputSize: inputSize, have: have, SIMD: SIMD };
+  window.Depth = { MODELS: MODELS, waitPng: waitPng, DETAIL: DETAIL, session: session, predict: predict, range: range, toPng: toPng, loadImage: loadImage, inputSize: inputSize, have: have, SIMD: SIMD };
 
   // ---------- dialog ----------
   var MODES = [['first', 'First frame'], ['current', 'Current frame'], ['all', 'Whole layer']];
@@ -257,7 +271,7 @@
       root.classList.add('busy');
       var stamp = Date.now(), tmp = info.temp ? info.temp + '/MenMenDepth_' + stamp : '';
       var out = info.dir ? info.dir + '/' + info.safe + '_' + stamp : '';
-      var short = DETAIL[d.detail], invert = !!d.invert, sess, prev = null, done = 0, t0 = Date.now(), BATCH = 4, preview = [];
+      var short = DETAIL[d.detail], invert = !!d.invert, sess, prev = null, done = 0, t0 = Date.now(), BATCH = 1, preview = [];
       var ids = { compId: info.compId, index: info.index, kind: info.kind }, tempId = 0, prepped = false;
       var hostOk = function (r, what) { if (!r || !r.ok) throw new Error(r ? r.msg : what + ' failed'); return r.msg; };
       var cleanup = function () { if (!prepped) return Promise.resolve(); prepped = false; return ctx.query('depthCleanup', ids); };
@@ -284,7 +298,7 @@
                 check();
                 var eta = done ? ' · ' + Math.round((Date.now() - t0) / done * (t.length - done) / 1000) + ' s left' : '';
                 progress(0.1 + 0.85 * done / t.length, 'Depth ' + (idx + 1) + ' / ' + t.length + eta);
-                var src = B.inCEP ? loadImage('data:image/png;base64,' + B.fs.readBase64(tmp + '/' + name)) : fakeFrame(idx, t.length);
+                var src = B.inCEP ? waitPng(tmp + '/' + name, check).then(loadImage) : fakeFrame(idx, t.length);
                 return src.then(function (img) { return predict(sess, img, short); }).then(function (dep) {
                   var r = range(dep.data);
                   if (prev) {  // video: ease the range from frame to frame so the map does not flicker
