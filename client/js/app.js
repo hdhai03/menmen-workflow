@@ -848,7 +848,11 @@
       return '<b>Update</b><span class="tip-desc">' + (c ? 'Version ' + esc(c.latest) + ' is available (you have ' + esc(c.current) + '). Click to update.'
         : 'Version ' + esc(window.Updater ? Updater.local() : '') + '. Click to check GitHub for a newer version.') + '</span>';
     });
+    var ver = el('span', 'cb-ver');
+    ver.textContent = 'v' + (window.Updater ? Updater.local() : '');
+    hoverTip(ver, '<b>MenMen Workflow</b><span class="tip-desc">Installed version</span>');
     bar.appendChild(links);
+    bar.appendChild(ver);
     bar.appendChild(up);
     paintUpdate(bar);
     return bar;

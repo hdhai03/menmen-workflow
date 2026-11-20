@@ -643,6 +643,8 @@ body.ge-dragging, body.ge-dragging * { cursor: move !important; user-select: non
 .cb-link svg rect, .cb-link svg circle[fill="none"] { stroke-width: 1.5; }
 .cb-link:hover { color: var(--text); background: var(--surface-2); }
 .contact-bar .cb-links { margin-left: auto; }
+.cb-ver { flex: none; height: 20px; display: flex; align-items: center; padding: 0 6px; margin-left: 4px; background: var(--surface); border: 1px solid var(--line-2);
+  color: var(--muted); font-size: calc(var(--fs) - 1.5px); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .cb-update { position: relative; flex: none; height: 20px; display: flex; align-items: center; gap: 4px; padding: 0 7px; margin-left: 4px;
   background: var(--surface-2); border: 1px solid var(--line-2); color: var(--accent); font-weight: 600; font-size: calc(var(--fs) - 1px); white-space: nowrap; }
 .cb-update:hover { background: var(--surface-3); border-color: rgba(var(--accent-rgb), .5); }
