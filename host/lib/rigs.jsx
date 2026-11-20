@@ -172,7 +172,6 @@
     // Same setup as spot.Blur: an adjustment layer "spot.Blur" with Compound Blur, driven by a
     // black & white "blur.Map" (white = sharp spots), "spot.Blur_01.." guide shapes you drag around,
     // and "spot.Blur_Controller" with the settings. Helper layers are shy (comp hides shy layers).
-    // The map is a precomp so Compound Blur reads its shapes + feather (a layer param ignores effects).
     // o.spots, o.maxBlur, o.size, o.feather
     T.spotBlur = function (o) {
         var c = MMW.comp(), W = c.width, H = c.height, i;
@@ -220,43 +219,29 @@
             spots.push(s);
         }
 
-        // blur.Map precomp: black background, white feathered circles following the spots
-        var mapComp = app.project.items.addComp(c.name + " blur.Map", W, H, c.pixelAspect, c.duration, c.frameRate);
-        mapComp.parentFolder = c.parentFolder;
-        mapComp.bgColor = [0, 0, 0];
-        var main = "comp(" + q(c.name) + ")", ctl = main + ".layer(" + q(ctrl.name) + ")";
-        var sh = mapComp.layers.addShape();
-        sh.name = "Spots";
-        sh.transform.anchorPoint.setValue([0, 0]);
-        sh.transform.position.setValue([0, 0]);
-        sh.property(R).addProperty("ADBE Vector Group");
-        var bgv = sh.property(R).property(1).property(V);
-        sh.property(R).property(1).name = "Background";
-        bgv.addProperty("ADBE Vector Shape - Rect");
-        bgv.addProperty("ADBE Vector Graphic - Fill");
-        bgv = sh.property(R).property(1).property(V);
-        bgv.property("ADBE Vector Shape - Rect").property("ADBE Vector Rect Size").setValue([W * 3, H * 3]);
-        bgv.property("ADBE Vector Shape - Rect").property("ADBE Vector Rect Position").setValue([W / 2, H / 2]);
-        bgv.property("ADBE Vector Graphic - Fill").property("ADBE Vector Fill Color").setValue([0, 0, 0]);
+        // blur.Map: a white solid in this comp with one feathered round mask per spot (Add). Mask paths follow
+        // the spot guides by expression, size and feather come from the controller. Compound Blur reads a
+        // layer with its masks and effects (transforms ignored), so no precomp and no comp-name links.
+        var map = c.layers.addSolid([1, 1, 1], nm("blur.Map"), W, H, c.pixelAspect, c.duration);
+        var masks = map.property("ADBE Mask Parade");
         for (i = 0; i < nSpots; i++) {
-            sh.property(R).addProperty("ADBE Vector Group");
-            var gi = sh.property(R).numProperties;
-            sh.property(R).property(gi).name = spots[i].name;
-            sh.property(R).property(gi).property(V).addProperty("ADBE Vector Shape - Ellipse");
-            sh.property(R).property(gi).property(V).addProperty("ADBE Vector Graphic - Fill");
-            var v = sh.property(R).property(gi).property(V);
-            v.property("ADBE Vector Graphic - Fill").property("ADBE Vector Fill Color").setValue([1, 1, 1]);
-            var el = v.property("ADBE Vector Shape - Ellipse");
-            el.property("ADBE Vector Ellipse Size").expression = "var z=" + ctl + ".effect(\"Spot Size\")(1);[z,z];";
-            el.property("ADBE Vector Ellipse Position").expression = "var L=" + main + ".layer(" + q(spots[i].name) + ");L.toComp(L.anchorPoint);";
+            var mk = masks.addProperty("ADBE Mask Atom");
+            mk.name = spots[i].name;
+            mk.maskMode = MaskMode.ADD;
+            var shp = new Shape(), p = spots[i].transform.position.value, r = (Number(o.size) || 240) / 2, kk = r * 0.5523;
+            shp.vertices = [[p[0], p[1] - r], [p[0] + r, p[1]], [p[0], p[1] + r], [p[0] - r, p[1]]];
+            shp.inTangents = [[-kk, 0], [0, -kk], [kk, 0], [0, kk]];
+            shp.outTangents = [[kk, 0], [0, kk], [-kk, 0], [0, -kk]];
+            shp.closed = true;
+            mk.property("ADBE Mask Shape").setValue(shp);
+            mk.property("ADBE Mask Shape").expression =
+                "var L=thisComp.layer(" + q(spots[i].name) + "), C=" + CT + ";\n" +
+                "var p=fromComp(L.toComp(L.anchorPoint)), r=Math.max(0.5, C.effect(\"Spot Size\")(1)/2), k=r*0.5523;\n" +
+                "createPath([[p[0],p[1]-r],[p[0]+r,p[1]],[p[0],p[1]+r],[p[0]-r,p[1]]], [[-k,0],[0,-k],[k,0],[0,k]], [[k,0],[0,k],[-k,0],[0,-k]], true);";
+            mk.property("ADBE Mask Feather").expression = "var f=Math.max(0," + CT + ".effect(\"Feather\")(1));[f,f];";
         }
-        var gb = MMW.addEffect(sh, "ADBE Gaussian Blur 2", "Feather");
-        gb.property(1).expression = ctl + ".effect(\"Feather\")(1);";
-        try { sh.property("ADBE Effect Parade").property("Feather").property(3).setValue(1); } catch (e0) {} // repeat edge pixels
-
-        var map = c.layers.add(mapComp);
-        map.name = nm("blur.Map");
         map.enabled = false;
+        map.label = 8;
 
         // spot.Blur: adjustment layer with Compound Blur reading blur.Map
         var adj = c.layers.addSolid([0, 0, 0], nm("spot.Blur"), W, H, c.pixelAspect, c.duration);
