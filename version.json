@@ -1,9 +1,8 @@
 {
-  "version": "0.4.0",
+  "version": "0.4.1",
   "date": "2026-11-20",
   "notes": [
-    "Update button next to Contact: checks GitHub when After Effects starts and installs new versions in place",
-    "Depth Map (Depth Anything V2): depth maps of the selected layer, imported right above it",
-    "Timer: Pomodoro loop keeps its rhythm and catches up"
+    "Update button: labelled like Purge, red dot when a new version is waiting",
+    "Depth Map: waits for the rendered frame instead of failing (After Effects did not write ...)"
   ]
 }
