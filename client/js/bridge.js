@@ -53,11 +53,11 @@
     return B.evalScript(s).then(B.parse);
   };
 
-  B.loadHost = function () {
+  B.loadHost = function (force) {
     if (!cep) return Promise.resolve({ ok: true, msg: 'mock' });
     var root = B.extPath.replace(/\\/g, '/');
     var s = '(function(){try{$.evalFile(new File(' + JSON.stringify(root + '/host/main.jsx') + '));return $.global.MMW.load(' +
-      JSON.stringify(root) + ');}catch(e){return "ERR|"+e.message+" (line "+e.line+")";}})()';
+      JSON.stringify(root) + ',' + (force ? 'true' : 'false') + ');}catch(e){return "ERR|"+e.message+" (line "+e.line+")";}})()';
     return B.evalScript(s).then(B.parse);
   };
 

@@ -196,7 +196,7 @@
     var changed = false;
     if (st.pomo.running && Date.now() >= st.pomo.end) { st.pomo.running = false; st.pomo.remaining = 0; finished('pomo'); changed = true; }
     if (st.count.running && Date.now() >= st.count.end) { finished('count'); changed = true; }
-    if (changed) build(); else paint();
+    if (changed) build(); else if (!document.hidden) paint();  // hidden panel: only watch for the end
   }
 
   // ---------------- settings (like the reference: SETTING / TIMER) ----------------
@@ -267,7 +267,8 @@
   if (st.pomo.running && Date.now() >= st.pomo.end) { st.pomo.running = false; st.pomo.remaining = 0; nextPhase(true); }
   if (st.count.running && Date.now() >= st.count.end) { st.count.running = false; st.count.remaining = 0; save(); }
   build();
-  setInterval(tick, 250);
+  // 4 updates/s while a timer runs, 1/s when idle
+  (function loop() { tick(); setTimeout(loop, st.pomo.running || st.count.running ? 250 : 1000); })();
   window.addEventListener('resize', sizeClass);
   if (B.inCEP) B.on('com.adobe.csxs.events.ThemeColorChanged', theme);
   window.addEventListener('keydown', function (e) {

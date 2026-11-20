@@ -7,7 +7,9 @@
 if (typeof $.global.MMW === "undefined" || !$.global.MMW) $.global.MMW = {};
 $.global.MMW.tools = $.global.MMW.tools || {};
 
-$.global.MMW.load = function (root) {
+// Every panel calls this when it opens. The modules are evaluated only when they changed on disk
+// (signature = their modification times) or force is set - not again for each panel.
+$.global.MMW.load = function (root, force) {
     var M = $.global.MMW;
     var files = [
         "core.jsx",
@@ -30,14 +32,21 @@ $.global.MMW.load = function (root) {
         "quickrow.jsx",
         "export.jsx"
     ];
-    var errs = [];
-    for (var i = 0; i < files.length; i++) {
+    var errs = [], sig = root, i, k, n = 0;
+    for (i = 0; i < files.length; i++) {
+        var sf = new File(root + "/host/lib/" + files[i]);
+        sig += "|" + (sf.exists && sf.modified ? sf.modified.getTime() : 0);
+    }
+    for (k in M.tools) n++;
+    if (!force && n && M.loadedSig === sig) return "OK|" + M.VERSION + " (" + n + " tools, cached)";
+    for (i = 0; i < files.length; i++) {
         var f = new File(root + "/host/lib/" + files[i]);
         if (!f.exists) { errs.push(files[i] + ": file not found (" + f.fsName + ")"); continue; }
         try { $.evalFile(f); } catch (e) { errs.push(files[i] + ": " + e.message + " (line " + e.line + ")"); }
     }
-    var n = 0;
-    for (var k in M.tools) n++;
+    n = 0;
+    for (k in M.tools) n++;
     if (!n) errs.push("no tools registered");
+    M.loadedSig = errs.length ? null : sig;
     return errs.length ? "ERR|" + errs.join("; ") : "OK|" + M.VERSION + " (" + n + " tools)";
 };

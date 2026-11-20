@@ -70,10 +70,12 @@
         return total;
     }
     // -> "used|max|path"  (bytes; max 0 = unknown)
+    // "used|max|path". o.noSize: skip measuring the folder (the panel measures it in a background
+    // process, off AE's UI thread) - walking a big cache here would freeze After Effects.
     T.diskCacheInfo = function (o) {
         var f = cacheFolder(o);
         if (!f) return "0|" + maxBytes(o) + "|";
-        return folderBytes(f) + "|" + maxBytes(o) + "|" + f.fsName;
+        return (o.noSize ? -1 : folderBytes(f)) + "|" + maxBytes(o) + "|" + f.fsName;
     };
     function menuId(names) {
         for (var i = 0; i < names.length; i++) {

@@ -559,7 +559,7 @@
     })).concat(['-',
       { label: 'Back up settings…', onClick: exportSettings },
       { label: 'Restore settings…', onClick: importSettings },
-      { label: 'Reload host scripts', onClick: loadHost },
+      { label: 'Reload host scripts', onClick: function () { loadHost(true); } },
       { label: 'Diagnostics…', onClick: diagnostics },
       { label: 'About MenMen Workflow', onClick: about }
     ]), { minWidth: 210 });
@@ -1013,7 +1013,7 @@
       } });
     }
     items.push({ label: 'Change content…', onClick: function () { contentPicker(r); } });
-    items.push({ label: 'Settings…', onClick: openSettings }, { label: 'Reload host scripts', onClick: loadHost }, { label: 'Diagnostics…', onClick: diagnostics });
+    items.push({ label: 'Settings…', onClick: openSettings }, { label: 'Reload host scripts', onClick: function () { loadHost(true); } }, { label: 'Diagnostics…', onClick: diagnostics });
     U.menu(r.right - 190, r.bottom + 4, items, { minWidth: 190 });
   }
 
@@ -1160,8 +1160,8 @@
   }
 
   // ============ host & init ============
-  function loadHost() {
-    return B.loadHost().then(function (r) {
+  function loadHost(force) {
+    return B.loadHost(force === true).then(function (r) {
       st.hostOk = r.ok; st.hostMsg = r.msg;
       if (!r.ok) U.toast('Could not load host: ' + r.msg, false);
       setTip();

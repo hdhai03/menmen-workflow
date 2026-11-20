@@ -77,6 +77,10 @@
   //  Both: the drag continues anywhere in the panel and ends on release, leaving the panel or blur;
   //  double-click resets; release applies when Auto is on.
   // Detail strip under the graph: [Out ›] [‹ In]; Apply / In / Out / Linear / Hold buttons at the bottom.
+  // One set of window/document listeners for all graph editors: they forward to the one being dragged.
+  var activeGE = null;
+  document.addEventListener('pointerlockchange', function () { if (activeGE) activeGE.lock(); });
+  window.addEventListener('blur', function () { if (activeGE) activeGE.end(); });
   function graphEditor(d, ctx) {
     initCurve(d);
     var root = el('div', 'w ge');
@@ -201,6 +205,7 @@
         try { if (box.requestPointerLock) box.requestPointerLock(); } catch (x) { /* unsupported */ }
       }
       document.body.classList.add('ge-dragging');
+      activeGE = { lock: onLockChange, end: function () { if (drag) endDrag(); } };
       docMove = function (ev) { onMove(ev); };
       docUp = function () { endDrag(); };
       document.addEventListener('mousemove', docMove, true);
@@ -263,21 +268,21 @@
       document.body.classList.remove('ge-dragging');
       if (!drag) return;
       var moved = drag.moved;
-      drag = null; ghost = null;
+      drag = null; ghost = null; activeGE = null;
       draw(); ctx.save();
       if (moved && d.auto) autoApply();
     }
     box.addEventListener('mousedown', onDown);
     // pointer lock granted: the pointer can no longer leave the panel, so leaving is not an end;
-    // lock lost while dragging (Esc, focus change): end the drag
-    document.addEventListener('pointerlockchange', function () {
+    // lock lost while dragging (Esc, focus change): end the drag. (Called by the shared listener below.)
+    function onLockChange() {
       if (!drag || drag.handle) return;
       if (document.pointerLockElement === box) {
         drag.locked = true; drag.vx = drag.vy = 0; drag.x = drag.y = 0;
         var cur = infl(); drag.o = cur[0]; drag.i = cur[1];
         document.documentElement.removeEventListener('mouseleave', docUp);
       } else if (drag.locked) endDrag();
-    });
+    }
     box.addEventListener('mousemove', function (e) {  // value view: hover a handle
       if (drag || d.view !== 'value') { if (!drag) box.style.cursor = ''; return; }
       var n = nearest(local(e)), h = n.dist <= HIT ? n.i : null;
@@ -285,7 +290,6 @@
       if (h !== hover) { hover = h; draw(); }
     });
     box.addEventListener('mouseleave', function () { if (!drag && hover != null) { hover = null; draw(); } });
-    window.addEventListener('blur', function () { if (drag) endDrag(); });
     box.addEventListener('dblclick', function () { d.bz = [0.333, 0, 0.667, 1]; if (d.view === 'speed') setInfl(0.333, 0.333); draw(); ctx.save(); if (d.auto) autoApply(); });
     box.addEventListener('keydown', function (e) {
       var key = e.key;
@@ -675,15 +679,49 @@
         (s.path ? '\n' + s.path : '') + '\nClick to refresh';
     });
   }
+  // Folder size measured by a separate process (du / PowerShell) so After Effects never waits.
+  // Without cep.process (very old CEP), only a click measures, through the host.
+  function measureAsync(path, done) {
+    var P = window.cep && window.cep.process;
+    if (!P || !P.createProcess || !path) return false;
+    var win = navigator.platform.indexOf('Win') === 0, out = '', r;
+    try {
+      r = win
+        ? P.createProcess('C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', '-NoProfile', '-NonInteractive', '-Command',
+          "(Get-ChildItem -LiteralPath '" + path.replace(/'/g, "''") + "' -Recurse -Force -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum")
+        : P.createProcess('/usr/bin/du', '-sk', path);
+    } catch (e) { return false; }
+    if (!r || r.err !== 0) return false;
+    var pid = r.data;
+    P.stdout(pid, function (chunk) { out += chunk; });
+    P.onquit(pid, function () {
+      var n = win ? Number(String(out).replace(/[^\d]/g, '')) : Number((/^\s*(\d+)/.exec(out) || [])[1]) * 1024;
+      done(isNaN(n) ? null : n);
+    });
+    return true;
+  }
   function diskRefresh(ctx, force) {
-    if (!force && Date.now() - diskState.t < 60000 && diskState.used != null) return diskPaint();
+    if (diskState.busy) return;
+    if (!force && Date.now() - diskState.t < 120000 && diskState.used != null) return diskPaint();
     diskState.t = Date.now();
-    diskViews.forEach(function (v) { v.root.classList.add('busy'); });
-    (ctx.query || ctx.run)('diskCacheInfo', {}).then(function (r) {
-      diskViews.forEach(function (v) { v.root.classList.remove('busy'); });
+    var busy = function (on) { diskState.busy = on; diskViews.forEach(function (v) { v.root.classList.toggle('busy', on); }); };
+    busy(true);
+    // 1) fast: cache folder + max size from AE's prefs (no folder walk on AE's thread)
+    (ctx.query || ctx.run)('diskCacheInfo', { noSize: true }).then(function (r) {
       var p = r && r.ok ? String(r.msg).split('|') : [];
-      if (p.length >= 2 && !isNaN(Number(p[0]))) { diskState.used = Number(p[0]); diskState.max = Number(p[1]) || 0; diskState.path = p.slice(2).join('|'); }
+      if (p.length >= 2) { diskState.max = Number(p[1]) || 0; diskState.path = p.slice(2).join('|'); }
+      if (p.length >= 2 && Number(p[0]) >= 0) diskState.used = Number(p[0]);  // preview / mock values
       diskPaint();
+      // 2) size in the background
+      var started = measureAsync(diskState.path, function (bytes) { if (bytes != null) diskState.used = bytes; busy(false); diskPaint(); });
+      if (started) return;
+      if (force) {  // no background process available: measure through AE only when asked
+        (ctx.query || ctx.run)('diskCacheInfo', {}).then(function (r2) {
+          var q = r2 && r2.ok ? String(r2.msg).split('|') : [];
+          if (q.length >= 2 && Number(q[0]) >= 0) diskState.used = Number(q[0]);
+          busy(false); diskPaint();
+        });
+      } else { busy(false); diskPaint(); }
     });
   }
   W.diskCache = function (d, ctx) {
@@ -703,7 +741,6 @@
     setTimeout(function () { diskRefresh(ctx, false); }, 50);
     return root;
   };
-  setInterval(function () { if (diskViews.length && diskViews[0].ctx) diskRefresh(diskViews[0].ctx, true); }, 300000);
 
   // Add: Solid / Adjustment / Null / Camera / Light / Text / Shape (above the top selected layer)
   var ADD = [
