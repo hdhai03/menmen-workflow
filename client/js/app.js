@@ -841,15 +841,15 @@
       hoverTip(a, '<b>' + c[0] + '</b><span class="tip-desc">' + esc(c[1]) + '</span>');
       links.appendChild(a);
     });
-    var up = el('button', 'cb-link cb-update', '<svg viewBox="0 0 20 20"><path d="M10 3.5v9M6.3 9l3.7 3.7L13.7 9" fill="none"/><path d="M4 15.5h12" fill="none"/></svg><i class="cb-dot"></i>');
+    var up = el('button', 'cb-update', '<span>Update</span><svg viewBox="0 0 16 16"><path d="M8 2.5v7.5M4.8 7l3.2 3.2L11.2 7M3 13.5h10"/></svg><i class="cb-dot"></i>');
     up.addEventListener('click', function (e) { e.stopPropagation(); updateNow(true); });
     hoverTip(up, function () {
       var c = window.Updater && Updater.cached();
       return '<b>Update</b><span class="tip-desc">' + (c ? 'Version ' + esc(c.latest) + ' is available (you have ' + esc(c.current) + '). Click to update.'
         : 'Version ' + esc(window.Updater ? Updater.local() : '') + '. Click to check GitHub for a newer version.') + '</span>';
     });
-    links.appendChild(up);
     bar.appendChild(links);
+    bar.appendChild(up);
     paintUpdate(bar);
     return bar;
   }
