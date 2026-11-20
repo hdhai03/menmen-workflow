@@ -46,11 +46,13 @@
         if (L instanceof CameraLayer || L instanceof LightLayer) MMW.fail("Select a layer with pixels (not a camera or light).");
         var src = sourceOf(L), w = src ? src.width : c.width, h = src ? src.height : c.height;
         var still = !!(src && src instanceof FootageItem && src.mainSource.isStill);
+        // a plain image file: the panel reads it directly, no render needed
+        var file = still && src.file && src.file.exists && /\.(png|jpe?g|webp|bmp|gif)$/i.test(src.file.name) ? slash(src.file.fsName) : "";
         return "{" + [
             '"name":' + q(L.name), '"safe":' + q(safe(L.name)), '"index":' + L.index, '"compId":' + c.id,
             '"kind":' + q(src ? "source" : "comp"), '"w":' + w, '"h":' + h, '"fps":' + c.frameRate,
             '"inPoint":' + Math.max(0, L.inPoint), '"outPoint":' + Math.min(c.duration, L.outPoint),
-            '"time":' + c.time, '"still":' + still,
+            '"time":' + c.time, '"still":' + still, '"file":' + q(file),
             '"dir":' + q(slash(outDir().fsName)), '"temp":' + q(slash(Folder.temp.fsName))
         ].join(",") + "}";
     };
@@ -96,6 +98,18 @@
             // no waiting here: newer AE writes the file only after this script returns (the panel waits for it)
         }
         return o.times.length;
+    };
+
+    // Is o.path a complete PNG? (its last chunk is IEND) "1" / "0". The panel polls this while AE writes.
+    T.depthReady = function (o) {
+        var f = new File(o.path);
+        if (!f.exists) return "0";
+        f.encoding = "BINARY";
+        if (!f.open("r")) return "0";
+        var n = f.length, tail = "";
+        if (n >= 12) { f.seek(n - 12); tail = f.read(12); }
+        f.close();
+        return tail.indexOf("IEND") >= 0 ? "1" : "0";
     };
 
     // After rendering (also on cancel / error): remove the temp comp, restore solo switches.

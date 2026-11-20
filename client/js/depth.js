@@ -207,18 +207,31 @@
     gOut.drawImage(cD, 0, 0, outW, outH);
     return cOut.toDataURL('image/png').split(',')[1];
   }
+  function fileUrl(path) {
+    var p = String(path).replace(/\\/g, '/');
+    return 'file://' + (p.charAt(0) === '/' ? '' : '/') + encodeURI(p).replace(/#/g, '%23').replace(/\?/g, '%3F');
+  }
   // AE writes the PNG after the script returns (saveFrameToPng is asynchronous in newer versions),
-  // so the panel waits until the file is complete: it ends with the IEND chunk.
-  function waitPng(path, check) {
-    var t0 = Date.now();
+  // so the panel waits for the file and loads it as an image straight from disk; a half-written
+  // file fails to decode and is simply tried again.
+  // complete(path) -> Promise<bool>: AE checks the file ends with IEND (a half-written PNG still decodes)
+  function waitPng(path, check, complete) {
+    var t0 = Date.now(), seen = 0;
     return new Promise(function (res, rej) {
       (function poll() {
         try { if (check) check(); } catch (e) { return rej(e); }
         var there = !window.cep || window.cep.fs.stat(path).err === 0;
-        var b64 = there ? B.fs.readBase64(path) : null;
-        if (b64 && b64.length > 40 && atob(b64.slice(-16)).indexOf('IEND') >= 0) return res('data:image/png;base64,' + b64);
-        if (Date.now() - t0 > 180000) return rej(new Error('After Effects did not write ' + path));
-        setTimeout(poll, b64 ? 150 : 100);
+        var again = function () {
+          if (!seen && Date.now() - t0 > 60000) return rej(new Error('After Effects did not render the frame (no file after 60 s): ' + path));
+          if (seen && Date.now() - seen > 60000) return rej(new Error('Cannot read the rendered frame: ' + path));
+          setTimeout(poll, there ? 200 : 100);
+        };
+        if (!there) return again();
+        if (!seen) seen = Date.now();
+        (complete ? complete(path) : Promise.resolve(true)).then(function (ok) {
+          if (!ok) return again();
+          loadImage(fileUrl(path) + '?t=' + Date.now()).then(res, again);
+        }, again);
       })();
     });
   }
@@ -231,7 +244,7 @@
     });
   }
 
-  window.Depth = { MODELS: MODELS, waitPng: waitPng, DETAIL: DETAIL, session: session, predict: predict, range: range, toPng: toPng, loadImage: loadImage, inputSize: inputSize, have: have, SIMD: SIMD };
+  window.Depth = { MODELS: MODELS, waitPng: waitPng, fileUrl: fileUrl, DETAIL: DETAIL, session: session, predict: predict, range: range, toPng: toPng, loadImage: loadImage, inputSize: inputSize, have: have, SIMD: SIMD };
 
   // ---------- dialog ----------
   var MODES = [['first', 'First frame'], ['current', 'Current frame'], ['all', 'Whole layer']];
@@ -354,18 +367,20 @@
       var t = times(); if (!t.length) return;
       busy = true; cancel = false; go.textContent = 'Cancel'; result.innerHTML = '';
       root.classList.add('busy');
-      var stamp = Date.now(), tmp = info.temp ? info.temp + '/MenMenDepth_' + stamp : '';
+      // frames go next to the output (not the system temp folder, which AE and the panel may see differently on macOS)
+      var stamp = Date.now(), tmp = info.dir ? info.dir + '/MenMenDepth_' + stamp : '';
       var out = info.dir ? info.dir + '/' + info.safe + '_' + stamp : '';
       var short = DETAIL[d.detail], invert = !!d.invert, sess, prev = null, done = 0, t0 = Date.now(), BATCH = 1, preview = [];
       var ids = { compId: info.compId, index: info.index, kind: info.kind }, tempId = 0, prepped = false;
       var hostOk = function (r, what) { if (!r || !r.ok) throw new Error(r ? r.msg : what + ' failed'); return r.msg; };
       var cleanup = function () { if (!prepped) return Promise.resolve(); prepped = false; return ctx.query('depthCleanup', ids); };
       var check = function () { if (cancel) throw new Error('Cancelled'); };
+      var pngDone = function (p) { return ctx.query('depthReady', { path: p }).then(function (r) { return !!(r && r.ok && r.msg === '1'); }); };
 
       session(d.model, function (f, text) { progress(f * 0.1, text); }).then(function (s) {
         sess = s; live = { s: s, key: d.model, kill: !!s.kill }; modelNote();
         check();
-        if (!B.inCEP) return;
+        if (!B.inCEP || info.file) return;
         progress(0.1, 'Preparing the render…');
         return ctx.query('depthPrep', ids).then(function (r) { tempId = Number(hostOk(r, 'Prepare')) || 0; prepped = true; });
       }).then(function () {
@@ -374,7 +389,7 @@
           check();
           if (i >= t.length) return null;
           var to = Math.min(t.length - 1, i + BATCH - 1), slice = t.slice(i, to + 1);
-          var render = B.inCEP ? ctx.query('depthFrames', Object.assign({ tempId: tempId, dir: tmp, from: i, times: slice }, ids)).then(function (r) { hostOk(r, 'Render'); }) : Promise.resolve();
+          var render = B.inCEP && !info.file ? ctx.query('depthFrames', Object.assign({ tempId: tempId, dir: tmp, from: i, times: slice }, ids)).then(function (r) { hostOk(r, 'Render'); }) : Promise.resolve();
           return render.then(function () {
             var chain = Promise.resolve();
             slice.forEach(function (tt, k) {
@@ -383,8 +398,8 @@
                 check();
                 var eta = done ? ' (' + Math.round((Date.now() - t0) / done * (t.length - done) / 1000) + ' s left)' : '';
                 var f = 0.1 + 0.85 * done / t.length, lbl = 'Frame ' + (idx + 1) + ' / ' + t.length + eta + ': ';
-                stage(f, lbl + 'After Effects renders it');
-                var src = B.inCEP ? waitPng(tmp + '/' + name, check).then(loadImage) : fakeFrame(idx, t.length);
+                stage(f, lbl + (info.file ? 'reading the image' : 'After Effects renders it'));
+                var src = info.file ? loadImage(fileUrl(info.file)) : B.inCEP ? waitPng(tmp + '/' + name, check, pngDone) : fakeFrame(idx, t.length);
                 return src.then(function (img) {
                   check();
                   stage(f, lbl + 'depth model' + (sess.worker ? '' : ' (the panel pauses)'));
