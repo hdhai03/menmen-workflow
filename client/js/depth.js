@@ -56,28 +56,98 @@
   })();
   var WASM = SIMD ? 'ort-wasm-simd.wasm' : 'ort-wasm.wasm';
   var runtime = null, sessions = {};
-  function ensureRuntime(onProgress) {
+  function ensureRuntime(onProgress) {  // -> wasm bytes
     if (runtime) return runtime;
-    runtime = getFile('ort-1.17.3-' + WASM, ORT_CDN + WASM, onProgress).then(function (bytes) {
-      var ort = window.ort;
-      if (!ort) throw new Error('ONNX Runtime did not load');
-      var paths = {}; paths[WASM] = URL.createObjectURL(new Blob([bytes], { type: 'application/wasm' }));
-      ort.env.wasm.wasmPaths = paths;
-      ort.env.wasm.numThreads = 1;  // CEP pages are not cross-origin isolated: no threads
-      ort.env.wasm.simd = SIMD;
-      ort.env.wasm.proxy = false;
-      return ort;
-    });
+    runtime = getFile('ort-1.17.3-' + WASM, ORT_CDN + WASM, onProgress);
     runtime.catch(function () { runtime = null; });
     return runtime;
+  }
+  function ortOptions(ort, wasmUrl) {
+    var paths = {}; paths[WASM] = wasmUrl;
+    ort.env.wasm.wasmPaths = paths;
+    ort.env.wasm.numThreads = 1;  // CEP pages are not cross-origin isolated: no threads
+    ort.env.wasm.simd = SIMD;
+    ort.env.wasm.proxy = false;
+  }
+
+  // The model runs in a Web Worker so the panel keeps painting (progress, timer, Cancel) while it works.
+  // The worker loads ONNX Runtime from the extension's own copy (client/lib), read through cep.fs.
+  var WORKER_SRC = [
+    'var sess=null;',
+    'self.onmessage=function(e){var m=e.data;',
+    ' if(m.type==="init"){try{',
+    '  var p={};p[m.wasmName]=URL.createObjectURL(new Blob([m.wasm],{type:"application/wasm"}));',
+    '  ort.env.wasm.wasmPaths=p;ort.env.wasm.numThreads=1;ort.env.wasm.simd=m.simd;ort.env.wasm.proxy=false;',
+    '  ort.InferenceSession.create(new Uint8Array(m.model),{executionProviders:["wasm"],graphOptimizationLevel:"all"})',
+    '   .then(function(s){sess=s;postMessage({type:"ready"});},function(err){postMessage({type:"error",msg:String(err&&err.message||err)});});',
+    ' }catch(err){postMessage({type:"error",msg:String(err&&err.message||err)});}}',
+    ' else if(m.type==="run"){var f={};f[sess.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);',
+    '  sess.run(f).then(function(o){var t=o[sess.outputNames[0]];postMessage({type:"result",id:m.id,data:t.data,dims:t.dims},[t.data.buffer]);},',
+    '   function(err){postMessage({type:"error",id:m.id,msg:String(err&&err.message||err)});});}',
+    '};'
+  ].join('\n');
+  var ORT_JS = (B.extPath || '').replace(/\\/g, '/') + '/client/lib/ort.wasm.min.js';
+  function workerSession(wasm, model) {
+    var src = B.fs.available ? B.fs.read(ORT_JS) : (window.__mmwOrtSource || null);  // the test page can inject it
+    if (!src || typeof Worker === 'undefined') return Promise.reject(new Error('no worker'));
+    return new Promise(function (res, rej) {
+      var w, wurl, jobs = {}, next = 1, ready = false;
+      try {
+        // one blob holding the runtime + the worker code (a worker on a file:// page cannot importScripts a blob)
+        wurl = URL.createObjectURL(new Blob([src, '\n;', WORKER_SRC], { type: 'text/javascript' }));
+        w = new Worker(wurl);
+      } catch (e) { return rej(e); }
+      var fail = setTimeout(function () { if (!ready) { w.terminate(); rej(new Error('worker did not start')); } }, 60000);
+      w.onerror = function (e) { if (!ready) { clearTimeout(fail); w.terminate(); rej(new Error(e.message || 'worker error')); } };
+      w.onmessage = function (e) {
+        var m = e.data;
+        if (m.type === 'ready') {
+          ready = true; clearTimeout(fail);
+          res({
+            worker: true,
+            run: function (data, dims) {
+              return new Promise(function (ok, no) { var id = next++; jobs[id] = [ok, no]; w.postMessage({ type: 'run', id: id, data: data, dims: dims }, [data.buffer]); });
+            },
+            kill: function () {  // Cancel: stop the worker now, the next run starts a fresh one
+              w.terminate();
+              Object.keys(jobs).forEach(function (id) { jobs[id][1](new Error('Cancelled')); });
+              jobs = {};
+            }
+          });
+        } else if (m.type === 'result' && jobs[m.id]) { jobs[m.id][0]({ data: m.data, dims: m.dims }); delete jobs[m.id]; }
+        else if (m.type === 'error') {
+          if (!ready) { clearTimeout(fail); w.terminate(); rej(new Error(m.msg)); }
+          else if (jobs[m.id]) { jobs[m.id][1](new Error(m.msg)); delete jobs[m.id]; }
+        }
+      };
+      var wb = wasm.slice(0), mb = model.buffer.slice(model.byteOffset, model.byteOffset + model.byteLength);
+      w.postMessage({ type: 'init', wasm: wb.buffer, wasmName: WASM, simd: SIMD, model: mb }, [wb.buffer, mb]);
+    });
+  }
+  function mainSession(wasm, model) {  // fallback: same interface, runs on the panel's thread
+    var ort = window.ort;
+    if (!ort) return Promise.reject(new Error('ONNX Runtime did not load'));
+    ortOptions(ort, URL.createObjectURL(new Blob([wasm], { type: 'application/wasm' })));
+    return ort.InferenceSession.create(model, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' }).then(function (sess) {
+      return {
+        worker: false,
+        run: function (data, dims) {
+          var f = {}; f[sess.inputNames[0]] = new ort.Tensor('float32', data, dims);
+          return sess.run(f).then(function (o) { var t = o[sess.outputNames[0]]; return { data: t.data, dims: t.dims }; });
+        }
+      };
+    });
   }
   function session(key, onProgress) {
     if (sessions[key]) return sessions[key];
     var m = MODELS[key];
-    sessions[key] = ensureRuntime(function (f) { onProgress(f * 0.1, 'Downloading runtime'); }).then(function (ort) {
-      return getFile(m.save, HF + m.file, function (f) { onProgress(0.1 + f * 0.9, 'Downloading model (' + m.mb + ' MB, once)'); }).then(function (bytes) {
+    sessions[key] = ensureRuntime(function (f) { onProgress(f * 0.1, 'Downloading runtime'); }).then(function (wasm) {
+      return getFile(m.save, HF + m.file, function (f) { onProgress(0.1 + f * 0.9, 'Downloading model (' + m.mb + ' MB, once)'); }).then(function (model) {
         onProgress(1, 'Loading model…');
-        return ort.InferenceSession.create(bytes, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' });
+        return workerSession(wasm, model).catch(function (e) {
+          console.warn('[depth] worker unavailable, running on the panel thread:', e && e.message);
+          return mainSession(wasm, model);
+        });
       });
     });
     sessions[key].catch(function () { delete sessions[key]; });
@@ -106,10 +176,8 @@
       t[n + i] = (px[p + 1] / 255 - MEAN[1]) / STD[1];
       t[2 * n + i] = (px[p + 2] / 255 - MEAN[2]) / STD[2];
     }
-    var ort = window.ort, feeds = {};
-    feeds[sess.inputNames[0]] = new ort.Tensor('float32', t, [1, 3, sz.h, sz.w]);
-    return sess.run(feeds).then(function (out) {
-      var o = out[sess.outputNames[0]], d = o.dims;
+    return sess.run(t, [1, 3, sz.h, sz.w]).then(function (o) {
+      var d = o.dims;
       return { data: o.data, w: d[d.length - 1], h: d[d.length - 2] };
     });
   }
@@ -146,10 +214,11 @@
     return new Promise(function (res, rej) {
       (function poll() {
         try { if (check) check(); } catch (e) { return rej(e); }
-        var b64 = B.fs.readBase64(path);
+        var there = !window.cep || window.cep.fs.stat(path).err === 0;
+        var b64 = there ? B.fs.readBase64(path) : null;
         if (b64 && b64.length > 40 && atob(b64.slice(-16)).indexOf('IEND') >= 0) return res('data:image/png;base64,' + b64);
-        if (Date.now() - t0 > 120000) return rej(new Error('After Effects did not write ' + path));
-        setTimeout(poll, b64 ? 40 : 80);
+        if (Date.now() - t0 > 180000) return rej(new Error('After Effects did not write ' + path));
+        setTimeout(poll, b64 ? 150 : 100);
       })();
     });
   }
@@ -172,7 +241,7 @@
     if (!d.mode) d.mode = 'current';
     if (!d.model) d.model = 'fast';
     if (!d.detail) d.detail = 'normal';
-    var info = null, busy = false, cancel = false;
+    var info = null, busy = false, cancel = false, live = null;  // live: the running session (Cancel stops it)
     var root = el('div', 'w gx dm');
     var head = el('div', 'dm-layer small', 'Reading the selected layer…');
     root.appendChild(head);
@@ -231,6 +300,7 @@
       if (info.still && d.mode === 'all') { d.mode = 'current'; modeSeg.querySelectorAll('.seg-btn').forEach(function (x) { x.classList.toggle('on', x.dataset.v === 'current'); }); }
       var t = times(), sz = inputSize(info.w, info.h, DETAIL[d.detail]);
       est.textContent = t.length + (t.length === 1 ? ' frame' : ' frames') + ' · output ' + info.w + '×' + info.h + ' · model input ' + sz.w + '×' + sz.h;
+      if (d.detail === 'high') est.textContent += ' · High takes about 3× longer than Normal';
       go.disabled = !t.length || t.length > MAX_FRAMES;
       if (t.length > MAX_FRAMES) est.textContent += ' – too long: trim the layer (max ' + MAX_FRAMES + ' frames)';
       else if (!t.length) est.textContent = 'The layer is not inside the comp duration';
@@ -251,7 +321,18 @@
     }
     readInfo();
 
-    function progress(f, text) { bar.firstChild.style.width = Math.round(f * 100) + '%'; status.textContent = text; }
+    function progress(f, text) { bar.firstChild.style.width = Math.round(f * 100) + '%'; status.textContent = text; stageText = null; }
+    // a running stage with a live seconds counter, so a long frame never looks frozen
+    var stageText = null, stageT0 = 0, ticker = null;
+    function stage(f, text) {
+      bar.firstChild.style.width = Math.round(f * 100) + '%';
+      stageText = text; stageT0 = Date.now(); tick();
+      if (!ticker) ticker = setInterval(tick, 500);
+    }
+    function tick() {
+      if (stageText == null) { clearInterval(ticker); ticker = null; return; }
+      status.textContent = stageText + ' · ' + Math.floor((Date.now() - stageT0) / 1000) + ' s';
+    }
     // preview mode: a synthetic frame (near ball, far gradient) instead of an AE render
     function fakeFrame(i, n) {
       var c = document.createElement('canvas'); c.width = info.w; c.height = info.h;
@@ -264,7 +345,11 @@
 
     go.addEventListener('click', function (e) {
       stop(e);
-      if (busy) { cancel = true; go.textContent = 'Cancelling…'; return; }
+      if (busy) {
+        cancel = true; go.textContent = 'Cancelling…';
+        if (live && live.kill) { live.s.kill(); delete sessions[live.key]; }
+        return;
+      }
       if (!info) return;
       var t = times(); if (!t.length) return;
       busy = true; cancel = false; go.textContent = 'Cancel'; result.innerHTML = '';
@@ -278,7 +363,7 @@
       var check = function () { if (cancel) throw new Error('Cancelled'); };
 
       session(d.model, function (f, text) { progress(f * 0.1, text); }).then(function (s) {
-        sess = s; modelNote();
+        sess = s; live = { s: s, key: d.model, kill: !!s.kill }; modelNote();
         check();
         if (!B.inCEP) return;
         progress(0.1, 'Preparing the render…');
@@ -296,10 +381,17 @@
               var idx = i + k, name = 'f' + ('00000' + idx).slice(-5) + '.png';
               chain = chain.then(function () {
                 check();
-                var eta = done ? ' · ' + Math.round((Date.now() - t0) / done * (t.length - done) / 1000) + ' s left' : '';
-                progress(0.1 + 0.85 * done / t.length, 'Depth ' + (idx + 1) + ' / ' + t.length + eta);
+                var eta = done ? ' (' + Math.round((Date.now() - t0) / done * (t.length - done) / 1000) + ' s left)' : '';
+                var f = 0.1 + 0.85 * done / t.length, lbl = 'Frame ' + (idx + 1) + ' / ' + t.length + eta + ': ';
+                stage(f, lbl + 'After Effects renders it');
                 var src = B.inCEP ? waitPng(tmp + '/' + name, check).then(loadImage) : fakeFrame(idx, t.length);
-                return src.then(function (img) { return predict(sess, img, short); }).then(function (dep) {
+                return src.then(function (img) {
+                  check();
+                  stage(f, lbl + 'depth model' + (sess.worker ? '' : ' (the panel pauses)'));
+                  return predict(sess, img, short);
+                }).then(function (dep) {
+                  check();
+                  stage(f, lbl + 'saving');
                   var r = range(dep.data);
                   if (prev) {  // video: ease the range from frame to frame so the map does not flicker
                     r = { lo: prev.lo + (r.lo - prev.lo) * 0.25, hi: prev.hi + (r.hi - prev.hi) * 0.25 };
@@ -339,7 +431,7 @@
         if (out && cancel) ctx.query('removeFolder', { dir: out });
         return cleanup();
       }).then(function () {
-        busy = false; go.textContent = 'Generate Depth Map'; root.classList.remove('busy');
+        busy = false; live = null; go.textContent = 'Generate Depth Map'; root.classList.remove('busy');
         if (tmp) ctx.query('removeFolder', { dir: tmp });
       });
     });

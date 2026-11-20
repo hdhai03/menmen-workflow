@@ -1,8 +1,9 @@
 {
-  "version": "0.4.1",
+  "version": "0.4.2",
   "date": "2026-11-20",
   "notes": [
-    "Update button: labelled like Purge, red dot when a new version is waiting",
-    "Depth Map: waits for the rendered frame instead of failing (After Effects did not write ...)"
+    "Depth Map: the model runs in the background, so the panel no longer freezes while a frame is processed",
+    "Depth Map: each step shows what is happening with a live seconds counter; Cancel stops at once",
+    "Update button: labelled like Purge, red dot when a new version is waiting"
   ]
 }
