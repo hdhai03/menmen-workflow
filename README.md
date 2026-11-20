@@ -38,7 +38,7 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
 | Composition (13) | Auto Crop, Crop Comp to Layer, Trash Disabled, Auto Trim, Pre-Compose, Decompose, Duplicate Comps, Batch Comp Settings, Audio to Precomps, Spot Blur, Black/Gray/White BG |
 | Project (6) | Project Cleanup, Organize Project, Folder Structure, Reveal Project Folder, Reveal Layer Source, Proxy Manager |
 | Guides (11) | Guides Around / Center / Edge / Anchor, Grid System, Clear, Copy, Paste, Show/Hide, Lock, Snap |
-| View (7) | Zoom 100% / 50%, Solo (Viewer), Rulers, Grid, Export PNG, Export GIF |
+| View (8) | Zoom 100% / 50%, Solo (Viewer), Rulers, Grid, Export PNG, Export GIF, Depth Map |
 | Expression (7) | Expression Editor, Enable / Disable / Remove, Remove Broken, Bake, Find & Replace |
 | Shapes (15) | Separate Shapes, Merge, Null Controllers for Points, Shapes from Vector, Remove Artboards, Mask → Shape, Cap/Join Round/Miter/Bevel, Toggle Fill/Stroke, Reverse Path, Reset Shape Transforms, Rectangle / Circle Wizard, Trim Paths Controller |
 | Text (5) | Find & Replace Text, Lorem Ipsum, Typewriter, Number Counter, Text Box Generator |
@@ -76,6 +76,14 @@ An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets
   - exact timing (centisecond delays with carry), looping via NETSCAPE2.0.
   - Presets: **High** (800 px, 30 fps, 256 colors, dither), **Balanced** (640 px, 25 fps, 128 colors, light dither), **Small** (480 px, 15 fps, 64 colors), **Tiny** (320 px, 12 fps, 32 colors); every field can be changed (custom).
   - On a test animation the delta encoding is 10-38x smaller than writing full frames, and matches or beats ffmpeg's palettegen/paletteuse (diff mode) at the same settings.
+
+### Depth Map (Depth Anything V2)
+- **Depth Map** (View ▸ Depth Map, also in MenMen Tools): select one layer, choose **First frame**, **Current frame** or **Whole layer**, then **Generate**. The depth map (near = white, far = black; *Invert* flips it) is imported right above the layer, into the project folder *MenMen Depth*.
+  - Footage and precomp layers: the layer's source is rendered at full source size and the depth layer is parented to the layer, so it follows its animation exactly. Text, shape and solid layers: the comp is rendered with only that layer soloed.
+  - Whole layer gives a PNG sequence at the comp frame rate, starting where the layer starts; a single frame gives a still as long as the layer.
+  - Runs on this computer with **Depth Anything V2 Small** (Apache-2.0) and ONNX Runtime Web (MIT, client/lib). The model downloads once to : **Fast** (8-bit, 27 MB) or **Best** (32-bit, 99 MB). *Detail* sets the model input (364 / 518 / 742 px on the short side): lower is faster.
+  - Speed is a few seconds per frame on the CPU, so a whole clip takes a while; the dialog shows the time left and can be cancelled. Video maps ease their black/white range from frame to frame to limit flicker.
+  - Files: PNGs in *MenMen Depth* next to the saved project (Desktop when unsaved).
 
 ### AE native look
 Settings ▸ Appearance ▸ **AE native look**: every icon becomes AE's neutral gray, no category colors and no colored button backgrounds (selection = a lighter gray, like AE). Surfaces are stepped from AE's own panel color, the font is AE's UI font and highlights use AE's highlight color, so the panels blend in with the rest of After Effects (light and dark brightness both work).

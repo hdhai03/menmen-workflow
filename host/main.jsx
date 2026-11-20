@@ -30,7 +30,8 @@ $.global.MMW.load = function (root, force) {
         "rigs.jsx",
         "motiontools.jsx",
         "quickrow.jsx",
-        "export.jsx"
+        "export.jsx",
+        "depth.jsx"
     ];
     var errs = [], sig = root, i, k, n = 0;
     for (i = 0; i < files.length; i++) {

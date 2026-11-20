@@ -69,7 +69,8 @@
 
     T.removeFolder = function (o) {
         var d = new Folder(o.dir);
-        if (!d.exists || d.name.indexOf("MenMenGIF_") !== 0) return "skip";  // only our temp folders
+        var ours = d.name.indexOf("MenMenGIF_") === 0 || d.name.indexOf("MenMenDepth_") === 0 || (d.parent && d.parent.name === "MenMen Depth");
+        if (!d.exists || !ours) return "skip";  // only our temp / output folders
         var f = d.getFiles();
         for (var i = 0; i < f.length; i++) f[i].remove();
         d.remove();
