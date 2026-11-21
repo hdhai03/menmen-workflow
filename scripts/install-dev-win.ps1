@@ -6,12 +6,12 @@ $src = Resolve-Path (Join-Path $PSScriptRoot "..")
 $destDir = Join-Path $env:APPDATA "Adobe\CEP\extensions"
 $dest = Join-Path $destDir "com.menmen.workflow"
 
-foreach ($v in 9, 10, 11, 12) {
+foreach ($v in 9, 10, 11, 12, 13) {
   $key = "HKCU:\Software\Adobe\CSXS.$v"
   if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
   Set-ItemProperty -Path $key -Name "PlayerDebugMode" -Value "1" -Type String
 }
-Write-Host "OK  PlayerDebugMode enabled (CSXS 9-12)"
+Write-Host "OK  PlayerDebugMode enabled (CSXS 9-13)"
 
 New-Item -ItemType Directory -Force -Path $destDir | Out-Null
 if (Test-Path $dest) {
