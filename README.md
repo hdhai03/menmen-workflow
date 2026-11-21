@@ -125,18 +125,6 @@ Every `.jsx`, `.jsxbin` and `.ffx` file in `library/` (inside the extension) or 
 
 Expression-driven tools add sliders so you can tweak them later (Wiggle Freq/Amp, Spin, Fade, Counter…). Hold **Alt / Shift / Ctrl** while clicking for alternate modes; the small A/S/C letters next to a tool name show which modes it has.
 
-## Install (users)
-
-1. Download the repo as a ZIP (GitHub: **Code ▸ Download ZIP**) and unzip it.
-2. Run the installer inside the unzipped folder:
-   - **macOS**: double-click `install-mac.command` (the first time: right-click ▸ **Open** ▸ **Open**).
-   - **Windows**: double-click `install-windows.bat`.
-3. Quit After Effects completely, start it again, then **Window ▸ Extensions ▸ MenMen Workflow**.
-
-The installer allows unsigned extensions (`PlayerDebugMode` for CSXS 9–13, i.e. After Effects 2022 and later) and copies the folder to the user extensions folder. After that, the **Update** button keeps it up to date.
-
-**The panel is in the Extensions menu but opens empty?** After Effects is not allowing unsigned extensions yet: run the installer again (or set `PlayerDebugMode` = `1` for `CSXS.11` on AE 2024, `CSXS.12` on AE 2025), then quit and restart After Effects. On macOS, if it still opens empty, log out and back in once (the preference cache keeps the old value).
-
 ## Development setup
 
 1. Clone the repo on a machine with After Effects.

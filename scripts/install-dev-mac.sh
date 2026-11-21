@@ -6,10 +6,10 @@ SRC="$(cd "$(dirname "$0")/.." && pwd)"
 DEST_DIR="$HOME/Library/Application Support/Adobe/CEP/extensions"
 DEST="$DEST_DIR/com.menmen.workflow"
 
-for v in 9 10 11 12 13; do
+for v in 9 10 11 12; do
   defaults write "com.adobe.CSXS.$v" PlayerDebugMode 1
 done
-echo "✓ PlayerDebugMode enabled (CSXS 9-13)"
+echo "✓ PlayerDebugMode enabled (CSXS 9-12)"
 
 mkdir -p "$DEST_DIR"
 if [ -L "$DEST" ]; then
