@@ -2,7 +2,9 @@
 
 An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets and expressions together in **one main panel plus dockable sub panels** to speed up motion design work.
 
-## Features (v0.3.0)
+## Features (v0.4.7)
+
+What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 
 ### Interface: 1 main panel + 4 sub panels
 - **MenMen Workflow** (main panel, `Window ▸ Extensions ▸ MenMen Workflow`) is a compact vertical bar with:
