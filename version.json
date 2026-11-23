@@ -1,7 +1,7 @@
 {
-  "version": "0.4.7",
-  "date": "2026-11-20",
+  "version": "0.4.8",
+  "date": "2026-11-23",
   "notes": [
-    "Spot Blur: the blur map is read correctly again. Compound Blur reads a precomp blur.Map (its Source contains the masks), or, with presets/Compound Blur (Effects & Masks).ffx installed, a masked solid in the same comp with Effects & Masks"
+    "Audio to Precomps: precomps play the audio again - the selected audio layers are copied into every precomp as guide layers with audio on (old setups are replaced)"
   ]
 }

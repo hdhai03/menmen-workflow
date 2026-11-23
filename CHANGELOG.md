@@ -4,6 +4,14 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.4.8 – Audio to Precomps plays again
+
+**Fixed**
+- **Audio to Precomps**: precomps were silent. The audio was shared as a nested `♪ … Audio` comp used as a guide layer, which After Effects did not play.
+  - The selected audio layers themselves are now copied into every precomp, as locked guide layers with audio on, shifted to play in sync.
+  - You hear them while working inside a precomp. They are never rendered from a parent comp, so the sound does not double.
+  - Running it again replaces the copies. Setups from the previous version, including the old `♪ … Audio` comps, are cleaned up automatically.
+
 ## 0.4.7 – Spot Blur reads the blur map correctly
 
 **Fixed**

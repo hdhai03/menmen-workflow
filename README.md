@@ -2,7 +2,7 @@
 
 An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets and expressions together in **one main panel plus dockable sub panels** to speed up motion design work.
 
-## Features (v0.4.7)
+## Features (v0.4.8)
 
 What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 
@@ -49,7 +49,7 @@ What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 ### Rigs
 - **Area Effector** (Area Opacity / Scale / Position / Rotation / Color): an `Area Effector` null with Radius, Falloff, Invert Field and Show Field controls plus a dashed guide; layers react to their distance from it. Alt = new controller, Shift = remove the effect.
 - **Spot Blur** (spot.Blur setup): `spot.Blur` adjustment layer with **Compound Blur** reading `blur.Map`: a white solid with one feathered round mask per spot (white = sharp) whose masks follow the guides by expression. Compound Blur has to see the masks, which needs its *Effects & Masks* option - scripts cannot set it, so `blur.Map` is a precomp (its *Source* includes the masks), or a masked solid in the same comp when `presets/Compound Blur (Effects & Masks).ffx` exists (see presets/README.md). Drag the `spot.Blur_01…` guide circles; `spot.Blur_Controller` holds Blur Amount, Spot Size, Feather, Invert and Show Spot Guides. Helper layers are shy and the comp hides shy layers.
-- **Audio to Precomps** (Universal Audio style): the selected audio goes into one audio comp (`♪ <comp> Audio`, in the `MenMen Audio` folder), added to every precomp inside the current comp, at any depth, as a **locked guide layer with audio on**, offset to play in sync. Guide layers are heard in previews but never rendered from a parent comp. Run it again to refresh the audio everywhere (new precomps get it too). Alt = also every other comp in the project; Shift = remove all shared audio. Precomps with time remap/stretch are skipped.
+- **Audio to Precomps** (Universal Audio style): the selected audio layers are copied into every precomp inside the current comp, at any depth, as **locked guide layers with audio on** (`♪ <name>`), shifted to play in sync. You hear the music while working inside a precomp; guide layers are never rendered from a parent comp, so nothing doubles. Run it again to replace the copies (new precomps get them too). Alt = also every other comp in the project; Shift = remove all shared audio. Precomps with time remap/stretch are skipped.
 
 ### MenMen Tools (Panel 1)
 `Window ▸ Extensions ▸ MenMen Tools` is the main tool panel, kept apart from user panels (its own row in the main panel; right-click ▸ **Reset to default layout**). Default layout, top to bottom:
