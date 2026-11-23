@@ -4,6 +4,12 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.4.12 – Path Visualizer: shape menus fixed
+
+**Fixed**
+- **Path Visualizer**: the shape menus were added as "Dropdown Menu Control" / "Dropdown Menu Control 2" instead of **Vertex Shape** / **Handle Shape**. Changing them did nothing, and the dot expressions reported errors. The menus now get their names.
+- **Alt (Update Path)** on an overlay made with 0.4.11 removes the unnamed menus and adds the named ones.
+
 ## 0.4.11 – Path Visualizer: shape menus
 
 **Added**

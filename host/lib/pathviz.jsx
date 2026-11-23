@@ -143,17 +143,25 @@
         try { p.property(1).setValue(val ? 1 : 0); } catch(e) {}
     }
 
-    // Dropdown Menu Control (AE 17+): items are set with setPropertyParameters, which rebuilds the
-    // effect, so it is looked up again by name afterwards. idx is 1-based.
+    // Dropdown Menu Control (AE 17+): setPropertyParameters rebuilds the effect and resets its name to
+    // "Dropdown Menu Control", so it is found again by index and renamed afterwards. idx is 1-based.
     function setDropdown(fx, name, items, idx) {
         var p; try { p = fx.property(name); } catch(e) { p = null; }
         if (!p || !p.active) {
             p = fx.addProperty("ADBE Dropdown Control");
-            p.name = name;
+            var at = p.propertyIndex;
             try { p.property(1).setPropertyParameters(items); } catch(e) {}
-            p = fx.property(name);
+            p = fx.property(at);
+            p.name = name;
         }
         try { p.property(1).setValue(idx); } catch(e) {}
+    }
+    // menus left unnamed by 0.4.11 ("Dropdown Menu Control", "... 2") are removed before adding the named ones
+    function removeStrayDropdowns(fx) {
+        for (var i = fx.numProperties; i >= 1; i--) {
+            var e = fx.property(i);
+            if (e.matchName === "ADBE Dropdown Control" && /^Dropdown Menu Control/.test(e.name)) e.remove();
+        }
     }
 
     function setupControls(overlay, opts) {
@@ -165,6 +173,7 @@
         setSlider(fx,   "Handle Size",   opts.handleSize);
         setSlider(fx,   "Line Width",    opts.lineWidth);
         // MenMen: dot shapes can be changed later from Effect Controls
+        removeStrayDropdowns(fx);
         setDropdown(fx, "Vertex Shape",  ["Square", "Circle", "Diamond"], shapeIdx(opts.anchorShape) + 1);
         setDropdown(fx, "Handle Shape",  ["Square", "Circle", "Diamond"], shapeIdx(opts.handleShape) + 1);
         setCheckbox(fx, "Show Vertex",   true);

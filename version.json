@@ -1,7 +1,7 @@
 {
-  "version": "0.4.11",
+  "version": "0.4.12",
   "date": "2026-11-23",
   "notes": [
-    "Path Visualizer: Vertex Shape / Handle Shape menus in Effect Controls (Square, Circle, Diamond) - older overlays: Alt (Update Path)"
+    "Path Visualizer: Vertex Shape / Handle Shape menus fixed (they were unnamed, so nothing changed and expressions errored) - select the overlays and Alt-click (Update Path)"
   ]
 }
