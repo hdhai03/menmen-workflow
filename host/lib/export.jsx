@@ -61,7 +61,9 @@
         for (var i = o.from; i <= o.to; i++) {
             var t = o.start + i / o.fps;
             var name = "f" + ("00000" + i).slice(-5) + ".png";
-            render(c, t, new File(dir.fsName + "/" + name));
+            var f = new File(dir.fsName + "/" + name);
+            if (f.exists) f.remove();
+            c.saveFrameToPng(t, f);  // no waiting: newer AE writes the file after this script returns (the panel waits)
             n++;
         }
         return n;

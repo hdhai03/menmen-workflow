@@ -208,13 +208,22 @@
     gOut.drawImage(cD, 0, 0, outW, outH);
     return cOut.toDataURL('image/png').split(',')[1];
   }
+  // A local file as an image the canvas can read: through cep.fs as a data: URL (a file:// image would
+  // taint the canvas, so getImageData fails). Outside CEP (preview) the file:// URL is used.
+  var MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', bmp: 'image/bmp', gif: 'image/gif' };
+  function loadLocal(path) {
+    if (!B.fs.available) return loadImage(fileUrl(path) + '?t=' + Date.now());
+    var b64 = B.fs.readBase64(path);
+    if (!b64) return Promise.reject(new Error('Cannot read ' + path));
+    var ext = (/\.(\w+)$/.exec(path) || [])[1] || 'png';
+    return loadImage('data:' + (MIME[ext.toLowerCase()] || 'image/png') + ';base64,' + b64);
+  }
   function fileUrl(path) {
     var p = String(path).replace(/\\/g, '/');
     return 'file://' + (p.charAt(0) === '/' ? '' : '/') + encodeURI(p).replace(/#/g, '%23').replace(/\?/g, '%3F');
   }
   // AE writes the PNG after the script returns (saveFrameToPng is asynchronous in newer versions),
-  // so the panel waits for the file and loads it as an image straight from disk; a half-written
-  // file fails to decode and is simply tried again.
+  // so the panel waits for the file (AE confirms it is complete) and then loads it.
   // complete(path) -> Promise<bool>: AE checks the file ends with IEND (a half-written PNG still decodes)
   function waitPng(path, check, complete) {
     var t0 = Date.now(), seen = 0;
@@ -231,7 +240,7 @@
         if (!seen) seen = Date.now();
         (complete ? complete(path) : Promise.resolve(true)).then(function (ok) {
           if (!ok) return again();
-          loadImage(fileUrl(path) + '?t=' + Date.now()).then(res, again);
+          loadLocal(path).then(res, again);
         }, again);
       })();
     });
@@ -245,7 +254,7 @@
     });
   }
 
-  window.Depth = { MODELS: MODELS, waitPng: waitPng, fileUrl: fileUrl, DETAIL: DETAIL, session: session, predict: predict, range: range, toPng: toPng, loadImage: loadImage, inputSize: inputSize, have: have, SIMD: SIMD };
+  window.Depth = { MODELS: MODELS, waitPng: waitPng, fileUrl: fileUrl, loadLocal: loadLocal, DETAIL: DETAIL, session: session, predict: predict, range: range, toPng: toPng, loadImage: loadImage, inputSize: inputSize, have: have, SIMD: SIMD };
 
   // ---------- dialog ----------
   var MODES = [['first', 'First frame'], ['current', 'Current frame'], ['all', 'Whole layer']];
@@ -395,7 +404,7 @@
         var ahead = Promise.resolve();  // AE renders one frame at a time, in order
         function render(idx) {
           var name = 'f' + ('00000' + idx).slice(-5) + '.png';
-          if (info.file) return loadImage(fileUrl(info.file));
+          if (info.file) return loadLocal(info.file);
           if (!B.inCEP) return fakeFrame(idx, t.length);
           var job = ahead.then(function () {
             check();

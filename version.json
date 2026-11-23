@@ -1,7 +1,8 @@
 {
-  "version": "0.4.15",
+  "version": "0.4.16",
   "date": "2026-11-23",
   "notes": [
-    "Align / Distribute icons drawn like After Effects' Align panel"
+    "Export GIF works again on newer After Effects (frames are read once AE has written them)",
+    "Depth Map: rendered frames and image files are read correctly again"
   ]
 }

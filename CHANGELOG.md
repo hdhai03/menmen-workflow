@@ -4,6 +4,15 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.4.16 – Export GIF works again
+
+**Fixed**
+- **Export GIF** failed on newer After Effects versions. Those versions write a rendered frame only after the script returns, so the render step always timed out.
+  - Now AE starts each frame render, and the panel waits until AE reports the PNG complete before reading it.
+  - Temporary frames go next to the GIF instead of the system temp folder.
+- **Depth Map**: frames and image files are read through the extension's file access again.
+  - Since 0.4.3 they were loaded as `file://` images. Chromium treats those as foreign, so the canvas could not read their pixels ("tainted canvas").
+
 ## 0.4.15 – Align icons like After Effects
 
 **Changed**

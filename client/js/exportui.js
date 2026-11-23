@@ -110,30 +110,27 @@
     info(ctx).then(function (c) { comp = c; estimate(); }).catch(function (e) { est.textContent = e.message; });
 
     // PNG file -> scaled RGBA over the comp background
-    var canvas = document.createElement('canvas'), g = canvas.getContext('2d');
+    var canvas = document.createElement('canvas'), g = canvas.getContext('2d', { willReadFrequently: true });
+    // Newer AE writes saveFrameToPng's file only after the script returns: wait until AE reports the PNG
+    // complete (depthReady: ends with IEND), then load it straight from disk (Depth.waitPng).
     function loadFrame(path, p) {
-      return new Promise(function (res, rej) {
-        var b64 = B.fs.readBase64(path);
-        if (!b64) return rej(new Error('Cannot read ' + path));
-        var img = new Image();
-        img.onload = function () {
-          canvas.width = p.w; canvas.height = p.h;
-          var bg = comp.bg || [0, 0, 0];
-          g.fillStyle = 'rgb(' + bg.map(function (v) { return Math.round(v * 255); }).join(',') + ')';
-          g.fillRect(0, 0, p.w, p.h);
-          // step down by halves for a clean downscale, then draw at the final size
-          var src = img, sw = img.width, sh = img.height;
-          while (sw / 2 >= p.w * 1.01) {
-            var t = document.createElement('canvas'); t.width = Math.round(sw / 2); t.height = Math.round(sh / 2);
-            var tg = t.getContext('2d'); tg.imageSmoothingQuality = 'high'; tg.drawImage(src, 0, 0, t.width, t.height);
-            src = t; sw = t.width; sh = t.height;
-          }
-          g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
-          g.drawImage(src, 0, 0, p.w, p.h);
-          res(g.getImageData(0, 0, p.w, p.h).data);
-        };
-        img.onerror = function () { rej(new Error('Bad PNG ' + path)); };
-        img.src = 'data:image/png;base64,' + b64;
+      var done = function (f) { return ctx.query('depthReady', { path: f }).then(function (r) { return !!(r && r.ok && r.msg === '1'); }); };
+      return window.Depth.waitPng(path, function () { if (cancel) throw new Error('Cancelled'); }, done).then(function (img) {
+        canvas.width = p.w; canvas.height = p.h;
+        var bg = comp.bg || [0, 0, 0];
+        g.fillStyle = 'rgb(' + bg.map(function (v) { return Math.round(v * 255); }).join(',') + ')';
+        g.fillRect(0, 0, p.w, p.h);
+        // step down by halves for a clean downscale, then draw at the final size
+        var src = img, sw = img.width, sh = img.height;
+        while (sw / 2 >= p.w * 1.01) {
+          var t = document.createElement('canvas'); t.width = Math.round(sw / 2); t.height = Math.round(sh / 2);
+          var tg = t.getContext('2d'); tg.imageSmoothingQuality = 'high'; tg.drawImage(src, 0, 0, t.width, t.height);
+          src = t; sw = t.width; sh = t.height;
+        }
+        g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+        g.drawImage(src, 0, 0, p.w, p.h);
+        B.fs.remove(path);
+        return g.getImageData(0, 0, p.w, p.h).data;
       });
     }
     // preview mode (browser): a moving test pattern instead of AE frames
@@ -162,7 +159,8 @@
         if (!/\.gif$/i.test(out)) out += '.gif';
       }
       busy = true; cancel = false; go.textContent = 'Cancel'; result.innerHTML = '';
-      var dir = comp.temp ? comp.temp + '/MenMenGIF_' + Date.now() : '', frames = [], BATCH = 4, i = 0;
+      var base = out ? out.replace(/[\\/][^\\/]*$/, '') : (comp.dir || comp.temp);
+      var dir = base ? base + '/MenMenGIF_' + Date.now() : '', frames = [], BATCH = 1, i = 0;
       var step = function () {
         if (cancel) throw new Error('Cancelled');
         if (i >= p.n) return null;
