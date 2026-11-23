@@ -31,7 +31,8 @@ $.global.MMW.load = function (root, force) {
         "motiontools.jsx",
         "quickrow.jsx",
         "export.jsx",
-        "depth.jsx"
+        "depth.jsx",
+        "pathviz.jsx"
     ];
     var errs = [], sig = root, i, k, n = 0;
     M.root = root;

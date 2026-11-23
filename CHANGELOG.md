@@ -4,6 +4,19 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.4.9 – Path Visualizer
+
+**Added**
+- **Path Visualizer** (Shapes): a live overlay that draws the **vertices**, **bezier handles** and **handle lines** of the selected layers' paths, for tutorials and design breakdowns.
+  - Works on **shape layers** (every Path shape, at any group depth) and on **masks** of any layer.
+  - The overlay follows the source's animation and parenting, and copies its opacity and in/out points.
+  - Animated paths whose point count changes get enough dots for their largest shape; the extra dots hide while not needed.
+  - Handles and handle lines are hidden on **corner points**, where there is no handle to show.
+  - **Effect Controls** on the overlay: Vertex / Handle / Line color, Vertex / Handle size, Line width, Show Vertices / Handles / Lines, and *Scale With Layer* (the dots follow the source's scale).
+  - Options when creating: vertex and handle shape (square, circle, diamond) and **Show in render**. Turning it off makes the overlay a guide layer: visible while you work, not rendered.
+  - **Alt** rebuilds the selected overlays from their source and keeps your Effect Controls settings. Use it after adding points.
+  - **Shift** removes every path overlay in the comp (can be undone).
+
 ## 0.4.8 – Audio to Precomps plays again
 
 **Fixed**

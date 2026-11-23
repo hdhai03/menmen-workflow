@@ -1,7 +1,8 @@
 {
-  "version": "0.4.8",
+  "version": "0.4.9",
   "date": "2026-11-23",
   "notes": [
-    "Audio to Precomps: precomps play the audio again - the selected audio layers are copied into every precomp as guide layers with audio on (old setups are replaced)"
+    "Path Visualizer (Shapes): live overlay of the vertices, bezier handles and handle lines of shape paths and masks",
+    "Audio to Precomps: precomps play the audio again"
   ]
 }
