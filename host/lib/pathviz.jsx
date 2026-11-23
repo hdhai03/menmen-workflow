@@ -33,8 +33,10 @@
 // ============================================================
 //
 //  ── MenMen Workflow integration ─────────────────────────────
-//  The code below is the original V2.1 code. Changes: the ScriptUI panel is replaced, and
-//  "Vertex Shape" / "Handle Shape" dropdowns pick the dot shapes live (marked MenMen).
+//  The code below is the original V2.1 code. Changes (marked MenMen): the ScriptUI panel is gone -
+//  the tool runs at once with the V2.1 defaults and everything is set in Effect Controls;
+//  "Vertex Shape" / "Handle Shape" dropdowns pick the dot shapes live; Update Path keeps the
+//  values already set in Effect Controls.
 //  the settings come from the MenMen tool dialog (getSettings), and the three buttons are
 //  the tool's click modes: click = Create Path, Alt = Update Path, Shift = Cleanup All Paths.
 // ============================================================
@@ -129,18 +131,24 @@
     // ══════════════════════════════════════════════════════════
     function setColor(fx, name, val) {
         var p; try { p = fx.property(name); } catch(e) { p = null; }
-        if (!p || !p.active) { p = fx.addProperty("ADBE Color Control"); p.name = name; }
-        try { p.property(1).setValue(val); } catch(e) {}
+        if (!p || !p.active) {  // MenMen: only new controls get the default, existing ones keep the user's value
+            p = fx.addProperty("ADBE Color Control"); p.name = name;
+            try { p.property(1).setValue(val); } catch(e) {}
+        }
     }
     function setSlider(fx, name, val) {
         var p; try { p = fx.property(name); } catch(e) { p = null; }
-        if (!p || !p.active) { p = fx.addProperty("ADBE Slider Control"); p.name = name; }
-        try { p.property(1).setValue(val); } catch(e) {}
+        if (!p || !p.active) {  // MenMen: only new controls get the default, existing ones keep the user's value
+            p = fx.addProperty("ADBE Slider Control"); p.name = name;
+            try { p.property(1).setValue(val); } catch(e) {}
+        }
     }
     function setCheckbox(fx, name, val) {
         var p; try { p = fx.property(name); } catch(e) { p = null; }
-        if (!p || !p.active) { p = fx.addProperty("ADBE Checkbox Control"); p.name = name; }
-        try { p.property(1).setValue(val ? 1 : 0); } catch(e) {}
+        if (!p || !p.active) {  // MenMen: only new controls get the default, existing ones keep the user's value
+            p = fx.addProperty("ADBE Checkbox Control"); p.name = name;
+            try { p.property(1).setValue(val ? 1 : 0); } catch(e) {}
+        }
     }
 
     // Dropdown Menu Control (AE 17+): setPropertyParameters rebuilds the effect and resets its name to
@@ -153,8 +161,8 @@
             try { p.property(1).setPropertyParameters(items); } catch(e) {}
             p = fx.property(at);
             p.name = name;
+            try { p.property(1).setValue(idx); } catch(e) {}
         }
-        try { p.property(1).setValue(idx); } catch(e) {}
     }
     // menus left unnamed by 0.4.11 ("Dropdown Menu Control", "... 2") are removed before adding the named ones
     function removeStrayDropdowns(fx) {
@@ -583,22 +591,21 @@
     // ══════════════════════════════════════════════════════════
     //  MENMEN: settings from the tool dialog instead of the ScriptUI panel
     // ══════════════════════════════════════════════════════════
-    var OPTS = {};
+    // MenMen: no dialog - the V2.1 panel defaults; change them in Effect Controls afterwards
     function getSettings() {
         return {
-            anchorSize   : parseFloat(OPTS.anchorSize)  || 20,
-            anchorColor  : hexToRgb(OPTS.anchorColor) || [1, 1, 1],
-            anchorShape  : OPTS.anchorShape || "Square",
-            handleSize   : parseFloat(OPTS.handleSize)  || 6,
-            handleColor  : hexToRgb(OPTS.handleColor) || hexToRgb("#FF4444"),
-            handleShape  : OPTS.handleShape || "Circle",
-            lineColor    : hexToRgb(OPTS.lineColor) || hexToRgb("#FF4444"),
-            lineWidth    : parseFloat(OPTS.lineWidth)   || 1.5
+            anchorSize   : 20,
+            anchorColor  : [1, 1, 1],
+            anchorShape  : "Square",
+            handleSize   : 6,
+            handleColor  : hexToRgb("#FF4444"),
+            handleShape  : "Circle",
+            lineColor    : hexToRgb("#FF4444"),
+            lineWidth    : 1.5
         };
     }
 
     T.pathVisualizer = function (o) {
-        OPTS = o || {};
         MMW.comp();  // makes the comp viewer active, so app.project.activeItem is the comp
         if (o.shift) { cleanupOverlays(); return "Cleanup All Paths done."; }
         if (o.alt) { updateOverlay(); return "Update Path done."; }

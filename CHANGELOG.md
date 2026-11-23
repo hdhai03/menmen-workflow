@@ -4,6 +4,16 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.4.13 – Path Visualizer runs at once
+
+**Changed**
+- **Path Visualizer** no longer opens a settings dialog. One click creates the overlay with the V2.1 defaults:
+  - **Vertex**: white, size 20, Square
+  - **Handle**: #FF4444, size 6, Circle
+  - **Line**: #FF4444, width 1.5
+- Everything is adjusted in **Effect Controls** afterwards.
+- **Alt (Update Path)** keeps the colors, sizes, shapes and switches already set in Effect Controls. It used to reset them.
+
 ## 0.4.12 – Path Visualizer: shape menus fixed
 
 **Fixed**
