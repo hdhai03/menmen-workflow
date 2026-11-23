@@ -4,6 +4,15 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.5.2 – Area Text Effector: width and slant
+
+**Added**
+- **Area Text Effector** on a variable font also drives the **Width** (`wdth`) and **Slant** (`slnt`) axes, alongside Weight.
+  - The effector gets **Text Width** and **Text Slant** sliders, each limited to the font's own range.
+  - Defaults: Width = the font's widest, Slant = the font's most slanted.
+  - Only the axes the font really has are added.
+- Effectors made with an older version get the new axes when you click the tool again on the text.
+
 ## 0.5.1 – Area Text Effector: variable font weight
 
 **Added**

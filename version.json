@@ -1,7 +1,7 @@
 {
-  "version": "0.5.1",
+  "version": "0.5.2",
   "date": "2026-11-23",
   "notes": [
-    "Area Text Effector: Text Weight slider for variable fonts (letters animate to that weight)"
+    "Area Text Effector: Text Width and Text Slant sliders for variable fonts (next to Text Weight)"
   ]
 }

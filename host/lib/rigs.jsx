@@ -263,14 +263,18 @@
             "f*C.effect(\"Text Strength %\")(1)" + (colorOnly ? "*C.effect(\"Text Use Color\")(1)" : "") + ";";
     }
 
-    // the text's variable font Weight axis ({min, max}) or null - AE 2024+ (FontObject.designAxesData)
-    function weightAxis(L) {
+    // variable font axes the effector can drive: tag, slider name, which end is the default, name pattern
+    var VF_AXES = [["wght", "Text Weight", "max", /wght|weight/i], ["wdth", "Text Width", "max", /wdth|width/i], ["slnt", "Text Slant", "min", /slnt|slant/i]];
+    // the text's variable font axes {tag: {min, max}} - AE 2024+ (FontObject.designAxesData), {} otherwise
+    function fontAxes(L) {
+        var out = {};
         try {
             var doc = L.property(TPROPS).property("ADBE Text Document").value, ax = doc.fontObject.designAxesData;
-            for (var i = 0; ax && i < ax.length; i++) if (ax[i].tag === "wght") return { min: ax[i].min, max: ax[i].max };
+            for (var i = 0; ax && i < ax.length; i++) out[ax[i].tag] = { min: ax[i].min, max: ax[i].max };
         } catch (e) {}
-        return null;
+        return out;
     }
+    function axisPattern(tag) { for (var i = 0; i < VF_AXES.length; i++) if (VF_AXES[i][0] === tag) return VF_AXES[i][3]; return null; }
 
     function findAnim(L, name) {
         var A = L.property(TPROPS).property(TANIMS);
@@ -286,12 +290,13 @@
                 var amt = sels.property(s).property("ADBE Text Expressible Amount");
                 if (amt) amt.expression = expr;
             }
-            // an older animator (0.5.0) on a variable font: add the Weight axis it is missing
+            // an older animator on a variable font: add the font axes it is missing
             for (var w = 0; w < props.length; w++) {
-                if (props[w][0] !== "wght") continue;
+                var pat = axisPattern(props[w][0]);
+                if (!pat) continue;
                 var ap = an.property("ADBE Text Animator Properties"), has = false;
-                for (var x = 1; x <= ap.numProperties; x++) if (/wght|weight|axis/i.test(ap.property(x).matchName + " " + ap.property(x).name)) has = true;
-                if (!has) try { ap.addVariableFontAxis("wght").expression = props[w][1]; } catch (eW) {}
+                for (var x = 1; x <= ap.numProperties; x++) if (pat.test(ap.property(x).matchName + " " + ap.property(x).name)) has = true;
+                if (!has) try { an.property("ADBE Text Animator Properties").addVariableFontAxis(props[w][0]).expression = props[w][1]; } catch (eW) {}
             }
             return false;
         }
@@ -305,8 +310,8 @@
         get().property("ADBE Text Selectors").property(1).property("ADBE Text Expressible Amount").expression = expr;
         for (var k = 0; k < props.length; k++) {
             try {
-                if (props[k][0] === "wght") {  // variable font axis: added with its own method, not by match name
-                    get().property("ADBE Text Animator Properties").addVariableFontAxis("wght").expression = props[k][1];
+                if (axisPattern(props[k][0])) {  // variable font axis: added with its own method, not by match name
+                    get().property("ADBE Text Animator Properties").addVariableFontAxis(props[k][0]).expression = props[k][1];
                     continue;
                 }
                 get().property("ADBE Text Animator Properties").addProperty(props[k][0]);
@@ -347,10 +352,12 @@
         for (i = 0; i < texts.length; i++) {
             var L = texts[i], pts = charCenters(c, L);
             if (!pts.length) continue;
-            var nm = TXT_ANIM + " \u00B7 " + cn, wa = weightAxis(L), extra = [];
-            if (wa) {  // variable font: the Weight axis animates too (target weight set on the effector)
-                ensureFx(ctrl, "ADBE Slider Control", "Text Weight", wa.max);
-                extra.push(["wght", "clamp(" + CT + ".effect(\"Text Weight\")(1)," + wa.min + "," + wa.max + ");"]);
+            var nm = TXT_ANIM + " \u00B7 " + cn, axes = fontAxes(L), extra = [];
+            for (var v = 0; v < VF_AXES.length; v++) {  // variable font: Weight / Width / Slant animate too
+                var ax = axes[VF_AXES[v][0]];
+                if (!ax) continue;
+                ensureFx(ctrl, "ADBE Slider Control", VF_AXES[v][1], VF_AXES[v][2] === "max" ? ax.max : ax.min);
+                extra.push([VF_AXES[v][0], "clamp(" + CT + ".effect(\"" + VF_AXES[v][1] + "\")(1)," + ax.min + "," + ax.max + ");"]);
             }
             var added = textAnimator(L, nm, selectorExpr(cn, pts, false), extra.concat([
                 ["ADBE Text Position 3D", "[" + CT + ".effect(\"Text Offset X\")(1)," + CT + ".effect(\"Text Offset Y\")(1),0];"],
