@@ -2,7 +2,7 @@
 
 An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets and expressions together in **one main panel plus dockable sub panels** to speed up motion design work.
 
-## Features (v0.4.18)
+## Features (v0.5.0)
 
 What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 
@@ -44,10 +44,11 @@ What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 | Expression (7) | Expression Editor, Enable / Disable / Remove, Remove Broken, Bake, Find & Replace |
 | Shapes (15) | Separate Shapes, Merge, Null Controllers for Points, Shapes from Vector, Remove Artboards, Mask → Shape, Cap/Join Round/Miter/Bevel, Toggle Fill/Stroke, Reverse Path, Reset Shape Transforms, Rectangle / Circle Wizard, Trim Paths Controller |
 | Text (5) | Find & Replace Text, Lorem Ipsum, Typewriter, Number Counter, Text Box Generator |
-| Animation (20) | Orbit, Overshoot, Bounce, Wiggle, Spin, Auto Fader, Blinker, Stop Motion, Beat Switch Layers, Beat Markers, Metronome Click, Beat Counter, Metronome Controller, Area Opacity / Scale / Position / Rotation / Color, Bend / Limb Rig, Position Trace |
+| Animation (21) | Orbit, Overshoot, Bounce, Wiggle, Spin, Auto Fader, Blinker, Stop Motion, Beat Switch Layers, Beat Markers, Metronome Click, Beat Counter, Metronome Controller, Area Opacity / Scale / Position / Rotation / Color, Area Text Effector, Bend / Limb Rig, Position Trace |
 
 ### Rigs
 - **Area Effector** (Area Opacity / Scale / Position / Rotation / Color): an `Area Effector` null with Radius, Falloff, Invert Field and Show Field controls plus a dashed guide; layers react to their distance from it. Alt = new controller, Shift = remove the effect.
+- **Area Text Effector**: the letters of the selected text layers animate as an effector passes over them and settle again behind it (Text Offset X/Y, Scale, Rotation, Opacity, Blur, Tracking, Color sliders on the effector; Radius / Falloff / Text Strength / Invert Field). Select another layer with the text (a cursor, a shape) to make it the effector; Alt = stack a new effector, Shift = remove. Letter positions are measured by the tool: click again after editing the text.
 - **Path Visualizer** (Shapes, Path Visualizer V2.1 by Sheikh Sohel): live `PATH_OVERLAY_` layer showing the vertices, handles and handle lines of the selected shape layers; colors, sizes, Vertex / Handle Shape menus and Show switches in Effect Controls. One click creates it (no dialog), Alt = Update Path (keeps Effect Controls settings) (select overlays), Shift = Cleanup All Paths.
 - **Spot Blur** (spot.Blur setup): `spot.Blur` adjustment layer with **Compound Blur** reading `blur.Map`: a white solid with one feathered round mask per spot (white = sharp) whose masks follow the guides by expression. Compound Blur has to see the masks, which needs its *Effects & Masks* option - scripts cannot set it, so `blur.Map` is a precomp (its *Source* includes the masks), or a masked solid in the same comp when `presets/Compound Blur (Effects & Masks).ffx` exists (see presets/README.md). Drag the `spot.Blur_01…` guide circles; `spot.Blur_Controller` holds Blur Amount, Spot Size, Feather, Invert and Show Spot Guides. Helper layers are shy and the comp hides shy layers.
 - **Audio to Precomps** (Universal Audio style): the selected audio layers are copied into every precomp inside the current comp, at any depth, as **locked guide layers with audio on** (`♪ <name>`), shifted to play in sync. You hear the music while working inside a precomp; guide layers are never rendered from a parent comp, so nothing doubles. Run it again to replace the copies (new precomps get them too). Alt = also every other comp in the project; Shift = remove all shared audio. Precomps with time remap/stretch are skipped.

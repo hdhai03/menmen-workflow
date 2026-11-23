@@ -1,8 +1,7 @@
 {
-  "version": "0.4.18",
+  "version": "0.5.0",
   "date": "2026-11-23",
   "notes": [
-    "Export GIF: next frame renders while the current one is read; encoding in the background (panel stays responsive, Cancel works)",
-    "Faster frame pickup for Export GIF and Depth Map; panels start without loading the AI runtime"
+    "Area Text Effector (Animation): letters animate as an effector passes over them - offset, scale, rotation, opacity, blur, tracking, color; any layer (e.g. a cursor) can be the effector"
   ]
 }

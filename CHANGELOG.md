@@ -4,6 +4,17 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.5.0 – Area Text Effector
+
+**Added**
+- **Area Text Effector** (Animation, in the Area Effector set): the letters of a text layer animate when an effector passes over them, then settle again behind it.
+  - **Effector**: select a layer together with the text (a cursor, a shape, anything) and that layer becomes the effector. Otherwise the comp's *Area Effector* null is used, or created.
+  - **Field**: *Radius* is full effect, it fades out over *Falloff*. *Text Strength %* and *Invert Field* control the amount. The dashed field guide shows the area.
+  - **Effects** (sliders on the effector): Text Offset X / Y, Text Scale %, Text Rotation, Text Opacity %, Text Blur, Text Tracking, and Text Color with *Text Use Color*.
+  - **Alt** adds a new effector, stacked on the same text. **Shift** removes the Area Text Effector animators.
+  - **After editing the text**, click the tool again to refresh the letter positions.
+  - The positions are measured once per letter, because expressions cannot read where a letter is. Point text is measured exactly. Box text is measured on its hard line breaks.
+
 ## 0.4.18 – Performance
 
 **Changed**

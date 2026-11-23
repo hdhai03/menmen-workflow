@@ -1,4 +1,4 @@
-// rigs.jsx - Area Effector, Spot Blur, Audio to Precomps
+// rigs.jsx - Area Effector, Area Text Effector, Spot Blur, Audio to Precomps
 (function () {
     var T = MMW.tools;
     var q = function (s) { return MMW.quote(s); };
@@ -166,6 +166,185 @@
         }
         ctrl.selected = true;
         return "Area " + mode + " -> " + n + " layer(s), controlled by \"" + cn + "\".";
+    };
+
+    // ===================== Area Text Effector =====================
+    // The letters of a text layer animate when an Area Effector controller passes over them, and
+    // settle again when it moves on: a Text Animator whose Expression Selector reads, per character,
+    // the distance from the character to the controller (Radius = full, fades out over Falloff,
+    // Strength, Invert Field). The animator values come from "Text ..." sliders on the controller.
+    // Character centers are measured once by the script (AE expressions cannot read a letter's
+    // position) and stored in the expression - click the tool again after editing the text.
+    //  click: use the selected non-text layer as the effector (e.g. a cursor), else the comp's Area Effector
+    //  Alt:   a new effector, stacked on the same text
+    //  Shift: remove all Area Text Effector animators from the selected text layers
+    var TXT_ANIM = "Area Text Effector";
+    var TPROPS = "ADBE Text Properties", TANIMS = "ADBE Text Animators";
+
+    function textFx(ctrl) {
+        ensureFx(ctrl, "ADBE Slider Control", "Radius", 200);
+        ensureFx(ctrl, "ADBE Slider Control", "Falloff", 150);
+        ensureFx(ctrl, "ADBE Checkbox Control", "Invert Field", 0);
+        ensureFx(ctrl, "ADBE Checkbox Control", "Show Field", 1);
+        ensureFx(ctrl, "ADBE Slider Control", "Text Strength %", 100);
+        ensureFx(ctrl, "ADBE Slider Control", "Text Offset X", 0);
+        ensureFx(ctrl, "ADBE Slider Control", "Text Offset Y", -40);
+        ensureFx(ctrl, "ADBE Slider Control", "Text Scale %", 140);
+        ensureFx(ctrl, "ADBE Angle Control", "Text Rotation", 0);
+        ensureFx(ctrl, "ADBE Slider Control", "Text Opacity %", 100);
+        ensureFx(ctrl, "ADBE Slider Control", "Text Blur", 0);
+        ensureFx(ctrl, "ADBE Slider Control", "Text Tracking", 0);
+        ensureFx(ctrl, "ADBE Checkbox Control", "Text Use Color", 0);
+        ensureFx(ctrl, "ADBE Color Control", "Text Color", [0.89, 1, 0.62]);
+    }
+
+    // centers of the non-space characters, in the text layer's own space (point text; box text
+    // is measured line by line on its hard line breaks)
+    function charCenters(c, L) {
+        var doc = L.property(TPROPS).property("ADBE Text Document").value;
+        var lines = String(doc.text).split(/\r\n|\r|\n|\u0003/), out = [];
+        var tmp = c.layers.addText("x"), td = tmp.property(TPROPS).property("ADBE Text Document");
+        var t = c.time, widths = {};
+        // the measuring layer gets the same text style (font, size, tracking, caps...)
+        var copied = false;
+        if (!doc.boxText) { try { td.setValue(doc); copied = true; } catch (e0) {} }
+        if (!copied) {
+            var d0 = td.value;
+            try { d0.font = doc.font; } catch (e1) {}
+            try { d0.fontSize = doc.fontSize; } catch (e2) {}
+            try { d0.tracking = doc.tracking; } catch (e3) {}
+            try { d0.fauxBold = doc.fauxBold; d0.fauxItalic = doc.fauxItalic; d0.allCaps = doc.allCaps; d0.smallCaps = doc.smallCaps; } catch (e4) {}
+            td.setValue(d0);
+        }
+        function rect(s) {
+            var d = td.value;
+            d.justification = ParagraphJustification.LEFT_JUSTIFY;
+            d.text = s;
+            td.setValue(d);
+            return tmp.sourceRectAtTime(t, false);
+        }
+        var lead = doc.fontSize * 1.2;
+        try { if (!doc.autoLeading && doc.leading > 0) lead = doc.leading; } catch (e5) {}
+        var just = doc.justification;
+        try {
+            for (var li = 0; li < lines.length; li++) {
+                var line = lines[li];
+                if (!/\S/.test(line)) continue;
+                var lr = rect(line), lineRight = lr.left + lr.width;
+                var shift = just === ParagraphJustification.CENTER_JUSTIFY ? -lineRight / 2 :
+                    just === ParagraphJustification.RIGHT_JUSTIFY ? -lineRight : 0;
+                var yc = lr.top + lr.height / 2 + li * lead;
+                for (var j = 0; j < line.length; j++) {
+                    var ch = line.charAt(j);
+                    if (/\s/.test(ch)) continue;
+                    var pr = rect(line.substr(0, j + 1));
+                    if (widths[ch] === undefined) widths[ch] = rect(ch).width;
+                    out.push([Math.round((pr.left + pr.width - widths[ch] / 2 + shift) * 10) / 10, Math.round(yc * 10) / 10]);
+                }
+            }
+        } finally {
+            tmp.remove();
+        }
+        return out;
+    }
+
+    function selectorExpr(ctrlName, pts, colorOnly) {
+        var a = [];
+        for (var i = 0; i < pts.length; i++) a.push("[" + pts[i][0] + "," + pts[i][1] + "]");
+        return "// MenMen Area Text Effector - character centers measured by the tool (run it again after editing the text)\n" +
+            "var C=thisComp.layer(" + q(ctrlName) + ");\n" +
+            "var P=[" + a.join(",") + "];\n" +
+            "var p=P[Math.min(textIndex,P.length)-1]||[0,0];\n" +
+            "var w=toComp(p), cw=C.toComp(C.anchorPoint);\n" +
+            "var r=Math.max(0,C.effect(\"Radius\")(1)), fo=Math.max(0.001,C.effect(\"Falloff\")(1));\n" +
+            "var d=length([w[0],w[1]],[cw[0],cw[1]]);\n" +
+            "var f=1-clamp((d-r)/fo,0,1); f=f*f*(3-2*f);\n" +
+            "if(C.effect(\"Invert Field\")(1)==1) f=1-f;\n" +
+            "f*C.effect(\"Text Strength %\")(1)" + (colorOnly ? "*C.effect(\"Text Use Color\")(1)" : "") + ";";
+    }
+
+    function findAnim(L, name) {
+        var A = L.property(TPROPS).property(TANIMS);
+        for (var i = 1; i <= A.numProperties; i++) if (A.property(i).name === name) return A.property(i);
+        return null;
+    }
+    // adds (or refreshes) an animator: props = [[matchName, expression], ...]
+    function textAnimator(L, name, expr, props) {
+        var A = L.property(TPROPS).property(TANIMS), an = findAnim(L, name), idx;
+        if (an) {  // already there: only refresh the measured positions
+            var sels = an.property("ADBE Text Selectors");
+            for (var s = 1; s <= sels.numProperties; s++) {
+                var amt = sels.property(s).property("ADBE Text Expressible Amount");
+                if (amt) amt.expression = expr;
+            }
+            return false;
+        }
+        an = A.addProperty("ADBE Text Animator");
+        an.name = name;
+        idx = an.propertyIndex;
+        var get = function () { return L.property(TPROPS).property(TANIMS).property(idx); };
+        get().property("ADBE Text Selectors").addProperty("ADBE Text Expressible Selector");
+        var sel = get().property("ADBE Text Selectors").property(1);
+        try { sel.property("ADBE Text Range Type2").setValue(2); } catch (e) {}  // Based On: Characters Excluding Spaces
+        get().property("ADBE Text Selectors").property(1).property("ADBE Text Expressible Amount").expression = expr;
+        for (var k = 0; k < props.length; k++) {
+            try {
+                get().property("ADBE Text Animator Properties").addProperty(props[k][0]);
+                get().property("ADBE Text Animator Properties").property(props[k][0]).expression = props[k][1];
+            } catch (eP) {}
+        }
+        return true;
+    }
+
+    T.areaTextEffector = function (o) {
+        var c = MMW.comp(), sel = c.selectedLayers, texts = [], others = [], i, k;
+        for (i = 0; i < sel.length; i++) {
+            if (sel[i] instanceof TextLayer) texts.push(sel[i]);
+            else if (!(/ Field$/.test(sel[i].name) && sel[i].guideLayer)) others.push(sel[i]);
+        }
+        if (!texts.length) MMW.fail("Select text layer(s)" + (o.shift ? "." : " - and optionally the layer to use as the effector (a cursor, a shape...)."));
+
+        if (o.shift) {
+            var removed = 0;
+            for (i = 0; i < texts.length; i++) {
+                var A = texts[i].property(TPROPS).property(TANIMS);
+                for (k = A.numProperties; k >= 1; k--) if (A.property(k).name.indexOf(TXT_ANIM) === 0) { A.property(k).remove(); removed++; }
+            }
+            return "Removed " + removed + " Area Text Effector animator(s).";
+        }
+
+        // the effector: a selected non-text layer, else the comp's Area Effector (Alt: a new one)
+        var ctrl;
+        if (others.length && !o.alt) {
+            ctrl = others[0];
+            textFx(ctrl);
+            areaFieldGuide(c, ctrl);
+        } else {
+            ctrl = getAreaCtrl(c, texts, !!o.alt);
+            textFx(ctrl);
+        }
+        var cn = ctrl.name, CT = "thisComp.layer(" + q(cn) + ")", made = 0, refreshed = 0;
+        for (i = 0; i < texts.length; i++) {
+            var L = texts[i], pts = charCenters(c, L);
+            if (!pts.length) continue;
+            var nm = TXT_ANIM + " · " + cn;
+            var added = textAnimator(L, nm, selectorExpr(cn, pts, false), [
+                ["ADBE Text Position 3D", "[" + CT + ".effect(\"Text Offset X\")(1)," + CT + ".effect(\"Text Offset Y\")(1),0];"],
+                ["ADBE Text Scale 3D", "var s=" + CT + ".effect(\"Text Scale %\")(1);[s,s,100];"],
+                ["ADBE Text Rotation", CT + ".effect(\"Text Rotation\")(1);"],
+                ["ADBE Text Opacity", CT + ".effect(\"Text Opacity %\")(1);"],
+                ["ADBE Text Blur", "var b=" + CT + ".effect(\"Text Blur\")(1);[b,b];"],
+                ["ADBE Text Tracking Amount", CT + ".effect(\"Text Tracking\")(1);"]
+            ]);
+            textAnimator(L, nm + " (Color)", selectorExpr(cn, pts, true), [
+                ["ADBE Text Fill Color", CT + ".effect(\"Text Color\")(1);"]
+            ]);
+            if (added) made++; else refreshed++;
+        }
+        for (i = 1; i <= c.numLayers; i++) c.layer(i).selected = false;
+        ctrl.selected = true;
+        return (made ? "Area Text Effector added to " + made + " text layer(s)" : "") + (made && refreshed ? ", " : "") +
+            (refreshed ? "letter positions refreshed on " + refreshed + " layer(s)" : "") + " - effector: \"" + cn + "\" (Text sliders in Effect Controls).";
     };
 
     // ===================== Spot Blur =====================

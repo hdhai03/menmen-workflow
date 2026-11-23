@@ -332,6 +332,8 @@
     { id: 'areaPosition', name: 'Area Position', cat: 'animation', host: 'areaEffector', opts: { mode: 'position' }, icon: 'area', desc: 'Layers near the controller are pushed by Offset X / Y / Z.', mods: { alt: 'New controller', shift: 'Remove effect' } },
     { id: 'areaRotation', name: 'Area Rotation', cat: 'animation', host: 'areaEffector', opts: { mode: 'rotation' }, icon: 'area', desc: 'Layers near the controller rotate by the Rotation slider.', mods: { alt: 'New controller', shift: 'Remove effect' } },
     { id: 'areaColor', name: 'Area Color', cat: 'animation', host: 'areaEffector', opts: { mode: 'color' }, icon: 'area', desc: 'Layers blend from Color Outside to Color Inside near the controller (Fill effect).', mods: { alt: 'New controller', shift: 'Remove effect' } },
+    { id: 'areaTextEffector', name: 'Area Text Effector', cat: 'animation', icon: 'area', desc: 'The letters of the selected text layers animate when the Area Effector passes over them and settle again behind it (offset, scale, rotation, opacity, blur, tracking, color - Text sliders on the effector). Select another layer too (a cursor, a shape) to make it the effector. Click again after editing the text.',
+      mods: { alt: 'New effector, stacked on the same text', shift: 'Remove the Area Text Effector animators' } },
     { id: 'orbit', name: 'Orbit', cat: 'animation', icon: 'orbit', desc: 'Selected layers orbit around a new Orbit Center null (Speed slider, optional Face Center).', mods: { shift: 'Remove' },
       params: [P.num('speed', 'Speed (deg/s)', 45)] },
     { id: 'createLimb', name: 'Bend / Limb Rig', cat: 'animation', desc: 'A bendable hose/limb driven by 2 nulls.' },
