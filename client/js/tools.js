@@ -276,7 +276,7 @@
     // ---------------- Shapes ----------------
     { id: 'extractShapes', name: 'Separate Shapes to Layers', cat: 'shapes', desc: 'Splits groups into separate layers.', mods: { alt: 'Keep source' } },
     { id: 'mergeShapes', name: 'Merge Shape Layers', cat: 'shapes', desc: 'Merges shape layers into the top one.', mods: { alt: 'Keep source layers' } },
-    { id: 'pathVisualizer', name: 'Path Visualizer', cat: 'shapes', icon: 'pathViz', desc: 'Path Visualizer V2.1 by Sheikh Sohel: creates a live PATH_OVERLAY_ layer showing the vertices, handles and handle lines of the selected shape layers. Runs at once; colors, sizes, shapes and Show switches are in Effect Controls.',
+    { id: 'pathVisualizer', name: 'Path Visualizer', cat: 'shapes', icon: 'pathViz', desc: 'Creates a live PATH_OVERLAY_ layer showing the vertices, handles and handle lines of the selected shape layers. Runs at once; colors, sizes, shapes and Show switches are in Effect Controls.',
       mods: { alt: 'Update Path (select PATH_OVERLAY_ layers)', shift: 'Cleanup All Paths in the comp' } },
     { id: 'nullsToPoint', name: 'Null Controllers for Points', cat: 'shapes', desc: 'Nulls that follow the points of the selected Path / Mask.', mods: { alt: 'Path follows nulls' } },
     { id: 'shapesFromVector', name: 'Shapes from Vector', cat: 'shapes', desc: 'AI / PDF → shape layers.', mods: { alt: 'Delete source', shift: 'Remove artboards' } },
