@@ -263,6 +263,15 @@
             "f*C.effect(\"Text Strength %\")(1)" + (colorOnly ? "*C.effect(\"Text Use Color\")(1)" : "") + ";";
     }
 
+    // the text's variable font Weight axis ({min, max}) or null - AE 2024+ (FontObject.designAxesData)
+    function weightAxis(L) {
+        try {
+            var doc = L.property(TPROPS).property("ADBE Text Document").value, ax = doc.fontObject.designAxesData;
+            for (var i = 0; ax && i < ax.length; i++) if (ax[i].tag === "wght") return { min: ax[i].min, max: ax[i].max };
+        } catch (e) {}
+        return null;
+    }
+
     function findAnim(L, name) {
         var A = L.property(TPROPS).property(TANIMS);
         for (var i = 1; i <= A.numProperties; i++) if (A.property(i).name === name) return A.property(i);
@@ -277,6 +286,13 @@
                 var amt = sels.property(s).property("ADBE Text Expressible Amount");
                 if (amt) amt.expression = expr;
             }
+            // an older animator (0.5.0) on a variable font: add the Weight axis it is missing
+            for (var w = 0; w < props.length; w++) {
+                if (props[w][0] !== "wght") continue;
+                var ap = an.property("ADBE Text Animator Properties"), has = false;
+                for (var x = 1; x <= ap.numProperties; x++) if (/wght|weight|axis/i.test(ap.property(x).matchName + " " + ap.property(x).name)) has = true;
+                if (!has) try { ap.addVariableFontAxis("wght").expression = props[w][1]; } catch (eW) {}
+            }
             return false;
         }
         an = A.addProperty("ADBE Text Animator");
@@ -289,6 +305,10 @@
         get().property("ADBE Text Selectors").property(1).property("ADBE Text Expressible Amount").expression = expr;
         for (var k = 0; k < props.length; k++) {
             try {
+                if (props[k][0] === "wght") {  // variable font axis: added with its own method, not by match name
+                    get().property("ADBE Text Animator Properties").addVariableFontAxis("wght").expression = props[k][1];
+                    continue;
+                }
                 get().property("ADBE Text Animator Properties").addProperty(props[k][0]);
                 get().property("ADBE Text Animator Properties").property(props[k][0]).expression = props[k][1];
             } catch (eP) {}
@@ -327,15 +347,19 @@
         for (i = 0; i < texts.length; i++) {
             var L = texts[i], pts = charCenters(c, L);
             if (!pts.length) continue;
-            var nm = TXT_ANIM + " · " + cn;
-            var added = textAnimator(L, nm, selectorExpr(cn, pts, false), [
+            var nm = TXT_ANIM + " \u00B7 " + cn, wa = weightAxis(L), extra = [];
+            if (wa) {  // variable font: the Weight axis animates too (target weight set on the effector)
+                ensureFx(ctrl, "ADBE Slider Control", "Text Weight", wa.max);
+                extra.push(["wght", "clamp(" + CT + ".effect(\"Text Weight\")(1)," + wa.min + "," + wa.max + ");"]);
+            }
+            var added = textAnimator(L, nm, selectorExpr(cn, pts, false), extra.concat([
                 ["ADBE Text Position 3D", "[" + CT + ".effect(\"Text Offset X\")(1)," + CT + ".effect(\"Text Offset Y\")(1),0];"],
                 ["ADBE Text Scale 3D", "var s=" + CT + ".effect(\"Text Scale %\")(1);[s,s,100];"],
                 ["ADBE Text Rotation", CT + ".effect(\"Text Rotation\")(1);"],
                 ["ADBE Text Opacity", CT + ".effect(\"Text Opacity %\")(1);"],
                 ["ADBE Text Blur", "var b=" + CT + ".effect(\"Text Blur\")(1);[b,b];"],
                 ["ADBE Text Tracking Amount", CT + ".effect(\"Text Tracking\")(1);"]
-            ]);
+            ]));
             textAnimator(L, nm + " (Color)", selectorExpr(cn, pts, true), [
                 ["ADBE Text Fill Color", CT + ".effect(\"Text Color\")(1);"]
             ]);
@@ -498,7 +522,7 @@
             var L = comp.layer(1);
             L.startTime = L.startTime - offset;
             L.comment = AUDIO_TAG;
-            L.name = "♪ " + A.name;
+            L.name = "\u266A " + A.name;
             L.guideLayer = true;              // heard while working in this comp, never rendered from a parent
             L.audioEnabled = true;
             L.label = 14;
@@ -508,7 +532,7 @@
         }
         return n;
     }
-    function removeOldAudioComps() {  // the previous version kept the audio in "♪ ... Audio" comps
+    function removeOldAudioComps() {  // the previous version kept the audio in "(note) ... Audio" comps
         var gone = [];
         for (var i = 1; i <= app.project.numItems; i++) {
             var it = app.project.item(i);

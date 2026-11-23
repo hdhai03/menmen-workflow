@@ -4,6 +4,17 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.5.1 – Area Text Effector: variable font weight
+
+**Added**
+- **Area Text Effector** on a **variable font** with a Weight axis: the effector gets a **Text Weight** slider, and the letters it passes over animate to that weight, limited to the font's own range.
+  - Its default is the font's heaviest weight.
+  - Needs After Effects 2024 or later.
+  - Effectors made with 0.5.0 get the Weight axis when you click the tool again on the text.
+
+**Fixed**
+- Layer and animator names with special characters (Audio to Precomps, Area Text Effector) are written with escapes, so they appear correctly whatever the system text encoding.
+
 ## 0.5.0 – Area Text Effector
 
 **Added**
