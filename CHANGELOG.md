@@ -4,6 +4,24 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.6.0 – Field Shape for the whole Area Effector set
+
+**Added**
+- **Field Shape** menu on every Area Effector controller. It applies to Area Opacity / Scale / Position / Rotation / Color and Area Text Effector.
+
+  | Shape | Full effect | Controls |
+  |---|---|---|
+  | **Circle** | inside *Radius* (as before) | – |
+  | **Ellipse** | inside an ellipse | *Field Aspect %* sets the height against the width |
+  | **Box** | inside a rectangle | *Radius* is the half-width; *Field Aspect %* sets the height |
+  | **Linear Band** | inside a straight band across the comp | *Radius* is the half-thickness; ideal for wipes through a line of text |
+  | **Ring** | only on a ring around *Radius* | *Ring Width* sets the ring's thickness |
+
+  - *Falloff* softens the edge of every shape.
+- **Rotate or scale the controller** to turn or stretch the field, for example a diagonal band or a tilted ellipse.
+- **The field guide** draws the chosen shape (full-effect edge and falloff edge) and turns and stretches with the controller.
+- **Existing controllers**: they get the new controls the next time an Area tool uses them, and their guide is redrawn. Layers set up before keep the circle field until you apply the tool to them again.
+
 ## 0.5.3 – Area Text Effector: italic
 
 **Added**

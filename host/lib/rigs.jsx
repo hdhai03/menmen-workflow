@@ -27,6 +27,43 @@
     // Alt: new controller. Shift: remove the effect of this mode from the selected layers.
     var AREA_TAG = "// MenMen Area Effector";
 
+    // Field Shape (dropdown on the controller): 1 Circle, 2 Ellipse, 3 Box, 4 Linear Band, 5 Ring.
+    // The field lives in the controller's own space, so rotating / scaling the controller turns / stretches it.
+    // fieldDist(v) -> expression code that sets dd = distance outside the full-effect area (<= 0 inside),
+    // from v = the point in controller space, r = Radius.
+    var FIELD_SHAPES = ["Circle", "Ellipse", "Box", "Linear Band", "Ring"];
+    function fieldDist() {
+        return "var m=C.effect(\"Field Shape\")(1), a=Math.max(0.01,C.effect(\"Field Aspect %\")(1)/100), rw=Math.max(0,C.effect(\"Ring Width\")(1)), dd;\n" +
+            "var ln=Math.sqrt(v[0]*v[0]+v[1]*v[1]);\n" +
+            "if(m==2){var k=Math.sqrt(Math.pow(v[0]/Math.max(r,0.01),2)+Math.pow(v[1]/Math.max(r*a,0.01),2));dd=k>0?ln*(1-1/k):-Math.min(r,r*a);}\n" +
+            "else if(m==3){var qx=Math.abs(v[0])-r,qy=Math.abs(v[1])-r*a;dd=Math.sqrt(Math.pow(Math.max(qx,0),2)+Math.pow(Math.max(qy,0),2))+Math.min(Math.max(qx,qy),0);}\n" +
+            "else if(m==4){dd=Math.abs(v[1])-r;}\n" +
+            "else if(m==5){dd=Math.abs(ln-r)-rw/2;}\n" +
+            "else{dd=ln-r;}\n";
+    }
+    // Dropdown Menu Control (AE 17+): setPropertyParameters rebuilds the effect and resets its name,
+    // so it is found again by index and renamed. idx is 1-based.
+    function ensureDropdown(layer, name, items, idx) {
+        var fx = layer.property("ADBE Effect Parade"), e = fx.property(name);
+        if (e) return e;
+        e = fx.addProperty("ADBE Dropdown Control");
+        var at = e.propertyIndex;
+        try { e.property(1).setPropertyParameters(items); } catch (x) {}
+        e = layer.property("ADBE Effect Parade").property(at);
+        e.name = name;
+        try { e.property(1).setValue(idx || 1); } catch (x2) {}
+        return layer.property("ADBE Effect Parade").property(name);
+    }
+    function fieldFx(ctrl) {
+        ensureFx(ctrl, "ADBE Slider Control", "Radius", 200);
+        ensureFx(ctrl, "ADBE Slider Control", "Falloff", 150);
+        ensureDropdown(ctrl, "Field Shape", FIELD_SHAPES, 1);
+        ensureFx(ctrl, "ADBE Slider Control", "Field Aspect %", 50);
+        ensureFx(ctrl, "ADBE Slider Control", "Ring Width", 60);
+        ensureFx(ctrl, "ADBE Checkbox Control", "Invert Field", 0);
+        ensureFx(ctrl, "ADBE Checkbox Control", "Show Field", 1);
+    }
+
     function isAreaCtrl(L) { return /^Area Effector( \d+)?$/.test(L.name); }
 
     function fieldExpr(ctrlName, posSrc) {
@@ -34,42 +71,67 @@
             "var C=thisComp.layer(" + q(ctrlName) + ");\n" +
             "var r=Math.max(0,C.effect(\"Radius\")(1)), fo=Math.max(0.001,C.effect(\"Falloff\")(1));\n" +
             "var p=" + posSrc + ";\n" +
-            "var w=hasParent?parent.toWorld(p):p, cw=C.toWorld(C.anchorPoint);\n" +
-            "var d=length([w[0],w[1]],[cw[0],cw[1]]);\n" +
-            "var f=1-clamp((d-r)/fo,0,1); f=f*f*(3-2*f);\n" +
+            "var w=hasParent?parent.toWorld(p):p, v=C.fromWorld(w); v=[v[0]-C.anchorPoint[0], v[1]-C.anchorPoint[1]];\n" +
+            fieldDist() +
+            "var f=1-clamp(dd/fo,0,1); f=f*f*(3-2*f);\n" +
             "if(C.effect(\"Invert Field\")(1)==1) f=1-f;\n";
     }
 
+    var GUIDE_TAG = "MenMen Field 2";
+    // path of one guide edge: level 0 = edge of the full-effect area, 1 = end of the falloff; side A / B
+    // (rings and bands have two edges per level)
+    function guidePathExpr(ctrlName, level, sideB) {
+        return "var C=thisComp.layer(" + q(ctrlName) + "), m=C.effect(\"Field Shape\")(1);\n" +
+            "var r=Math.max(0,C.effect(\"Radius\")(1)), e=" + (level ? "Math.max(0,C.effect(\"Falloff\")(1))" : "0") + ";\n" +
+            "var a=Math.max(0.01,C.effect(\"Field Aspect %\")(1)/100), rw=Math.max(0,C.effect(\"Ring Width\")(1)), B=" + (sideB ? "true" : "false") + ";\n" +
+            "function ell(rx,ry){var k=0.5523;rx=Math.max(0.01,rx);ry=Math.max(0.01,ry);return createPath([[0,-ry],[rx,0],[0,ry],[-rx,0]],[[-rx*k,0],[0,-ry*k],[rx*k,0],[0,ry*k]],[[rx*k,0],[0,ry*k],[-rx*k,0],[0,-ry*k]],true);}\n" +
+            "function none(){return createPath([[0,0],[0,0]],[],[],false);}\n" +
+            "if(m==2){B?none():ell(r+e,r*a+e);}\n" +
+            "else if(m==3){if(B){none()}else{var w=r+e,h=r*a+e;createPath([[-w,-h],[w,-h],[w,h],[-w,h]],[],[],true);}}\n" +
+            "else if(m==4){var y=(r+e)*(B?1:-1);createPath([[-4000,y],[4000,y]],[],[],false);}\n" +
+            "else if(m==5){B?ell(Math.max(0.01,r-rw/2-e),Math.max(0.01,r-rw/2-e)):ell(r+rw/2+e,r+rw/2+e);}\n" +
+            "else{B?none():ell(r+e,r+e);}";
+    }
     function areaFieldGuide(c, ctrl) {
-        var name = ctrl.name + " Field";
-        for (var i = 1; i <= c.numLayers; i++) if (c.layer(i).name === name) return;
+        var name = ctrl.name + " Field", i;
+        for (i = 1; i <= c.numLayers; i++) {
+            var old = c.layer(i);
+            if (old.name !== name) continue;
+            if (old.comment === GUIDE_TAG) return;
+            old.locked = false; old.remove();  // a guide from before Field Shape: drawn again
+            break;
+        }
         var g = c.layers.addShape();
         g.name = name;
+        g.comment = GUIDE_TAG;
         g.guideLayer = true;
         g.label = 10;
         g.transform.anchorPoint.setValue([0, 0]);
         var R = "ADBE Root Vectors Group";
-        var specs = [["Radius", "C.effect(\"Radius\")(1)"], ["Falloff", "C.effect(\"Radius\")(1)+C.effect(\"Falloff\")(1)"]];
-        for (var s = 0; s < specs.length; s++) {
+        var specs = [["Full", 0, false], ["Full B", 0, true], ["Falloff", 1, false], ["Falloff B", 1, true]];
+        for (var s2 = 0; s2 < specs.length; s2++) {
             g.property(R).addProperty("ADBE Vector Group");
             var gi = g.property(R).numProperties;
-            g.property(R).property(gi).name = specs[s][0];
-            g.property(R).property(gi).property("ADBE Vectors Group").addProperty("ADBE Vector Shape - Ellipse");
+            g.property(R).property(gi).name = specs[s2][0];
+            g.property(R).property(gi).property("ADBE Vectors Group").addProperty("ADBE Vector Shape - Group");
             g.property(R).property(gi).property("ADBE Vectors Group").addProperty("ADBE Vector Graphic - Stroke");
             var v = g.property(R).property(gi).property("ADBE Vectors Group");
-            v.property("ADBE Vector Shape - Ellipse").property("ADBE Vector Ellipse Size").expression =
-                "var C=thisComp.layer(" + q(ctrl.name) + ");var r=" + specs[s][1] + ";[r*2,r*2];";
+            v.property("ADBE Vector Shape - Group").property("ADBE Vector Shape").expression = guidePathExpr(ctrl.name, specs[s2][1], specs[s2][2]);
             var st = v.property("ADBE Vector Graphic - Stroke");
-            st.property("ADBE Vector Stroke Width").setValue(s === 0 ? 2 : 1);
+            st.property("ADBE Vector Stroke Width").setValue(specs[s2][1] ? 1 : 2);
             st.property("ADBE Vector Stroke Color").setValue([0.3, 0.75, 1]);
             try {
                 var dash = st.property("ADBE Vector Stroke Dashes");
-                dash.addProperty("ADBE Vector Stroke Dash 1").setValue(s === 0 ? 12 : 4);
+                dash.addProperty("ADBE Vector Stroke Dash 1").setValue(specs[s2][1] ? 4 : 12);
                 dash.addProperty("ADBE Vector Stroke Gap 1").setValue(6);
             } catch (e) {}
         }
-        g.transform.position.expression = "var C=thisComp.layer(" + q(ctrl.name) + ");C.toComp(C.anchorPoint);";
-        g.transform.opacity.expression = "thisComp.layer(" + q(ctrl.name) + ").effect(\"Show Field\")(1)==1?100:0;";
+        var CT = "thisComp.layer(" + q(ctrl.name) + ")";
+        g.transform.position.expression = CT + ".toComp(" + CT + ".anchorPoint);";
+        // turn and stretch with the controller (its own rotation and scale)
+        g.transform.rotation.expression = "try{" + CT + ".transform.rotation}catch(e){0}";
+        g.transform.scale.expression = "var s=" + CT + ".transform.scale;[s[0],s[1]];";
+        g.transform.opacity.expression = CT + ".effect(\"Show Field\")(1)==1?100:0;";
         g.moveAfter(ctrl);
         g.locked = true;
     }
@@ -77,9 +139,9 @@
     function getAreaCtrl(c, layers, makeNew) {
         var i, found = null;
         if (!makeNew) {
-            for (i = 0; i < layers.length; i++) if (isAreaCtrl(layers[i])) return layers[i];
-            for (i = 1; i <= c.numLayers; i++) if (isAreaCtrl(c.layer(i))) { found = c.layer(i); break; }
-            if (found) return found;
+            for (i = 0; i < layers.length; i++) if (isAreaCtrl(layers[i])) found = layers[i];
+            if (!found) for (i = 1; i <= c.numLayers; i++) if (isAreaCtrl(c.layer(i))) { found = c.layer(i); break; }
+            if (found) { fieldFx(found); areaFieldGuide(c, found); return found; }  // older controllers get Field Shape
         }
         var name = "Area Effector", n = 1;
         var taken = {};
@@ -89,10 +151,7 @@
         ctrl.label = 10;
         var pos = avgPosition(c, layers);
         ctrl.transform.position.setValue(pos);
-        ensureFx(ctrl, "ADBE Slider Control", "Radius", 200);
-        ensureFx(ctrl, "ADBE Slider Control", "Falloff", 150);
-        ensureFx(ctrl, "ADBE Checkbox Control", "Invert Field", 0);
-        ensureFx(ctrl, "ADBE Checkbox Control", "Show Field", 1);
+        fieldFx(ctrl);
         ctrl.moveToBeginning();
         areaFieldGuide(c, ctrl);
         return ctrl;
@@ -182,10 +241,7 @@
     var TPROPS = "ADBE Text Properties", TANIMS = "ADBE Text Animators";
 
     function textFx(ctrl) {
-        ensureFx(ctrl, "ADBE Slider Control", "Radius", 200);
-        ensureFx(ctrl, "ADBE Slider Control", "Falloff", 150);
-        ensureFx(ctrl, "ADBE Checkbox Control", "Invert Field", 0);
-        ensureFx(ctrl, "ADBE Checkbox Control", "Show Field", 1);
+        fieldFx(ctrl);
         ensureFx(ctrl, "ADBE Slider Control", "Text Strength %", 100);
         ensureFx(ctrl, "ADBE Slider Control", "Text Offset X", 0);
         ensureFx(ctrl, "ADBE Slider Control", "Text Offset Y", -40);
@@ -255,10 +311,10 @@
             "var C=thisComp.layer(" + q(ctrlName) + ");\n" +
             "var P=[" + a.join(",") + "];\n" +
             "var p=P[Math.min(textIndex,P.length)-1]||[0,0];\n" +
-            "var w=toComp(p), cw=C.toComp(C.anchorPoint);\n" +
+            "var w=toComp(p), v=C.fromComp(w); v=[v[0]-C.anchorPoint[0], v[1]-C.anchorPoint[1]];\n" +
             "var r=Math.max(0,C.effect(\"Radius\")(1)), fo=Math.max(0.001,C.effect(\"Falloff\")(1));\n" +
-            "var d=length([w[0],w[1]],[cw[0],cw[1]]);\n" +
-            "var f=1-clamp((d-r)/fo,0,1); f=f*f*(3-2*f);\n" +
+            fieldDist() +
+            "var f=1-clamp(dd/fo,0,1); f=f*f*(3-2*f);\n" +
             "if(C.effect(\"Invert Field\")(1)==1) f=1-f;\n" +
             "f*C.effect(\"Text Strength %\")(1)" + (colorOnly ? "*C.effect(\"Text Use Color\")(1)" : "") + ";";
     }

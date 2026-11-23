@@ -1,7 +1,7 @@
 {
-  "version": "0.5.3",
+  "version": "0.6.0",
   "date": "2026-11-23",
   "notes": [
-    "Area Text Effector: Text Italic slider for variable fonts with an ital axis"
+    "Area Effector set: Field Shape menu - Circle, Ellipse, Box, Linear Band, Ring (rotate / scale the controller to turn or stretch the field); the guide draws the shape"
   ]
 }
