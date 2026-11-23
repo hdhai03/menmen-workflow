@@ -1,8 +1,7 @@
 {
-  "version": "0.4.9",
+  "version": "0.4.10",
   "date": "2026-11-23",
   "notes": [
-    "Path Visualizer (Shapes): live overlay of the vertices, bezier handles and handle lines of shape paths and masks",
-    "Audio to Precomps: precomps play the audio again"
+    "Path Visualizer: runs the original V2.1 code (Create / Alt: Update / Shift: Cleanup All Paths)"
   ]
 }

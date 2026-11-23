@@ -4,6 +4,14 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.4.10 – Path Visualizer: original V2.1 code
+
+**Changed**
+- **Path Visualizer** now runs the original *Path Visualizer V2.1* code by Sheikh Sohel, unchanged. Only its ScriptUI panel is replaced by the MenMen tool dialog: vertex, handle and line colors, sizes and shapes.
+  - Click = **Create Path**, Alt = **Update Path**, Shift = **Cleanup All Paths**.
+  - The `PATH_OVERLAY_` layers and Effect Controls are the same as in the standalone script.
+- The rewrite from 0.4.9 is removed.
+
 ## 0.4.9 – Path Visualizer
 
 **Added**

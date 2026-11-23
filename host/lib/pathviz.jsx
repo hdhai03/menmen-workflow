@@ -1,180 +1,580 @@
-// pathviz.jsx - Path Visualizer: a live overlay that draws the vertices, bezier handles and handle lines
-// of the selected layers' paths (shape paths and masks), for tutorials and design breakdowns.
-// The overlay is a shape layer at the comp origin; every dot follows its point through
-// sourceLayer.toComp(), so parenting and animation of the source just work. Vector math uses add()/sub()
-// so the expressions run in both the Legacy and the JavaScript expression engine.
-//  click: create / replace overlays for the selected layers
-//  Alt:   rebuild the selected overlays (or the overlays of the selected sources), keeping their settings
-//  Shift: remove all overlays in the comp
-(function () {
+// ============================================================
+//  PATH VISUALIZER  V2.1
+//  for Adobe After Effects
+// ============================================================
+//
+//  Created by   : Sheikh Sohel
+//  Website      : www.sheikhsohel.com
+//  Copyright (c) 2026 Sheikh Sohel. All rights reserved.
+//
+//  This script is part of the Path Visualizer toolset.
+//  Unauthorized redistribution or resale is prohibited.
+//  For updates and more tools visit www.sheikhsohel.com
+//
+//  ── HOW TO USE ──────────────────────────────────────────────
+//  1. Select one or more Shape Layers in your comp
+//  2. Set options in the script panel
+//  3. Click "Create Path" — creates overlay for ALL selected
+//  4. PATH_OVERLAY_ layer(s) appear — live, expression-driven
+//  5. Render → handles visible in final video
+//     To hide from render → toggle eye icon on overlay layer
+//
+//  ── EFFECT CONTROLS (live, no re-run needed) ────────────────
+//  Vertex Color · Handle Color · Line Color
+//  Vertex Size  · Handle Size  · Line Width
+//  Show Vertex  · Show Handles · Show Lines
+//
+//  ── CHANGE SHAPE ────────────────────────────────────────────
+//  Change dropdown → select PATH_OVERLAY_ layer → Update Path
+//
+//  ── CLEANUP ALL PATHS ───────────────────────────────────────
+//  Click "Cleanup All Paths" — removes ALL PATH_OVERLAY_
+//  path shape layers in the active comp. No selection needed.
+// ============================================================
+//
+//  ── MenMen Workflow integration ─────────────────────────────
+//  The code below is the original V2.1 code, unchanged. Only the ScriptUI panel is replaced:
+//  the settings come from the MenMen tool dialog (getSettings), and the three buttons are
+//  the tool's click modes: click = Create Path, Alt = Update Path, Shift = Cleanup All Paths.
+// ============================================================
+
+(function pathVisualizerV21() {
     var T = MMW.tools;
-    var TAG = "MenMen PathViz|";
-    var R = "ADBE Root Vectors Group", V = "ADBE Vectors Group", TR = "ADBE Vector Transform Group";
 
-    function q(s) { return '"' + String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"'; }
-    function isOverlay(L) { return String(L.comment).indexOf(TAG) === 0; }
-    function sourceName(L) { return String(L.comment).slice(TAG.length); }
 
-    // most vertices a path ever has (animated paths can change their point count)
-    function maxVerts(prop) {
-        var n = 0, i, v;
-        try {
-            if (prop.numKeys > 0) {
-                for (i = 1; i <= prop.numKeys; i++) { v = prop.keyValue(i); if (v && v.vertices && v.vertices.length > n) n = v.vertices.length; }
-            } else {
-                v = prop.value; if (v && v.vertices) n = v.vertices.length;
-            }
-        } catch (e) {}
-        return n;
+    var OVERLAY_PREFIX = "PATH_OVERLAY_";
+    var LABEL_OVERLAY  = 6;
+
+    // ══════════════════════════════════════════════════════════
+    //  COLOR HELPERS
+    // ══════════════════════════════════════════════════════════
+    function hexToRgb(str) {
+        if (!str) return null;
+        var s = String(str).replace(/\s+/g,"");
+        if (s.charAt(0) === "#") s = s.substring(1);
+        if (s.length === 3) s = s[0]+s[0]+s[1]+s[1]+s[2]+s[2];
+        if (!/^[0-9a-fA-F]{6}$/.test(s)) return null;
+        return [
+            parseInt(s.substr(0,2),16)/255,
+            parseInt(s.substr(2,2),16)/255,
+            parseInt(s.substr(4,2),16)/255
+        ];
     }
-    // [{ expr: "<path expression>", n: <max vertices>, name }]
-    function collectPaths(L) {
-        var out = [], LE = "thisComp.layer(" + q(L.name) + ")";
-        function walk(group, base) {
-            for (var i = 1; i <= group.numProperties; i++) {
-                var p = group.property(i);
-                if (!p.enabled) continue;  // hidden groups / paths are skipped
-                if (p.matchName === "ADBE Vector Group") walk(p.property(V), base + ".content(" + i + ")");
-                else if (p.matchName === "ADBE Vector Shape - Group") {
-                    var n = maxVerts(p.property("ADBE Vector Shape"));
-                    if (n) out.push({ expr: LE + base + ".content(" + i + ").path", n: n, name: p.name });
-                }
-            }
+
+    function rgbToHex(rgb) {
+        function h(v) {
+            var s = Math.round(Math.min(Math.max(v,0),1)*255).toString(16);
+            return s.length < 2 ? "0"+s : s;
         }
-        if (L instanceof ShapeLayer) walk(L.property(R), "");
-        var masks = L.property("ADBE Mask Parade");
-        if (masks) for (var m = 1; m <= masks.numProperties; m++) {
-            var mk = masks.property(m), nm = maxVerts(mk.property("ADBE Mask Shape"));
-            if (nm) out.push({ expr: LE + ".mask(" + m + ").maskPath", n: nm, name: mk.name });
+        return h(rgb[0]) + h(rgb[1]) + h(rgb[2]);
+    }
+
+    function esc(n) { return String(n).replace(/\\/g,"\\\\").replace(/"/g,'\\"'); }
+
+    function shapeIdx(name) {
+        if (name === "Circle")  return 1;
+        if (name === "Diamond") return 2;
+        return 0;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  GENERAL HELPERS
+    // ══════════════════════════════════════════════════════════
+    function getActiveComp() {
+        var c = app.project.activeItem;
+        if (!c || !(c instanceof CompItem)) {
+            alert("Error: Please open and select a composition first.");
+            return null;
         }
-        return out;
+        return c;
     }
 
-    function fx(layer, matchName, name, value) {
-        var e = layer.property("ADBE Effect Parade").property(name);
-        if (!e) { e = MMW.addEffect(layer, matchName, name); if (value !== undefined) e.property(1).setValue(value); }
-        return e;
-    }
-    function controls(ov, o) {
-        fx(ov, "ADBE Color Control", "Vertex Color", [1, 1, 1]);
-        fx(ov, "ADBE Color Control", "Handle Color", [1, 0.27, 0.27]);
-        fx(ov, "ADBE Color Control", "Line Color", [1, 0.27, 0.27]);
-        fx(ov, "ADBE Slider Control", "Vertex Size", Number(o.vertexSize) || 12);
-        fx(ov, "ADBE Slider Control", "Handle Size", Number(o.handleSize) || 7);
-        fx(ov, "ADBE Slider Control", "Line Width", Number(o.lineWidth) || 1.5);
-        fx(ov, "ADBE Checkbox Control", "Show Vertices", 1);
-        fx(ov, "ADBE Checkbox Control", "Show Handles", 1);
-        fx(ov, "ADBE Checkbox Control", "Show Lines", 1);
-        fx(ov, "ADBE Checkbox Control", "Scale With Layer", 0);
-    }
+    function isShape(l)   { return l && (l instanceof ShapeLayer); }
+    function isOverlay(l) { return l && l.name.indexOf(OVERLAY_PREFIX) === 0; }
 
-    // one dot: a rect (square / circle via roundness / diamond via 45 deg) whose group follows `posExpr`
-    // "Scale With Layer": dots grow / shrink with the source's own and its parents' scale
-    function dot(parent, name, sizeFx, colorFx, shape, posExpr, showExpr, SRC) {
-        var g = parent.addProperty("ADBE Vector Group");
-        g.name = name;
-        var c = g.property(V);
-        var rect = c.addProperty("ADBE Vector Shape - Rect");
-        var size = "var L=" + SRC + ";var s=effect(\"" + sizeFx + "\")(1)*(effect(\"Scale With Layer\")(1)==1?length(sub(L.toComp([100,0]),L.toComp([0,0])))/100:1);";
-        rect.property("ADBE Vector Rect Size").expression = size + "[s,s];";
-        rect.property("ADBE Vector Rect Roundness").expression = shape === "circle" ? size + "s/2;" : "0;";
-        c.addProperty("ADBE Vector Graphic - Fill").property("ADBE Vector Fill Color").expression = "effect(\"" + colorFx + "\")(1);";
-        var t = g.property(TR);
-        if (shape === "diamond") t.property("ADBE Vector Rotation").setValue(45);
-        t.property("ADBE Vector Position").expression = posExpr;
-        t.property("ADBE Vector Group Opacity").expression = showExpr;
-        return g;
-    }
-
-    function build(ov, L, o) {
-        var paths = collectPaths(L), root = ov.property(R), i, k;
-        for (k = root.numProperties; k >= 1; k--) root.property(k).remove();
-        var SRC = "thisComp.layer(" + q(L.name) + ")";
-        var vShape = o.vertexShape || "square", hShape = o.handleShape || "circle";
-        for (i = 0; i < paths.length; i++) {
-            var P = paths[i];
-            var pg = root.addProperty("ADBE Vector Group");
-            pg.name = (paths.length > 1 ? (i + 1) + ". " : "") + P.name;
-            var pc = pg.property(V);
-            // order inside a shape layer: first = on top -> vertices, handles, then lines underneath
-            var gv = pc.addProperty("ADBE Vector Group"); gv.name = "Vertices";
-            var gh = pc.addProperty("ADBE Vector Group"); gh.name = "Handles";
-            var gl = pc.addProperty("ADBE Vector Group"); gl.name = "Lines";
-            var head = "var L=" + SRC + ", P=" + P.expr + ", p=P.points(), I=P.inTangents(), O=P.outTangents();\n";
-            for (k = 0; k < P.n; k++) {
-                var at = "if(" + k + ">=p.length){[0,0]}else{var v=p[" + k + "];";
-                // vertex
-                dot(gv.property(V), "Vertex " + (k + 1), "Vertex Size", "Vertex Color", vShape,
-                    "try{" + head + at + "L.toComp(v)}}catch(e){[0,0]}",
-                    "try{" + head + "(" + k + "<p.length && effect(\"Show Vertices\")(1)==1)?100:0}catch(e){0}", SRC);
-                // handles: hidden on corner points (zero-length tangents)
-                var showH = function (T) {
-                    return "try{" + head + "(" + k + "<p.length && effect(\"Show Handles\")(1)==1 && length(" + T + "[" + k + "])>0.01)?100:0}catch(e){0}";
-                };
-                dot(gh.property(V), "In " + (k + 1), "Handle Size", "Handle Color", hShape,
-                    "try{" + head + at + "L.toComp(add(v,I[" + k + "]))}}catch(e){[0,0]}", showH("I"), SRC);
-                dot(gh.property(V), "Out " + (k + 1), "Handle Size", "Handle Color", hShape,
-                    "try{" + head + at + "L.toComp(add(v,O[" + k + "]))}}catch(e){[0,0]}", showH("O"), SRC);
-                // handle line: in handle - vertex - out handle
-                var lg = gl.property(V).addProperty("ADBE Vector Group");
-                lg.name = "Line " + (k + 1);
-                var lc = lg.property(V);
-                lc.addProperty("ADBE Vector Shape - Group").property("ADBE Vector Shape").expression =
-                    "try{" + head + "if(" + k + ">=p.length){createPath([[0,0],[0,0]],[],[],false)}else{var v=p[" + k + "];" +
-                    "createPath([L.toComp(add(v,I[" + k + "])),L.toComp(v),L.toComp(add(v,O[" + k + "]))],[],[],false)}}catch(e){createPath([[0,0],[0,0]],[],[],false)}";
-                var st = lc.addProperty("ADBE Vector Graphic - Stroke");
-                st.property("ADBE Vector Stroke Color").expression = "effect(\"Line Color\")(1);";
-                st.property("ADBE Vector Stroke Width").expression = "effect(\"Line Width\")(1);";
-                lg.property(TR).property("ADBE Vector Group Opacity").expression =
-                    "try{" + head + "(" + k + "<p.length && effect(\"Show Lines\")(1)==1 && (length(I[" + k + "])>0.01||length(O[" + k + "])>0.01))?100:0}catch(e){0}";
-            }
+    function getSource(overlay) {
+        if (!isOverlay(overlay)) return null;
+        var name = overlay.name.replace(OVERLAY_PREFIX,"");
+        var comp = overlay.containingComp;
+        if (!comp) return null;
+        for (var i=1; i<=comp.numLayers; i++) {
+            var l = comp.layer(i);
+            if (l && l.name === name && !isOverlay(l)) return l;
         }
-        return paths.length;
-    }
-    function overlayFor(c, L) {
-        for (var i = 1; i <= c.numLayers; i++) if (isOverlay(c.layer(i)) && sourceName(c.layer(i)) === L.name) return c.layer(i);
         return null;
     }
 
+    function getPathProp(grp) {
+        if (!grp || typeof grp.numProperties === "undefined") return null;
+        for (var i=1; i<=grp.numProperties; i++) {
+            var p = grp.property(i);
+            if (p && p.matchName === "ADBE Vector Shape") return p;
+        }
+        return null;
+    }
+
+    function LE(l)        { return 'thisComp.layer("' + esc(l.name) + '")'; }
+    function GE(l, names) {
+        var e = LE(l);
+        for (var i=0; i<names.length; i++) e += '.content("' + esc(names[i]) + '")';
+        return e;
+    }
+    function PE(l, names, pName) {
+        return GE(l, names) + '.content("' + esc(pName) + '").path';
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  EFFECT CONTROLS
+    // ══════════════════════════════════════════════════════════
+    function setColor(fx, name, val) {
+        var p; try { p = fx.property(name); } catch(e) { p = null; }
+        if (!p || !p.active) { p = fx.addProperty("ADBE Color Control"); p.name = name; }
+        try { p.property(1).setValue(val); } catch(e) {}
+    }
+    function setSlider(fx, name, val) {
+        var p; try { p = fx.property(name); } catch(e) { p = null; }
+        if (!p || !p.active) { p = fx.addProperty("ADBE Slider Control"); p.name = name; }
+        try { p.property(1).setValue(val); } catch(e) {}
+    }
+    function setCheckbox(fx, name, val) {
+        var p; try { p = fx.property(name); } catch(e) { p = null; }
+        if (!p || !p.active) { p = fx.addProperty("ADBE Checkbox Control"); p.name = name; }
+        try { p.property(1).setValue(val ? 1 : 0); } catch(e) {}
+    }
+
+    function setupControls(overlay, opts) {
+        var fx = overlay.property("ADBE Effect Parade");
+        setColor(fx,    "Vertex Color",  opts.anchorColor);
+        setColor(fx,    "Handle Color",  opts.handleColor);
+        setColor(fx,    "Line Color",    opts.lineColor);
+        setSlider(fx,   "Vertex Size",   opts.anchorSize);
+        setSlider(fx,   "Handle Size",   opts.handleSize);
+        setSlider(fx,   "Line Width",    opts.lineWidth);
+        setCheckbox(fx, "Show Vertex",   true);
+        setCheckbox(fx, "Show Handles",  true);
+        setCheckbox(fx, "Show Lines",    true);
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  TRANSFORM LINKS
+    //  Overlay sits at comp origin [0,0] with no rotation/scale.
+    //  All dot positions use sourceLayer.toComp() to convert
+    //  path points from layer space → comp space directly.
+    //  This handles parented layers, animated nulls, any case.
+    // ══════════════════════════════════════════════════════════
+    function linkLayerTr(overlay, source) {
+        var tr = overlay.property("Transform");
+        // Hard-zero the overlay transform so content coords = comp coords
+        tr.property("Anchor Point").setValue([0, 0]);
+        tr.property("Position").setValue([0, 0]);
+        tr.property("Scale").setValue([100, 100]);
+        tr.property("Rotation").setValue(0);
+        // Only link opacity so overlay hides when source hides
+        tr.property("Opacity").expression =
+            LE(source) + ".transform.opacity";
+    }
+
+    function linkGroupTr(destGroup, source, names) {
+        // No group transform link — positioning done via toComp() per dot
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  DOT SHAPE BUILDER
+    // ══════════════════════════════════════════════════════════
+    function buildDot(contents, OE, sizeEff, shapeVal) {
+        var rect = contents.addProperty("ADBE Vector Shape - Rect");
+        rect.property("Size").expression =
+            'var s = ' + OE + '.effect("' + sizeEff + '")("Slider"); [s, s];';
+        rect.property("Roundness").expression =
+            'var s = ' + OE + '.effect("' + sizeEff + '")("Slider"); ' +
+            (shapeVal === 1 ? 's / 2;' : '0;');
+        return rect;
+    }
+
+    function applyDotRotation(group, shapeVal) {
+        if (shapeVal === 2) group.property("Transform").property("Rotation").setValue(45);
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  ANCHOR DOTS
+    // ══════════════════════════════════════════════════════════
+    function addAnchors(dstC, source, overlay, pathGroup, pE, aShapeVal, pathIdx) {
+        var pp = getPathProp(pathGroup);
+        if (!pp) return;
+        var pv; try { pv = pp.value; } catch(e) { return; }
+        if (!pv || !pv.vertices || pv.vertices.length === 0) return;
+
+        var OE = LE(overlay);
+
+        var aSet  = dstC.addProperty("ADBE Vector Group");
+        aSet.name = "_ANCHORS_path" + pathIdx;
+        var aC    = aSet.property("Contents");
+
+        aSet.property("Transform").property("Opacity").expression =
+            OE + '.effect("Show Vertex")("Checkbox") == 1 ? 100 : 0;';
+
+        for (var i=0; i<pv.vertices.length; i++) {
+            var sq  = aC.addProperty("ADBE Vector Group");
+            sq.name = "Anchor_" + i;
+            var sqC = sq.property("Contents");
+
+            buildDot(sqC, OE, "Vertex Size", aShapeVal);
+            sqC.addProperty("ADBE Vector Graphic - Fill")
+               .property("Color").expression =
+                OE + '.effect("Vertex Color")("Color");';
+
+            applyDotRotation(sq, aShapeVal);
+
+            sq.property("Transform").property("Position").expression =
+                'try { ' +
+                'var srcL = ' + LE(source) + '; ' +
+                'var p = ' + pE + '; ' +
+                'srcL.toComp(p.points()[' + i + ']); ' +
+                '} catch(e) { [0,0]; }';
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  HANDLE DOTS + LINES
+    // ══════════════════════════════════════════════════════════
+    function addHandles(dstC, source, overlay, pathGroup, pE, hShapeVal, pathIdx) {
+        var pp = getPathProp(pathGroup);
+        if (!pp) return;
+        var pv; try { pv = pp.value; } catch(e) { return; }
+        if (!pv || !pv.vertices || pv.vertices.length === 0) return;
+
+        var OE = LE(overlay);
+
+        var hSet  = dstC.addProperty("ADBE Vector Group");
+        hSet.name = "_HANDLES_path" + pathIdx;
+        var hC    = hSet.property("Contents");
+
+        hSet.property("Transform").property("Opacity").expression =
+            OE + '.effect("Show Handles")("Checkbox") == 1 ? 100 : 0;';
+
+        for (var i=0; i<pv.vertices.length; i++) {
+
+            // ── Line ──────────────────────────────────────────
+            var lineGrp  = hC.addProperty("ADBE Vector Group");
+            lineGrp.name = "HandleLine_" + i;
+            var lC       = lineGrp.property("Contents");
+
+            lineGrp.property("Transform").property("Opacity").expression =
+                OE + '.effect("Show Lines")("Checkbox") == 1 ? 100 : 0;';
+
+            var linePath = lC.addProperty("ADBE Vector Shape - Group");
+            linePath.property("Path").expression =
+                'try { ' +
+                'var srcL = ' + LE(source) + '; ' +
+                'var p  = ' + pE + '; ' +
+                'var v  = p.points()[' + i + ']; ' +
+                'var it = p.inTangents()[' + i + ']; ' +
+                'var ot = p.outTangents()[' + i + ']; ' +
+                'var iH = srcL.toComp([v[0]+it[0], v[1]+it[1]]); ' +
+                'var vc = srcL.toComp(v); ' +
+                'var oH = srcL.toComp([v[0]+ot[0], v[1]+ot[1]]); ' +
+                'createPath([iH, vc, oH],[],[],false); ' +
+                '} catch(e) { createPath([],[],[],false); }';
+
+            var lineStroke = lC.addProperty("ADBE Vector Graphic - Stroke");
+            lineStroke.property("ADBE Vector Stroke Color").expression =
+                OE + '.effect("Line Color")("Color");';
+            lineStroke.property("ADBE Vector Stroke Width").expression =
+                OE + '.effect("Line Width")("Slider");';
+
+            // ── In handle ─────────────────────────────────────
+            var inGrp  = hC.addProperty("ADBE Vector Group");
+            inGrp.name = "InHandle_" + i;
+            var iC     = inGrp.property("Contents");
+            buildDot(iC, OE, "Handle Size", hShapeVal);
+            iC.addProperty("ADBE Vector Graphic - Fill")
+              .property("Color").expression = OE + '.effect("Handle Color")("Color");';
+            applyDotRotation(inGrp, hShapeVal);
+            inGrp.property("Transform").property("Position").expression =
+                'try { ' +
+                'var srcL = ' + LE(source) + '; ' +
+                'var p = ' + pE + '; ' +
+                'var v = p.points()[' + i + ']; ' +
+                'var t = p.inTangents()[' + i + ']; ' +
+                'srcL.toComp([v[0]+t[0], v[1]+t[1]]); ' +
+                '} catch(e) { [0,0]; }';
+
+            // ── Out handle ────────────────────────────────────
+            var outGrp  = hC.addProperty("ADBE Vector Group");
+            outGrp.name = "OutHandle_" + i;
+            var oC      = outGrp.property("Contents");
+            buildDot(oC, OE, "Handle Size", hShapeVal);
+            oC.addProperty("ADBE Vector Graphic - Fill")
+              .property("Color").expression = OE + '.effect("Handle Color")("Color");';
+            applyDotRotation(outGrp, hShapeVal);
+            outGrp.property("Transform").property("Position").expression =
+                'try { ' +
+                'var srcL = ' + LE(source) + '; ' +
+                'var p = ' + pE + '; ' +
+                'var v = p.points()[' + i + ']; ' +
+                'var t = p.outTangents()[' + i + ']; ' +
+                'srcL.toComp([v[0]+t[0], v[1]+t[1]]); ' +
+                '} catch(e) { [0,0]; }';
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  FLAT PATH COLLECTOR
+    //  Walks all contents recursively, collecting every path
+    //  with its index-based expression string.
+    //  Using indices (.content(1).content(2)) instead of names
+    //  is reliable for all layer types: pen tool, text outlines,
+    //  compound shapes, Create Shapes from Vector Layer, etc.
+    // ══════════════════════════════════════════════════════════
+    function collectPaths(srcC, layerExprBase, indexExprBase, results) {
+        if (!srcC || typeof srcC.numProperties === "undefined") return;
+        for (var i=1; i<=srcC.numProperties; i++) {
+            var prop = srcC.property(i);
+            if (!prop) continue;
+            var idxExpr = indexExprBase + ".content(" + i + ")";
+            if (prop.matchName === "ADBE Vector Group") {
+                collectPaths(prop.property("Contents"), layerExprBase, idxExpr, results);
+            } else if (prop.matchName === "ADBE Vector Shape - Group") {
+                // Verify path has vertices before adding
+                var hasPts = false;
+                try {
+                    var pathProp = getPathProp(prop);
+                    if (pathProp && pathProp.value && pathProp.value.vertices &&
+                        pathProp.value.vertices.length > 0) hasPts = true;
+                } catch(e) {}
+                if (hasPts) {
+                    results.push({
+                        pathGroup : prop,
+                        pathExpr  : layerExprBase + idxExpr + ".path"
+                    });
+                }
+            }
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  MIRROR  (Create)
+    //  Uses flat path collection — works for all shape types
+    // ══════════════════════════════════════════════════════════
+    function mirrorContents(srcC, dstC, source, overlay, names, opts) {
+        var aV = shapeIdx(opts.anchorShape);
+        var hV = shapeIdx(opts.handleShape);
+
+        // Collect ALL paths from source layer with index-based expressions
+        var layerBase = LE(source);
+        var idxBase   = "";
+        var allPaths  = [];
+        collectPaths(srcC, layerBase, idxBase, allPaths);
+
+        // Create one flat group in overlay for all anchors and handles
+        for (var p=0; p<allPaths.length; p++) {
+            addAnchors(dstC, source, overlay, allPaths[p].pathGroup,
+                       allPaths[p].pathExpr, aV, p);
+            addHandles(dstC, source, overlay, allPaths[p].pathGroup,
+                       allPaths[p].pathExpr, hV, p);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  REBUILD  (Update)
+    // ══════════════════════════════════════════════════════════
+    function removeGenerated(container) {
+        if (!container || typeof container.numProperties === "undefined") return;
+        for (var i=container.numProperties; i>=1; i--) {
+            var p = container.property(i);
+            if (!p) continue;
+            if (p.name && (/^_HANDLES_/.test(p.name) || /^_ANCHORS_/.test(p.name))) {
+                p.remove(); continue;
+            }
+            if (p.matchName === "ADBE Vector Group") removeGenerated(p.property("Contents"));
+        }
+    }
+
+    function rebuildInto(srcC, dstC, source, overlay, names, opts) {
+        var aV = shapeIdx(opts.anchorShape);
+        var hV = shapeIdx(opts.handleShape);
+        var layerBase = LE(source);
+        var allPaths  = [];
+        collectPaths(srcC, layerBase, "", allPaths);
+        for (var p=0; p<allPaths.length; p++) {
+            addAnchors(dstC, source, overlay, allPaths[p].pathGroup,
+                       allPaths[p].pathExpr, aV, p);
+            addHandles(dstC, source, overlay, allPaths[p].pathGroup,
+                       allPaths[p].pathExpr, hV, p);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  CREATE  — works on ALL selected shape layers at once
+    // ══════════════════════════════════════════════════════════
+    function createOverlay() {
+        try {
+            var comp = getActiveComp(); if (!comp) return;
+
+            // Snapshot selected layers before any changes
+            // (selection can change as layers are added)
+            var selectedLayers = [];
+            for (var s=0; s<comp.selectedLayers.length; s++) {
+                selectedLayers.push(comp.selectedLayers[s]);
+            }
+
+            if (selectedLayers.length === 0) {
+                alert("Error: Please select one or more Shape Layers."); return;
+            }
+
+            // Filter to shape layers only (exclude existing overlays)
+            var targets = [];
+            for (var t=0; t<selectedLayers.length; t++) {
+                var l = selectedLayers[t];
+                if (isShape(l) && !isOverlay(l)) targets.push(l);
+            }
+
+            if (targets.length === 0) {
+                alert("Error: No Shape Layers found in your selection.\nPlease select Shape Layers (not overlay layers)."); return;
+            }
+
+            var opts = getSettings();
+            app.beginUndoGroup("Create Path Overlay");
+
+            for (var i=0; i<targets.length; i++) {
+                var layer = targets[i];
+
+                // Remove existing overlay for this layer if present
+                try {
+                    var ex = comp.layer(OVERLAY_PREFIX + layer.name);
+                    if (ex) ex.remove();
+                } catch(e) {}
+
+                var ov   = comp.layers.addShape();
+                ov.name  = OVERLAY_PREFIX + layer.name;
+                ov.label = LABEL_OVERLAY;
+                ov.moveBefore(layer);
+
+                setupControls(ov, opts);
+                linkLayerTr(ov, layer);
+                mirrorContents(layer.property("Contents"), ov.property("Contents"),
+                    layer, ov, [], opts);
+            }
+
+            app.endUndoGroup();
+
+            // Feedback
+            var msg = targets.length === 1
+                ? "Overlay created for: " + targets[0].name
+                : "Overlays created for " + targets.length + " layers.";
+            // Silent success — no alert needed, user sees layers in timeline
+
+        } catch(err) {
+            app.endUndoGroup();
+            alert("Create Path error:\n" + err.toString());
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  UPDATE  — works on ALL selected overlay layers at once
+    // ══════════════════════════════════════════════════════════
+    function updateOverlay() {
+        try {
+            var comp = getActiveComp(); if (!comp) return;
+
+            var selectedLayers = [];
+            for (var s=0; s<comp.selectedLayers.length; s++) {
+                selectedLayers.push(comp.selectedLayers[s]);
+            }
+
+            if (selectedLayers.length === 0) {
+                alert("Error: Select one or more ANCHOR_OVERLAY_ layers to update."); return;
+            }
+
+            var targets = [];
+            for (var t=0; t<selectedLayers.length; t++) {
+                if (isOverlay(selectedLayers[t])) targets.push(selectedLayers[t]);
+            }
+
+            if (targets.length === 0) {
+                alert("Error: No overlay layers found in selection.\nPlease select ANCHOR_OVERLAY_ layers."); return;
+            }
+
+            var opts = getSettings();
+            app.beginUndoGroup("Update Path Overlay");
+
+            for (var j=0; j<targets.length; j++) {
+                var ov  = targets[j];
+                var src = getSource(ov);
+                if (!src) {
+                    alert("Warning: Source layer not found for:\n" + ov.name); continue;
+                }
+
+                setupControls(ov, opts);
+                removeGenerated(ov.property("Contents"));
+                rebuildInto(src.property("Contents"), ov.property("Contents"),
+                    src, ov, [], opts);
+            }
+
+            app.endUndoGroup();
+        } catch(err) {
+            app.endUndoGroup();
+            alert("Update Path error:\n" + err.toString());
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  CLEANUP  — removes ALL overlay layers in the comp
+    // ══════════════════════════════════════════════════════════
+    function cleanupOverlays() {
+        try {
+            var comp = getActiveComp(); if (!comp) return;
+
+            // Scan ALL layers in comp for overlay layers
+            var toDelete = [];
+            for (var i=1; i<=comp.numLayers; i++) {
+                var l = comp.layer(i);
+                if (isOverlay(l)) toDelete.push(l);
+            }
+
+            if (toDelete.length === 0) {
+                alert("No overlay layers found in this composition."); return;
+            }
+
+            if (!confirm(
+                "Remove all " + toDelete.length + " overlay path shape layer" +
+                (toDelete.length > 1 ? "s" : "") + " in this comp?\nThis cannot be undone."
+            )) return;
+
+            app.beginUndoGroup("Cleanup All Path Overlays");
+            for (var d=0; d<toDelete.length; d++) toDelete[d].remove();
+            app.endUndoGroup();
+
+        } catch(err) {
+            app.endUndoGroup();
+            alert("Cleanup All Paths error:\n" + err.toString());
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  MENMEN: settings from the tool dialog instead of the ScriptUI panel
+    // ══════════════════════════════════════════════════════════
+    var OPTS = {};
+    function getSettings() {
+        return {
+            anchorSize   : parseFloat(OPTS.anchorSize)  || 20,
+            anchorColor  : hexToRgb(OPTS.anchorColor) || [1, 1, 1],
+            anchorShape  : OPTS.anchorShape || "Square",
+            handleSize   : parseFloat(OPTS.handleSize)  || 6,
+            handleColor  : hexToRgb(OPTS.handleColor) || hexToRgb("#FF4444"),
+            handleShape  : OPTS.handleShape || "Circle",
+            lineColor    : hexToRgb(OPTS.lineColor) || hexToRgb("#FF4444"),
+            lineWidth    : parseFloat(OPTS.lineWidth)   || 1.5
+        };
+    }
+
     T.pathVisualizer = function (o) {
-        var c = MMW.comp(), i, n = 0, made = [];
-        if (o.shift) {
-            for (i = c.numLayers; i >= 1; i--) if (isOverlay(c.layer(i))) { c.layer(i).locked = false; c.layer(i).remove(); n++; }
-            return n ? "Removed " + n + " path overlay(s)." : "No path overlays in this comp.";
-        }
-        var sel = c.selectedLayers, jobs = [];
-        if (!sel.length) MMW.fail("Select shape layers or layers with masks" + (o.alt ? ", or their path overlays." : "."));
-        for (i = 0; i < sel.length; i++) {
-            var S = sel[i];
-            if (isOverlay(S)) {
-                var src = null;
-                for (var k = 1; k <= c.numLayers; k++) if (c.layer(k).name === sourceName(S) && !isOverlay(c.layer(k))) { src = c.layer(k); break; }
-                if (src) jobs.push({ src: src, ov: S });
-            } else jobs.push({ src: S, ov: overlayFor(c, S) });
-        }
-        for (i = 0; i < jobs.length; i++) {
-            var J = jobs[i], L = J.src, ov = J.ov;
-            if (!collectPaths(L).length) continue;
-            if (ov && !o.alt) { ov.locked = false; ov.remove(); ov = null; }  // click: start fresh
-            if (!ov) {
-                ov = c.layers.addShape();
-                ov.name = MMW.uniqueLayerName(c, "◇ " + L.name + " path");
-                ov.comment = TAG + L.name;
-                ov.label = 6;
-                ov.moveBefore(L);
-                var tr = ov.transform;
-                tr.anchorPoint.setValue([0, 0]); tr.position.setValue([0, 0]);
-                tr.opacity.expression = "thisComp.layer(" + q(L.name) + ").transform.opacity;";
-                ov.inPoint = L.inPoint; ov.outPoint = L.outPoint;
-                ov.guideLayer = o.render === false;  // not in the render: visible in the comp only
-            } else ov.locked = false;
-            controls(ov, o);
-            n += build(ov, L, o);
-            made.push(ov);
-        }
-        if (!made.length) MMW.fail("No paths found: select shape layers (with Path shapes) or layers with masks.");
-        for (i = 1; i <= c.numLayers; i++) c.layer(i).selected = false;
-        for (i = 0; i < made.length; i++) made[i].selected = true;
-        return (o.alt ? "Rebuilt " : "Created ") + made.length + " overlay(s), " + n + " path(s). Colors, sizes and switches are in Effect Controls.";
+        OPTS = o || {};
+        MMW.comp();  // makes the comp viewer active, so app.project.activeItem is the comp
+        if (o.shift) { cleanupOverlays(); return "Cleanup All Paths done."; }
+        if (o.alt) { updateOverlay(); return "Update Path done."; }
+        createOverlay();
+        return "Create Path done.";
     };
+
 })();
