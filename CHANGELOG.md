@@ -4,6 +4,17 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.4.18 – Performance
+
+**Changed**
+- **Export GIF**
+  - After Effects renders the **next frame while the panel reads the current one**. In a test with 60 frames, the render phase went from about 21 s to about 15 s.
+  - The status shows the time left.
+  - **Encoding runs in the background** (Web Worker), so the panel keeps responding and **Cancel** works during encoding. Before, a 60-frame export froze the panel for 1.5–6 s.
+  - Frames are handed to the encoder without copying, which saves memory on big exports.
+- **Depth Map / Export GIF**: a rendered frame is picked up sooner. The panel checks quickly at first, then less often.
+- **All panels**: the ONNX Runtime library is no longer loaded at every panel start, only when Depth Map needs it on the panel thread.
+
 ## 0.4.17 – Export GIF never refuses a big comp
 
 **Fixed**

@@ -154,9 +154,35 @@
     }
     var wait = function () { return new Promise(function (r) { setTimeout(r, 0); }); };
 
+    // GIF encoding in a Web Worker built from client/js/gif.js (read through cep.fs); the frames are
+    // transferred, not copied. Without CEP file access or Worker it runs on the panel thread.
+    var encoder = null;
+    var WORKER = 'self.onmessage=function(e){try{var m=e.data,fr=m.frames.map(function(b){return new Uint8ClampedArray(b)});' +
+      'var r=GIF.encode(fr,m.w,m.h,m.o);postMessage({bytes:r.bytes,frames:r.frames,colors:r.colors},[r.bytes.buffer]);}' +
+      'catch(err){postMessage({error:String(err&&err.message||err)})}};';
+    function encodeAsync(frames, w, h, opts) {
+      var src = B.fs.available && B.extPath ? B.fs.read(B.extPath.replace(/\\/g, '/') + '/client/js/gif.js') : (window.__mmwGifSource || null);
+      var worker = null;
+      if (src && typeof Worker !== 'undefined') {
+        try { worker = new Worker(URL.createObjectURL(new Blob(['var window=self;\n', src, '\n;', WORKER], { type: 'text/javascript' }))); } catch (e) { worker = null; }
+      }
+      if (!worker) return wait().then(function () { return window.GIF.encode(frames, w, h, opts); });
+      encoder = worker;
+      return new Promise(function (res, rej) {
+        worker.onmessage = function (e) { worker.terminate(); encoder = null; if (e.data.error) rej(new Error(e.data.error)); else res(e.data); };
+        worker.onerror = function (e) { worker.terminate(); encoder = null; rej(new Error(e.message || 'GIF encoder failed')); };
+        worker.__reject = rej;
+        worker.postMessage({ frames: frames.map(function (f) { return f.buffer; }), w: w, h: h, o: opts }, frames.map(function (f) { return f.buffer; }));
+      });
+    }
+
     go.addEventListener('click', function (e) {
       stop(e);
-      if (busy) { cancel = true; return; }
+      if (busy) {
+        cancel = true;
+        if (encoder) { encoder.terminate(); if (encoder.__reject) encoder.__reject(new Error('Cancelled')); encoder = null; }
+        return;
+      }
       var p = plan(); if (!p) return;
       var name = comp.name.replace(/[\\/:*?"<>|]/g, '_') + '.gif', out = null;
       if (B.fs.available) {
@@ -166,29 +192,37 @@
       }
       busy = true; cancel = false; go.textContent = 'Cancel'; result.innerHTML = '';
       var base = out ? out.replace(/[\\/][^\\/]*$/, '') : (comp.dir || comp.temp);
-      var dir = base ? base + '/MenMenGIF_' + Date.now() : '', frames = [], BATCH = 1, i = 0;
+      var dir = base ? base + '/MenMenGIF_' + Date.now() : '', frames = [], i = 0, asked = {}, t0 = Date.now();
+      // AE renders one frame per call; the next frame is already asked for while the panel reads this one
+      var ask = function (k) {
+        if (k >= p.n || asked[k]) return;
+        asked[k] = ctx.query('gifFrames', { dir: dir, start: p.start, fps: p.fps, from: k, to: k }).then(function (r) {
+          if (!r || !r.ok) throw new Error(r ? r.msg : 'Render failed');
+        });
+        asked[k].catch(function () {});
+      };
       var step = function () {
         if (cancel) throw new Error('Cancelled');
         if (i >= p.n) return null;
-        var to = Math.min(p.n - 1, i + BATCH - 1);
-        progress(i / p.n * 0.7, 'Rendering frames ' + (i + 1) + '–' + (to + 1) + ' / ' + p.n);
-        var job = B.inCEP ? ctx.query('gifFrames', { dir: dir, start: p.start, fps: p.fps, from: i, to: to }).then(function (r) {
-          if (!r || !r.ok) throw new Error(r ? r.msg : 'Render failed');
-          var chain = Promise.resolve();
-          for (var k = i; k <= to; k++) (function (k) {
-            chain = chain.then(function () { return loadFrame(dir + '/f' + ('00000' + k).slice(-5) + '.png', p); }).then(function (px) { frames[k] = new Uint8ClampedArray(px); });
-          })(k);
-          return chain;
-        }) : wait().then(function () { for (var k = i; k <= to; k++) frames[k] = new Uint8ClampedArray(fakeFrame(k, p)); });
-        return job.then(function () { i = to + 1; return step(); });
+        var eta = i ? ', ' + Math.round((Date.now() - t0) / i * (p.n - i) / 1000) + ' s left' : '';
+        progress(i / p.n * 0.7, 'Rendering frame ' + (i + 1) + ' / ' + p.n + eta);
+        var job;
+        if (B.inCEP) {
+          ask(i); ask(i + 1);
+          job = asked[i].then(function () { return loadFrame(dir + '/f' + ('00000' + i).slice(-5) + '.png', p); })
+            .then(function (px) { frames[i] = new Uint8ClampedArray(px); delete asked[i]; });
+        } else job = wait().then(function () { frames[i] = new Uint8ClampedArray(fakeFrame(i, p)); });
+        return job.then(function () { i++; return step(); });
       };
       Promise.resolve().then(step).then(function () {
         progress(0.75, 'Encoding ' + p.n + ' frames…');
         return wait();
       }).then(function () {
-        var t0 = Date.now();
-        var r = window.GIF.encode(frames, p.w, p.h, { colors: o.colors, dither: (o.dither || 0) / 100, tolerance: o.tolerance || 0, fps: p.fps, loop: d.loop ? 0 : 1 });
+        t0 = Date.now();
+        return encodeAsync(frames, p.w, p.h, { colors: o.colors, dither: (o.dither || 0) / 100, tolerance: o.tolerance || 0, fps: p.fps, loop: d.loop ? 0 : 1 });
+      }).then(function (r) {
         frames = null;
+        if (cancel) throw new Error('Cancelled');
         progress(0.95, 'Saving…');
         var msg = kb(r.bytes.length) + ' · ' + p.w + '×' + p.h + ' · ' + p.n + ' frames (' + r.frames + ' written) · ' + r.colors + ' colors · ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s';
         if (out) {

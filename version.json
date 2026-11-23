@@ -1,7 +1,8 @@
 {
-  "version": "0.4.17",
+  "version": "0.4.18",
   "date": "2026-11-23",
   "notes": [
-    "Export GIF: big comps are scaled down to fit in memory instead of disabling the Export button"
+    "Export GIF: next frame renders while the current one is read; encoding in the background (panel stays responsive, Cancel works)",
+    "Faster frame pickup for Export GIF and Depth Map; panels start without loading the AI runtime"
   ]
 }

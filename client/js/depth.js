@@ -125,9 +125,21 @@
       w.postMessage({ type: 'init', wasm: wb.buffer, wasmName: WASM, simd: SIMD, model: mb }, [wb.buffer, mb]);
     });
   }
+  // ONNX Runtime is only loaded into the panel when this fallback needs it (not at every panel start)
+  function loadOrt() {
+    if (window.ort) return Promise.resolve(window.ort);
+    return new Promise(function (res, rej) {
+      var sc = document.createElement('script');
+      sc.src = 'lib/ort.wasm.min.js';
+      sc.onload = function () { if (window.ort) res(window.ort); else rej(new Error('ONNX Runtime did not load')); };
+      sc.onerror = function () { rej(new Error('ONNX Runtime did not load')); };
+      document.head.appendChild(sc);
+    });
+  }
   function mainSession(wasm, model) {  // fallback: same interface, runs on the panel's thread
-    var ort = window.ort;
-    if (!ort) return Promise.reject(new Error('ONNX Runtime did not load'));
+    return loadOrt().then(function (ort) { return mainSessionWith(ort, wasm, model); });
+  }
+  function mainSessionWith(ort, wasm, model) {
     ortOptions(ort, URL.createObjectURL(new Blob([wasm], { type: 'application/wasm' })));
     return ort.InferenceSession.create(model, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' }).then(function (sess) {
       return {
@@ -226,15 +238,16 @@
   // so the panel waits for the file (AE confirms it is complete) and then loads it.
   // complete(path) -> Promise<bool>: AE checks the file ends with IEND (a half-written PNG still decodes)
   function waitPng(path, check, complete) {
-    var t0 = Date.now(), seen = 0;
+    var t0 = Date.now(), seen = 0, polls = 0;
     return new Promise(function (res, rej) {
       (function poll() {
+        polls++;
         try { if (check) check(); } catch (e) { return rej(e); }
         var there = !window.cep || window.cep.fs.stat(path).err === 0;
         var again = function () {
           if (!seen && Date.now() - t0 > 60000) return rej(new Error('After Effects did not render the frame (no file after 60 s): ' + path));
           if (seen && Date.now() - seen > 60000) return rej(new Error('Cannot read the rendered frame: ' + path));
-          setTimeout(poll, there ? 200 : 100);
+          setTimeout(poll, Math.min(200, 25 + polls * 15));  // quick at first, then back off
         };
         if (!there) return again();
         if (!seen) seen = Date.now();
