@@ -4,6 +4,11 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.4.15 – Align icons like After Effects
+
+**Changed**
+- **Align / Distribute icons** in MenMen Tools (and in Align & Distribute) are drawn like After Effects' Align panel: a thin guide line plus solid layer bars, easier to read at small sizes.
+
 ## 0.4.14 – Distribute row
 
 **Added**

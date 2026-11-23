@@ -1,8 +1,7 @@
 {
-  "version": "0.4.14",
+  "version": "0.4.15",
   "date": "2026-11-23",
   "notes": [
-    "MenMen Tools: Distribute row (top / vertical center / bottom / left / horizontal center / right) under Align",
-    "MenMen Tools: Graph Editor without the preset curve row"
+    "Align / Distribute icons drawn like After Effects' Align panel"
   ]
 }

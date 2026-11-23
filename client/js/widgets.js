@@ -627,17 +627,21 @@
   W.sequencerCompact = function (d, ctx) { return W.sequencer(d, ctx); };  // same layout in MenMen Tools
 
   // ---------- Align / Distribute ----------
+  // icons drawn like After Effects' Align panel: a 1 px guide line and solid layer bars
   var AL = {
-    left: '<path d="M2.5 2v12"/><path d="M5 5h8M5 11h5"/>', hcenter: '<path d="M8 2v12"/><path d="M3 5h10M5 11h6"/>', right: '<path d="M13.5 2v12"/><path d="M3 5h8M6 11h5"/>',
-    top: '<path d="M2 2.5h12"/><path d="M5 5v8M11 5v5"/>', vcenter: '<path d="M2 8h12"/><path d="M5 3v10M11 5v6"/>', bottom: '<path d="M2 13.5h12"/><path d="M5 3v8M11 6v5"/>',
+    left: '<g fill="currentColor" stroke="none"><rect x="2" y="2" width="1" height="12"/><rect x="4" y="4" width="4" height="3"/><rect x="4" y="9" width="9" height="3"/></g>',
+    hcenter: '<g fill="currentColor" stroke="none"><rect x="7.5" y="2" width="1" height="12"/><rect x="5" y="4" width="6" height="3"/><rect x="3" y="9" width="10" height="3"/></g>',
+    right: '<g fill="currentColor" stroke="none"><rect x="13" y="2" width="1" height="12"/><rect x="8" y="4" width="4" height="3"/><rect x="3" y="9" width="9" height="3"/></g>',
+    top: '<g fill="currentColor" stroke="none"><rect x="2" y="2" width="12" height="1"/><rect x="4" y="4" width="3" height="9"/><rect x="9" y="4" width="3" height="5"/></g>',
+    vcenter: '<g fill="currentColor" stroke="none"><rect x="2" y="7.5" width="12" height="1"/><rect x="4" y="3" width="3" height="10"/><rect x="9" y="5" width="3" height="6"/></g>',
+    bottom: '<g fill="currentColor" stroke="none"><rect x="2" y="13" width="12" height="1"/><rect x="4" y="3" width="3" height="9"/><rect x="9" y="7" width="3" height="5"/></g>',
     dh: '<path d="M2 3v10M14 3v10"/><path d="M6 5v6M10 5v6"/>', dv: '<path d="M3 2h10M3 14h10"/><path d="M5 6h6M5 10h6"/>',
-    // Distribute Layers (by edge / center): the guide lines go through the edges / centers being spaced
-    dtop: '<path d="M1.5 3h13M1.5 9h13"/><rect x="3.5" y="3" width="3.5" height="4"/><rect x="9" y="9" width="3.5" height="4.5"/>',
-    dvcenter: '<path d="M1.5 5h13M1.5 11h13"/><rect x="3.5" y="3" width="3.5" height="4"/><rect x="9" y="8.5" width="3.5" height="5"/>',
-    dbottom: '<path d="M1.5 7h13M1.5 13.5h13"/><rect x="3.5" y="3" width="3.5" height="4"/><rect x="9" y="9" width="3.5" height="4.5"/>',
-    dleft: '<path d="M3 1.5v13M9 1.5v13"/><rect x="3" y="3.5" width="4" height="3.5"/><rect x="9" y="9" width="4.5" height="3.5"/>',
-    dhcenter: '<path d="M5 1.5v13M11 1.5v13"/><rect x="3" y="3.5" width="4" height="3.5"/><rect x="8.5" y="9" width="5" height="3.5"/>',
-    dright: '<path d="M7 1.5v13M13.5 1.5v13"/><rect x="3" y="3.5" width="4" height="3.5"/><rect x="9" y="9" width="4.5" height="3.5"/>'
+    dtop: '<g fill="currentColor" stroke="none"><rect x="2" y="2" width="12" height="1"/><rect x="5" y="3.5" width="6" height="3"/><rect x="2" y="8" width="12" height="1"/><rect x="3.5" y="9.5" width="9" height="4"/></g>',
+    dvcenter: '<g fill="currentColor" stroke="none"><rect x="2" y="4.5" width="12" height="1"/><rect x="5" y="3" width="6" height="4"/><rect x="2" y="10.5" width="12" height="1"/><rect x="3.5" y="8.5" width="9" height="5"/></g>',
+    dbottom: '<g fill="currentColor" stroke="none"><rect x="5" y="2.5" width="6" height="3"/><rect x="2" y="6.5" width="12" height="1"/><rect x="3.5" y="8.5" width="9" height="4"/><rect x="2" y="13.5" width="12" height="1"/></g>',
+    dleft: '<g fill="currentColor" stroke="none"><rect x="2" y="2" width="1" height="12"/><rect x="3.5" y="3.5" width="4" height="9"/><rect x="9" y="2" width="1" height="12"/><rect x="10.5" y="5" width="3" height="6"/></g>',
+    dhcenter: '<g fill="currentColor" stroke="none"><rect x="4.5" y="2" width="1" height="12"/><rect x="3" y="3.5" width="4" height="9"/><rect x="10.5" y="2" width="1" height="12"/><rect x="9" y="5" width="3" height="6"/></g>',
+    dright: '<g fill="currentColor" stroke="none"><rect x="2.5" y="3.5" width="4" height="9"/><rect x="7" y="2" width="1" height="12"/><rect x="10" y="5" width="3" height="6"/><rect x="13.5" y="2" width="1" height="12"/></g>'
   };
   W.align = function (d, ctx) {
     if (!d.to) d.to = 'selection';
