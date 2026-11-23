@@ -15,7 +15,7 @@
   function quickItems() {
     var it = function (tool, w, h) { var o = { id: uid(), type: 'tool', tool: tool }; if (w) { o.w = w; o.h = h; } return o; };
     return [
-      it('diskCache'), it('easyKeyframes', 2, 2), { id: uid(), type: 'quickAccess' }, it('addRow'), it('alignRow'), it('splitRow'),
+      it('diskCache'), it('easyKeyframes', 2, 2), { id: uid(), type: 'quickAccess' }, it('addRow'), it('alignRow'), it('distributeRow'), it('splitRow'),
       it('easings', 2, 1), it('sequencer', 2, 1), it('moveAnchor', 2, 2), it('addNull'), it('clone'), it('cloneMirror'), it('loop'),
       it('elastic'), it('bounce'), it('fixKeysTime'), it('easingPresets'),
       it('extractShapes'), it('mergeShapes'), it('nullsToPoint'), it('selectPaths'),
@@ -95,6 +95,14 @@
       }
     }
     s.splitAdded = true;
+    if (!s.distAdded) {  // the Distribute row came later: add it under the Align row once
+      if (!tp.items.some(function (x) { return x.tool === 'distributeRow'; })) {
+        var dat = -1;
+        tp.items.forEach(function (x, i) { if (x.tool === 'alignRow') dat = i + 1; });
+        if (dat >= 0) tp.items.splice(dat, 0, { id: uid(), type: 'tool', tool: 'distributeRow' });
+      }
+    }
+    s.distAdded = true;
     if (!s.exportAdded) {  // Export PNG / GIF tiles came later: append them once
       ['exportPng', 'exportGif'].forEach(function (t) {
         if (!tp.items.some(function (x) { return x.tool === t; })) tp.items.push({ id: uid(), type: 'tool', tool: t });

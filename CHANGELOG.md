@@ -4,6 +4,19 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.4.14 – Distribute row
+
+**Added**
+- **MenMen Tools**: a **Distribute** row under the Align row with After Effects' six *Distribute Layers* buttons:
+  - top edges, vertical centers, bottom edges,
+  - left edges, horizontal centers, right edges.
+- Select 3 or more layers: the first and last layer stay in place and the chosen edge or center of the others is spaced evenly between them.
+- Existing MenMen Tools layouts get the row once, right under Align.
+
+**Changed**
+- **MenMen Tools**: the Graph Editor no longer shows the row of preset curves (still in the expanded Graph Editor).
+- **Path Visualizer**: shorter tool description.
+
 ## 0.4.13 – Path Visualizer runs at once
 
 **Changed**

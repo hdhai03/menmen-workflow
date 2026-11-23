@@ -630,7 +630,14 @@
   var AL = {
     left: '<path d="M2.5 2v12"/><path d="M5 5h8M5 11h5"/>', hcenter: '<path d="M8 2v12"/><path d="M3 5h10M5 11h6"/>', right: '<path d="M13.5 2v12"/><path d="M3 5h8M6 11h5"/>',
     top: '<path d="M2 2.5h12"/><path d="M5 5v8M11 5v5"/>', vcenter: '<path d="M2 8h12"/><path d="M5 3v10M11 5v6"/>', bottom: '<path d="M2 13.5h12"/><path d="M5 3v8M11 6v5"/>',
-    dh: '<path d="M2 3v10M14 3v10"/><path d="M6 5v6M10 5v6"/>', dv: '<path d="M3 2h10M3 14h10"/><path d="M5 6h6M5 10h6"/>'
+    dh: '<path d="M2 3v10M14 3v10"/><path d="M6 5v6M10 5v6"/>', dv: '<path d="M3 2h10M3 14h10"/><path d="M5 6h6M5 10h6"/>',
+    // Distribute Layers (by edge / center): the guide lines go through the edges / centers being spaced
+    dtop: '<path d="M1.5 3h13M1.5 9h13"/><rect x="3.5" y="3" width="3.5" height="4"/><rect x="9" y="9" width="3.5" height="4.5"/>',
+    dvcenter: '<path d="M1.5 5h13M1.5 11h13"/><rect x="3.5" y="3" width="3.5" height="4"/><rect x="9" y="8.5" width="3.5" height="5"/>',
+    dbottom: '<path d="M1.5 7h13M1.5 13.5h13"/><rect x="3.5" y="3" width="3.5" height="4"/><rect x="9" y="9" width="3.5" height="4.5"/>',
+    dleft: '<path d="M3 1.5v13M9 1.5v13"/><rect x="3" y="3.5" width="4" height="3.5"/><rect x="9" y="9" width="4.5" height="3.5"/>',
+    dhcenter: '<path d="M5 1.5v13M11 1.5v13"/><rect x="3" y="3.5" width="4" height="3.5"/><rect x="8.5" y="9" width="5" height="3.5"/>',
+    dright: '<path d="M7 1.5v13M13.5 1.5v13"/><rect x="3" y="3.5" width="4" height="3.5"/><rect x="9" y="9" width="4.5" height="3.5"/>'
   };
   W.align = function (d, ctx) {
     if (!d.to) d.to = 'selection';
@@ -825,6 +832,21 @@
       var b = el('button', 'w-btn wr-btn wr-ico', '<svg viewBox="0 0 16 16">' + AL[a[0]] + '</svg>');
       b.title = a[1];
       b.addEventListener('click', function (e) { stop(e); ctx.run('alignLayers', { where: a[0], to: d.to }, e); });
+      root.appendChild(b);
+    });
+    autoCompact(root, 150);
+    return root;
+  };
+
+  // One line: After Effects' Distribute Layers buttons (3+ layers; first and last stay in place)
+  W.distributeRow = function (d, ctx) {
+    var root = el('div', 'w w-row w-distrow');
+    root.appendChild(el('span', 'wr-lbl wr-dist-lbl', 'Distribute:'));
+    [['top', 'dtop', 'Distribute top edges'], ['vcenter', 'dvcenter', 'Distribute vertical centers'], ['bottom', 'dbottom', 'Distribute bottom edges'],
+     ['left', 'dleft', 'Distribute left edges'], ['hcenter', 'dhcenter', 'Distribute horizontal centers'], ['right', 'dright', 'Distribute right edges']].forEach(function (a) {
+      var b = el('button', 'w-btn wr-btn wr-ico', '<svg viewBox="0 0 16 16">' + AL[a[1]] + '</svg>');
+      b.title = a[2] + ' (3+ layers)';
+      b.addEventListener('click', function (e) { stop(e); ctx.run('distributeLayers', { where: a[0] }, e); });
       root.appendChild(b);
     });
     autoCompact(root, 150);

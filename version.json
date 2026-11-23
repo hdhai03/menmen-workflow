@@ -1,7 +1,8 @@
 {
-  "version": "0.4.13",
+  "version": "0.4.14",
   "date": "2026-11-23",
   "notes": [
-    "Path Visualizer: one click, no dialog - adjust everything in Effect Controls; Update Path keeps your settings"
+    "MenMen Tools: Distribute row (top / vertical center / bottom / left / horizontal center / right) under Align",
+    "MenMen Tools: Graph Editor without the preset curve row"
   ]
 }

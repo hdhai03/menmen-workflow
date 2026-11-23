@@ -67,10 +67,24 @@
         return "Aligned " + L.length + " layer(s) " + w + " to " + (useComp ? "comp" : "selection") + ".";
     };
 
-    // o.axis: "h" | "v" - equal gaps between layers (first and last stay in place).
+    // o.where: top | vcenter | bottom | left | hcenter | right - like After Effects' Distribute Layers:
+    // that edge (or center) of each layer is spaced evenly between the first and the last layer.
+    // Without o.where, o.axis "h" | "v" spaces the gaps between the layers evenly.
+    var EDGE = { left: "l", hcenter: "cx", right: "r", top: "t", vcenter: "cy", bottom: "b" };
     T.distributeLayers = function (o) {
         var c = MMW.comp(), L = movable(c);
         if (L.length < 3) MMW.fail("Select at least 3 layers.");
+        if (o.where && EDGE[o.where]) {
+            var k = EDGE[o.where], hz = k === "l" || k === "cx" || k === "r", Bx = boxes(c, L), ord = [], j;
+            for (j = 0; j < L.length; j++) ord.push(j);
+            ord.sort(function (a, b) { return Bx[a][k] - Bx[b][k]; });
+            var v0 = Bx[ord[0]][k], step = (Bx[ord[ord.length - 1]][k] - v0) / (ord.length - 1);
+            for (j = 1; j < ord.length - 1; j++) {
+                var dv = v0 + j * step - Bx[ord[j]][k];
+                moveBy(c, L[ord[j]], hz ? dv : 0, hz ? 0 : dv);
+            }
+            return "Distributed " + L.length + " layers by " + o.where + ".";
+        }
         var B = boxes(c, L), h = o.axis !== "v", idx = [], i;
         for (i = 0; i < L.length; i++) idx.push(i);
         idx.sort(function (a, b) { return h ? B[a].cx - B[b].cx : B[a].cy - B[b].cy; });
