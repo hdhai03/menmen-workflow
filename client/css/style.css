@@ -421,6 +421,7 @@ body.h-sm .toast, body.w-xs .toast { bottom: 8px; }
 .ge-info { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .ge-read { flex: 1 1 auto; justify-content: flex-start; gap: 12px; }
 .ge-bz { flex: 0 1 150px; width: 150px; height: 24px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; padding: 0 6px; }
+.wq-easyKeyframes .ge-presets { display: none; }  /* MenMen Tools: no preset curve row */
 .ge-presets { display: flex; gap: 3px; overflow-x: auto; padding-bottom: 2px; }
 .ge-presets::-webkit-scrollbar { height: 5px; }
 .ge-presets::-webkit-scrollbar-thumb { background: var(--surface-3); }
