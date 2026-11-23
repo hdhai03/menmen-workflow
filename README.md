@@ -2,7 +2,7 @@
 
 An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets and expressions together in **one main panel plus dockable sub panels** to speed up motion design work.
 
-## Features (v0.5.2)
+## Features (v0.5.3)
 
 What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 
@@ -48,7 +48,7 @@ What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 
 ### Rigs
 - **Area Effector** (Area Opacity / Scale / Position / Rotation / Color): an `Area Effector` null with Radius, Falloff, Invert Field and Show Field controls plus a dashed guide; layers react to their distance from it. Alt = new controller, Shift = remove the effect.
-- **Area Text Effector**: the letters of the selected text layers animate as an effector passes over them and settle again behind it (Text Offset X/Y, Scale, Rotation, Opacity, Blur, Tracking, Color sliders on the effector, plus Text Weight / Width / Slant on variable fonts (AE 2024+); Radius / Falloff / Text Strength / Invert Field). Select another layer with the text (a cursor, a shape) to make it the effector; Alt = stack a new effector, Shift = remove. Letter positions are measured by the tool: click again after editing the text.
+- **Area Text Effector**: the letters of the selected text layers animate as an effector passes over them and settle again behind it (Text Offset X/Y, Scale, Rotation, Opacity, Blur, Tracking, Color sliders on the effector, plus Text Weight / Width / Slant / Italic on variable fonts (AE 2024+); Radius / Falloff / Text Strength / Invert Field). Select another layer with the text (a cursor, a shape) to make it the effector; Alt = stack a new effector, Shift = remove. Letter positions are measured by the tool: click again after editing the text.
 - **Path Visualizer** (Shapes, Path Visualizer V2.1 by Sheikh Sohel): live `PATH_OVERLAY_` layer showing the vertices, handles and handle lines of the selected shape layers; colors, sizes, Vertex / Handle Shape menus and Show switches in Effect Controls. One click creates it (no dialog), Alt = Update Path (keeps Effect Controls settings) (select overlays), Shift = Cleanup All Paths.
 - **Spot Blur** (spot.Blur setup): `spot.Blur` adjustment layer with **Compound Blur** reading `blur.Map`: a white solid with one feathered round mask per spot (white = sharp) whose masks follow the guides by expression. Compound Blur has to see the masks, which needs its *Effects & Masks* option - scripts cannot set it, so `blur.Map` is a precomp (its *Source* includes the masks), or a masked solid in the same comp when `presets/Compound Blur (Effects & Masks).ffx` exists (see presets/README.md). Drag the `spot.Blur_01…` guide circles; `spot.Blur_Controller` holds Blur Amount, Spot Size, Feather, Invert and Show Spot Guides. Helper layers are shy and the comp hides shy layers.
 - **Audio to Precomps** (Universal Audio style): the selected audio layers are copied into every precomp inside the current comp, at any depth, as **locked guide layers with audio on** (`♪ <name>`), shifted to play in sync. You hear the music while working inside a precomp; guide layers are never rendered from a parent comp, so nothing doubles. Run it again to replace the copies (new precomps get them too). Alt = also every other comp in the project; Shift = remove all shared audio. Precomps with time remap/stretch are skipped.

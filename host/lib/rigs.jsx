@@ -264,7 +264,7 @@
     }
 
     // variable font axes the effector can drive: tag, slider name, which end is the default, name pattern
-    var VF_AXES = [["wght", "Text Weight", "max", /wght|weight/i], ["wdth", "Text Width", "max", /wdth|width/i], ["slnt", "Text Slant", "min", /slnt|slant/i]];
+    var VF_AXES = [["wght", "Text Weight", "max", /wght|weight/i], ["wdth", "Text Width", "max", /wdth|width/i], ["slnt", "Text Slant", "min", /slnt|slant/i], ["ital", "Text Italic", "max", /ital/i]];
     // the text's variable font axes {tag: {min, max}} - AE 2024+ (FontObject.designAxesData), {} otherwise
     function fontAxes(L) {
         var out = {};

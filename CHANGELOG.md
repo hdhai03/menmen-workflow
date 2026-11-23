@@ -4,6 +4,14 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.5.3 – Area Text Effector: italic
+
+**Added**
+- **Area Text Effector** on a variable font with an **Italic** axis (`ital`) gets a **Text Italic** slider.
+  - Its default is the font's italic end, usually 1; 0 is upright.
+  - The letters the effector passes over turn italic.
+- Effectors made with an older version get it when you click the tool again on the text.
+
 ## 0.5.2 – Area Text Effector: width and slant
 
 **Added**

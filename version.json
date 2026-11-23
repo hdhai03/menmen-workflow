@@ -1,7 +1,7 @@
 {
-  "version": "0.5.2",
+  "version": "0.5.3",
   "date": "2026-11-23",
   "notes": [
-    "Area Text Effector: Text Width and Text Slant sliders for variable fonts (next to Text Weight)"
+    "Area Text Effector: Text Italic slider for variable fonts with an ital axis"
   ]
 }
