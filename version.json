@@ -1,7 +1,7 @@
 {
-  "version": "0.6.1",
+  "version": "0.6.2",
   "date": "2026-11-23",
   "notes": [
-    "Update deletes files the new version no longer has (your library/ scripts and presets/ are kept)"
+    "Field Shape: only Circle and Ring (controllers and layers from 0.6.0 are converted automatically)"
   ]
 }

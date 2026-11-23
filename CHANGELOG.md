@@ -4,6 +4,15 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.6.2 – Field Shape: Circle and Ring only
+
+**Changed**
+- **Field Shape** keeps only **Circle** and **Ring**; Ellipse, Box and Linear Band are removed, and so is the *Field Aspect %* slider.
+- **Controllers from 0.6.0** are converted the next time an Area tool uses them:
+  - the menu is rebuilt, and a controller set to Ring stays Ring (any other shape becomes Circle);
+  - the expressions on the layers it drives are updated, so they keep working;
+  - the field guide is drawn again.
+
 ## 0.6.1 – Update removes old files
 
 **Changed**

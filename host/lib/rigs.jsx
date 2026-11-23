@@ -27,19 +27,15 @@
     // Alt: new controller. Shift: remove the effect of this mode from the selected layers.
     var AREA_TAG = "// MenMen Area Effector";
 
-    // Field Shape (dropdown on the controller): 1 Circle, 2 Ellipse, 3 Box, 4 Linear Band, 5 Ring.
+    // Field Shape (dropdown on the controller): 1 Circle, 2 Ring.
     // The field lives in the controller's own space, so rotating / scaling the controller turns / stretches it.
     // fieldDist(v) -> expression code that sets dd = distance outside the full-effect area (<= 0 inside),
     // from v = the point in controller space, r = Radius.
-    var FIELD_SHAPES = ["Circle", "Ellipse", "Box", "Linear Band", "Ring"];
+    var FIELD_SHAPES = ["Circle", "Ring"];
     function fieldDist() {
-        return "var m=C.effect(\"Field Shape\")(1), a=Math.max(0.01,C.effect(\"Field Aspect %\")(1)/100), rw=Math.max(0,C.effect(\"Ring Width\")(1)), dd;\n" +
+        return "var m=C.effect(\"Field Shape\")(1), rw=Math.max(0,C.effect(\"Ring Width\")(1));\n" +
             "var ln=Math.sqrt(v[0]*v[0]+v[1]*v[1]);\n" +
-            "if(m==2){var k=Math.sqrt(Math.pow(v[0]/Math.max(r,0.01),2)+Math.pow(v[1]/Math.max(r*a,0.01),2));dd=k>0?ln*(1-1/k):-Math.min(r,r*a);}\n" +
-            "else if(m==3){var qx=Math.abs(v[0])-r,qy=Math.abs(v[1])-r*a;dd=Math.sqrt(Math.pow(Math.max(qx,0),2)+Math.pow(Math.max(qy,0),2))+Math.min(Math.max(qx,qy),0);}\n" +
-            "else if(m==4){dd=Math.abs(v[1])-r;}\n" +
-            "else if(m==5){dd=Math.abs(ln-r)-rw/2;}\n" +
-            "else{dd=ln-r;}\n";
+            "var dd=m==2?Math.abs(ln-r)-rw/2:ln-r;\n";
     }
     // Dropdown Menu Control (AE 17+): setPropertyParameters rebuilds the effect and resets its name,
     // so it is found again by index and renamed. idx is 1-based.
@@ -54,11 +50,39 @@
         try { e.property(1).setValue(idx || 1); } catch (x2) {}
         return layer.property("ADBE Effect Parade").property(name);
     }
+    // expressions written by 0.6.0 (5 shapes) are rewritten to the 2-shape code when its controller is updated
+    var OLD_DIST = "var m=C.effect(\"Field Shape\")(1), a=Math.max(0.01,C.effect(\"Field Aspect %\")(1)/100), rw=Math.max(0,C.effect(\"Ring Width\")(1)), dd;\nvar ln=Math.sqrt(v[0]*v[0]+v[1]*v[1]);\nif(m==2){var k=Math.sqrt(Math.pow(v[0]/Math.max(r,0.01),2)+Math.pow(v[1]/Math.max(r*a,0.01),2));dd=k>0?ln*(1-1/k):-Math.min(r,r*a);}\nelse if(m==3){var qx=Math.abs(v[0])-r,qy=Math.abs(v[1])-r*a;dd=Math.sqrt(Math.pow(Math.max(qx,0),2)+Math.pow(Math.max(qy,0),2))+Math.min(Math.max(qx,qy),0);}\nelse if(m==4){dd=Math.abs(v[1])-r;}\nelse if(m==5){dd=Math.abs(ln-r)-rw/2;}\nelse{dd=ln-r;}\n";
+    function upgradeExpressions(comp) {
+        var n = 0, NEW_DIST = fieldDist();
+        function walk(g) {
+            for (var i = 1; i <= g.numProperties; i++) {
+                var p = g.property(i);
+                if (p.propertyType === PropertyType.PROPERTY) {
+                    try { if (p.canSetExpression && p.expression.indexOf("Field Aspect %") >= 0 && p.expression.indexOf(OLD_DIST) >= 0) { p.expression = p.expression.split(OLD_DIST).join(NEW_DIST); n++; } } catch (e) {}
+                } else walk(p);
+            }
+        }
+        for (var l = 1; l <= comp.numLayers; l++) {
+            var L = comp.layer(l), lk = L.locked;
+            L.locked = false;
+            try { walk(L); } catch (e2) {}
+            L.locked = lk;
+        }
+        return n;
+    }
     function fieldFx(ctrl) {
         ensureFx(ctrl, "ADBE Slider Control", "Radius", 200);
         ensureFx(ctrl, "ADBE Slider Control", "Falloff", 150);
+        // 0.6.0 had a 5-shape menu + Field Aspect %: replace it, keeping Ring (was item 5)
+        var parade = ctrl.property("ADBE Effect Parade"), aspect = parade.property("Field Aspect %");
+        if (aspect) {
+            var oldMenu = parade.property("Field Shape"), wasRing = false;
+            if (oldMenu) { try { wasRing = oldMenu.property(1).value === 5; } catch (e0) {} oldMenu.remove(); }
+            ctrl.property("ADBE Effect Parade").property("Field Aspect %").remove();
+            ensureDropdown(ctrl, "Field Shape", FIELD_SHAPES, wasRing ? 2 : 1);
+            upgradeExpressions(ctrl.containingComp);
+        }
         ensureDropdown(ctrl, "Field Shape", FIELD_SHAPES, 1);
-        ensureFx(ctrl, "ADBE Slider Control", "Field Aspect %", 50);
         ensureFx(ctrl, "ADBE Slider Control", "Ring Width", 60);
         ensureFx(ctrl, "ADBE Checkbox Control", "Invert Field", 0);
         ensureFx(ctrl, "ADBE Checkbox Control", "Show Field", 1);
@@ -77,19 +101,16 @@
             "if(C.effect(\"Invert Field\")(1)==1) f=1-f;\n";
     }
 
-    var GUIDE_TAG = "MenMen Field 2";
+    var GUIDE_TAG = "MenMen Field 3";  // guides with another tag are drawn again
     // path of one guide edge: level 0 = edge of the full-effect area, 1 = end of the falloff; side A / B
     // (rings and bands have two edges per level)
     function guidePathExpr(ctrlName, level, sideB) {
         return "var C=thisComp.layer(" + q(ctrlName) + "), m=C.effect(\"Field Shape\")(1);\n" +
             "var r=Math.max(0,C.effect(\"Radius\")(1)), e=" + (level ? "Math.max(0,C.effect(\"Falloff\")(1))" : "0") + ";\n" +
-            "var a=Math.max(0.01,C.effect(\"Field Aspect %\")(1)/100), rw=Math.max(0,C.effect(\"Ring Width\")(1)), B=" + (sideB ? "true" : "false") + ";\n" +
+            "var rw=Math.max(0,C.effect(\"Ring Width\")(1)), B=" + (sideB ? "true" : "false") + ";\n" +
             "function ell(rx,ry){var k=0.5523;rx=Math.max(0.01,rx);ry=Math.max(0.01,ry);return createPath([[0,-ry],[rx,0],[0,ry],[-rx,0]],[[-rx*k,0],[0,-ry*k],[rx*k,0],[0,ry*k]],[[rx*k,0],[0,ry*k],[-rx*k,0],[0,-ry*k]],true);}\n" +
             "function none(){return createPath([[0,0],[0,0]],[],[],false);}\n" +
-            "if(m==2){B?none():ell(r+e,r*a+e);}\n" +
-            "else if(m==3){if(B){none()}else{var w=r+e,h=r*a+e;createPath([[-w,-h],[w,-h],[w,h],[-w,h]],[],[],true);}}\n" +
-            "else if(m==4){var y=(r+e)*(B?1:-1);createPath([[-4000,y],[4000,y]],[],[],false);}\n" +
-            "else if(m==5){B?ell(Math.max(0.01,r-rw/2-e),Math.max(0.01,r-rw/2-e)):ell(r+rw/2+e,r+rw/2+e);}\n" +
+            "if(m==2){B?ell(Math.max(0.01,r-rw/2-e),Math.max(0.01,r-rw/2-e)):ell(r+rw/2+e,r+rw/2+e);}\n" +
             "else{B?none():ell(r+e,r+e);}";
     }
     function areaFieldGuide(c, ctrl) {
