@@ -4,6 +4,13 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.4.11 – Path Visualizer: shape menus
+
+**Added**
+- **Path Visualizer**: Effect Controls of a `PATH_OVERLAY_` layer have **Vertex Shape** and **Handle Shape** menus (Square / Circle / Diamond). Changing them reshapes the dots right away, with no rebuild.
+  - The shapes chosen in the tool dialog become the menus' starting values.
+  - Overlays made with an older version get the menus after **Alt (Update Path)**.
+
 ## 0.4.10 – Path Visualizer: original V2.1 code
 
 **Changed**

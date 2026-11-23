@@ -33,7 +33,8 @@
 // ============================================================
 //
 //  ── MenMen Workflow integration ─────────────────────────────
-//  The code below is the original V2.1 code, unchanged. Only the ScriptUI panel is replaced:
+//  The code below is the original V2.1 code. Changes: the ScriptUI panel is replaced, and
+//  "Vertex Shape" / "Handle Shape" dropdowns pick the dot shapes live (marked MenMen).
 //  the settings come from the MenMen tool dialog (getSettings), and the three buttons are
 //  the tool's click modes: click = Create Path, Alt = Update Path, Shift = Cleanup All Paths.
 // ============================================================
@@ -142,6 +143,19 @@
         try { p.property(1).setValue(val ? 1 : 0); } catch(e) {}
     }
 
+    // Dropdown Menu Control (AE 17+): items are set with setPropertyParameters, which rebuilds the
+    // effect, so it is looked up again by name afterwards. idx is 1-based.
+    function setDropdown(fx, name, items, idx) {
+        var p; try { p = fx.property(name); } catch(e) { p = null; }
+        if (!p || !p.active) {
+            p = fx.addProperty("ADBE Dropdown Control");
+            p.name = name;
+            try { p.property(1).setPropertyParameters(items); } catch(e) {}
+            p = fx.property(name);
+        }
+        try { p.property(1).setValue(idx); } catch(e) {}
+    }
+
     function setupControls(overlay, opts) {
         var fx = overlay.property("ADBE Effect Parade");
         setColor(fx,    "Vertex Color",  opts.anchorColor);
@@ -150,6 +164,9 @@
         setSlider(fx,   "Vertex Size",   opts.anchorSize);
         setSlider(fx,   "Handle Size",   opts.handleSize);
         setSlider(fx,   "Line Width",    opts.lineWidth);
+        // MenMen: dot shapes can be changed later from Effect Controls
+        setDropdown(fx, "Vertex Shape",  ["Square", "Circle", "Diamond"], shapeIdx(opts.anchorShape) + 1);
+        setDropdown(fx, "Handle Shape",  ["Square", "Circle", "Diamond"], shapeIdx(opts.handleShape) + 1);
         setCheckbox(fx, "Show Vertex",   true);
         setCheckbox(fx, "Show Handles",  true);
         setCheckbox(fx, "Show Lines",    true);
@@ -185,14 +202,17 @@
         var rect = contents.addProperty("ADBE Vector Shape - Rect");
         rect.property("Size").expression =
             'var s = ' + OE + '.effect("' + sizeEff + '")("Slider"); [s, s];';
+        // MenMen: the shape follows the "Vertex Shape" / "Handle Shape" menu (1 Square, 2 Circle, 3 Diamond)
+        var shapeEff = sizeEff.replace("Size", "Shape");
         rect.property("Roundness").expression =
             'var s = ' + OE + '.effect("' + sizeEff + '")("Slider"); ' +
-            (shapeVal === 1 ? 's / 2;' : '0;');
+            'var m = ' + OE + '.effect("' + shapeEff + '")(1); m == 2 ? s / 2 : 0;';
         return rect;
     }
 
-    function applyDotRotation(group, shapeVal) {
-        if (shapeVal === 2) group.property("Transform").property("Rotation").setValue(45);
+    function applyDotRotation(group, shapeVal, OE, sizeEff) {
+        group.property("Transform").property("Rotation").expression =
+            OE + '.effect("' + sizeEff.replace("Size", "Shape") + '")(1) == 3 ? 45 : 0;';
     }
 
     // ══════════════════════════════════════════════════════════
@@ -223,7 +243,7 @@
                .property("Color").expression =
                 OE + '.effect("Vertex Color")("Color");';
 
-            applyDotRotation(sq, aShapeVal);
+            applyDotRotation(sq, aShapeVal, OE, "Vertex Size");
 
             sq.property("Transform").property("Position").expression =
                 'try { ' +
@@ -289,7 +309,7 @@
             buildDot(iC, OE, "Handle Size", hShapeVal);
             iC.addProperty("ADBE Vector Graphic - Fill")
               .property("Color").expression = OE + '.effect("Handle Color")("Color");';
-            applyDotRotation(inGrp, hShapeVal);
+            applyDotRotation(inGrp, hShapeVal, OE, "Handle Size");
             inGrp.property("Transform").property("Position").expression =
                 'try { ' +
                 'var srcL = ' + LE(source) + '; ' +
@@ -306,7 +326,7 @@
             buildDot(oC, OE, "Handle Size", hShapeVal);
             oC.addProperty("ADBE Vector Graphic - Fill")
               .property("Color").expression = OE + '.effect("Handle Color")("Color");';
-            applyDotRotation(outGrp, hShapeVal);
+            applyDotRotation(outGrp, hShapeVal, OE, "Handle Size");
             outGrp.property("Transform").property("Position").expression =
                 'try { ' +
                 'var srcL = ' + LE(source) + '; ' +

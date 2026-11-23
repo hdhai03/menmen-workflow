@@ -1,7 +1,7 @@
 {
-  "version": "0.4.10",
+  "version": "0.4.11",
   "date": "2026-11-23",
   "notes": [
-    "Path Visualizer: runs the original V2.1 code (Create / Alt: Update / Shift: Cleanup All Paths)"
+    "Path Visualizer: Vertex Shape / Handle Shape menus in Effect Controls (Square, Circle, Diamond) - older overlays: Alt (Update Path)"
   ]
 }
