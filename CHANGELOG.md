@@ -4,6 +4,15 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.6.1 – Update removes old files
+
+**Changed**
+- **Update** now mirrors the extension folder: files the new version no longer has are deleted, so nothing piles up over many updates.
+  - Kept: `library/` (your scripts) and `presets/` (your presets). They only receive the new version's files; nothing in them is deleted.
+  - Settings and downloaded models live outside the extension folder and are not affected.
+- Tools: macOS uses `rsync --delete` with those folders protected. Windows uses `robocopy /MIR`, plus a plain copy into those folders.
+- A git checkout still updates with `git pull`.
+
 ## 0.6.0 – Field Shape for the whole Area Effector set
 
 **Added**

@@ -1,8 +1,10 @@
 /* update.js - checks GitHub for a newer MenMen Workflow and installs it in place.
  * The version lives in version.json at the repo root (bump it to publish an update).
  * Install: the main branch zip is downloaded and copied over the extension folder with the system's own
- * tools (curl + ditto on macOS, PowerShell + robocopy on Windows). Copying only adds / replaces files, so
- * scripts the user put in library/ (and settings in userData, scripts in Documents) are never touched.
+ * tools (curl + ditto + rsync on macOS, PowerShell + robocopy on Windows). The extension folder is mirrored:
+ * files that are no longer part of the plugin are deleted, except what the user adds - library/ (their
+ * scripts) and presets/ (their .ffx presets) only get new files, nothing there is deleted. Settings live in
+ * userData and scripts in Documents, outside the extension folder.
  * A git checkout is updated with `git pull --ff-only` instead. */
 (function () {
   var B = window.Bridge;
@@ -84,7 +86,11 @@
           "Invoke-WebRequest -UseBasicParsing -Uri " + ps(ZIP_URL) + " -OutFile (Join-Path $t 'u.zip');" +
           "Expand-Archive -LiteralPath (Join-Path $t 'u.zip') -DestinationPath (Join-Path $t 'x');" +
           "$s=(Get-ChildItem -LiteralPath (Join-Path $t 'x') -Directory|Select-Object -First 1).FullName;" +
-          "robocopy $s " + ps(dest) + " /E /NFL /NDL /NJH /NJS /NP /R:2 /W:1|Out-Null;$rc=$LASTEXITCODE;" +
+          // 1) mirror everything except the user folders (/MIR deletes files the new version no longer has),
+          // 2) add the new version's files to library / presets without deleting anything there
+          "$o=@('/NFL','/NDL','/NJH','/NJS','/NP','/R:2','/W:1');" +
+          "robocopy $s " + ps(dest) + " /MIR /XD library presets .git @o|Out-Null;$rc=$LASTEXITCODE;" +
+          "foreach($k in 'library','presets'){$f=Join-Path $s $k;if(Test-Path $f){robocopy $f (Join-Path " + ps(dest) + " $k) /E @o|Out-Null;if($LASTEXITCODE -ge 8){$rc=$LASTEXITCODE}}};" +
           "Remove-Item -LiteralPath $t -Recurse -Force -ErrorAction SilentlyContinue;if($rc -ge 8){throw ('Copy failed ('+$rc+')')};'MMW_OK'";
       return ['C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script];
     }
@@ -94,7 +100,9 @@
       : 'set -e; t=$(/usr/bin/mktemp -d "${TMPDIR:-/tmp}/MenMenUpdate.XXXXXX"); ' +
         '/usr/bin/curl -fsSL --retry 2 -o "$t/u.zip" ' + sh(ZIP_URL) + '; ' +
         '/usr/bin/ditto -x -k "$t/u.zip" "$t/x"; s=$(ls -d "$t"/x/*/ | head -n 1); ' +
-        '/usr/bin/ditto "$s" ' + sh(dest) + '; /bin/rm -rf "$t"; echo MMW_OK';
+        // mirror: delete what the new version no longer has, but never touch library/ or presets/ files
+        '/usr/bin/rsync -a --delete --filter="P /library/***" --filter="P /presets/***" --filter="P /.git/***" "$s" ' + sh(dest + '/') + '; ' +
+        '/bin/rm -rf "$t"; echo MMW_OK';
     return ['/bin/sh', '-c', s2];
   }
   // Downloads and installs. Resolves with the new version; rejects with a readable message.
