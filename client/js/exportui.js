@@ -96,15 +96,21 @@
       if (!comp) return null;
       var start = d.range === 'work' ? comp.workStart : 0, dur = d.range === 'work' ? comp.workDuration : comp.duration;
       var fps = Math.max(1, Math.min(60, o.fps || 15)), n = Math.max(1, Math.floor(dur * fps + 1e-6));
-      var w = o.width && o.width < comp.w ? o.width : comp.w, h = Math.max(1, Math.round(comp.h * w / comp.w));
-      return { start: start, fps: fps, n: n, w: w, h: h };
+      var w = o.width && o.width < comp.w ? o.width : comp.w, h = Math.max(1, Math.round(comp.h * w / comp.w)), capped = false;
+      // too many pixels to keep in memory: scale the GIF down until it fits (instead of refusing to export)
+      if (n * w * h > MAX_PIXELS) {
+        w = Math.max(16, Math.floor(Math.sqrt(MAX_PIXELS / n * comp.w / comp.h)));
+        h = Math.max(1, Math.round(comp.h * w / comp.w));
+        capped = true;
+      }
+      return { start: start, fps: fps, n: n, w: w, h: h, capped: capped };
     }
     function estimate() {
       var p = plan();
       if (!p) { est.textContent = 'Reading the active comp…'; return; }
       est.textContent = comp.name + ' · ' + p.n + ' frames · ' + p.w + '×' + p.h + ' · ' + (p.n / p.fps).toFixed(2) + ' s';
-      go.disabled = p.n * p.w * p.h > MAX_PIXELS;
-      if (go.disabled) est.textContent += ' – too large: lower the width, FPS or range';
+      go.disabled = false;
+      if (p.capped) est.textContent += ' (scaled down to fit in memory)';
     }
     function progress(f, text) { bar.firstChild.style.width = Math.round(f * 100) + '%'; status.textContent = text; }
     info(ctx).then(function (c) { comp = c; estimate(); }).catch(function (e) { est.textContent = e.message; });

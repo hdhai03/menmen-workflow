@@ -1,8 +1,7 @@
 {
-  "version": "0.4.16",
+  "version": "0.4.17",
   "date": "2026-11-23",
   "notes": [
-    "Export GIF works again on newer After Effects (frames are read once AE has written them)",
-    "Depth Map: rendered frames and image files are read correctly again"
+    "Export GIF: big comps are scaled down to fit in memory instead of disabling the Export button"
   ]
 }

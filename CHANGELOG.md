@@ -4,6 +4,13 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.4.17 – Export GIF never refuses a big comp
+
+**Fixed**
+- **Export GIF**: a long or large export (for example a 4K comp at *Comp size*) disabled the Export button, and clicking it did nothing.
+  - The GIF is now scaled down just enough to fit in memory, and the summary line says *(scaled down to fit in memory)*.
+  - Example: 60 frames of a 3840×2160 comp export at 2108×1186.
+
 ## 0.4.16 – Export GIF works again
 
 **Fixed**
