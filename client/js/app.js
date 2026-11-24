@@ -881,7 +881,8 @@
     go.addEventListener('click', function () {
       go.disabled = later.disabled = true; go.textContent = 'Updating…';
       status.classList.remove('up-err');
-      status.textContent = r.git ? 'Running git pull…' : 'Downloading from GitHub and installing…';
+      status.textContent = r.git ? 'Running git pull…' : 'Downloading from GitHub and installing…' +
+        (Updater.needsAdmin && Updater.needsAdmin() ? ' Windows asks for administrator permission (installed for all users): click Yes.' : '');
       Updater.install().then(function (res) {
         status.textContent = 'Updated to ' + res.version + '. Reloading the panels… If something looks off, restart After Effects.';
         go.textContent = 'Done';

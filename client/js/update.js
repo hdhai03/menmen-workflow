@@ -74,7 +74,7 @@
   }
   function sh(s) { return "'" + String(s).replace(/'/g, "'\\''") + "'"; }
   function ps(s) { return "'" + String(s).replace(/'/g, "''") + "'"; }
-  function command(git) {
+  function command(git, elevate) {
     var dest = WIN ? ROOT.replace(/\//g, '\\') : ROOT;
     if (WIN) {
       var script = git
@@ -92,6 +92,18 @@
           "robocopy $s " + ps(dest) + " /MIR /XD library presets .git @o|Out-Null;$rc=$LASTEXITCODE;" +
           "foreach($k in 'library','presets'){$f=Join-Path $s $k;if(Test-Path $f){robocopy $f (Join-Path " + ps(dest) + " $k) /E @o|Out-Null;if($LASTEXITCODE -ge 8){$rc=$LASTEXITCODE}}};" +
           "Remove-Item -LiteralPath $t -Recurse -Force -ErrorAction SilentlyContinue;if($rc -ge 8){throw ('Copy failed ('+$rc+')')};'MMW_OK'";
+      if (elevate) {
+        // Installed for all users (Program Files): the same update runs in an elevated PowerShell - Windows
+        // shows its administrator (UAC) prompt. The elevated script writes its result to a file we read back.
+        var inner = "param($r);try{$x=& {" + script + "};Set-Content -LiteralPath $r -Value ($x -join ' ')}catch{Set-Content -LiteralPath $r -Value ('ERR '+$_.Exception.Message)}";
+        script = "$ErrorActionPreference='Stop';$id=[guid]::NewGuid().ToString('N');" +
+          "$f=Join-Path $env:TEMP ('MenMenUpdate_'+$id+'.ps1');$r=Join-Path $env:TEMP ('MenMenUpdate_'+$id+'.txt');" +
+          "Set-Content -LiteralPath $f -Value " + ps(inner) + " -Encoding UTF8;" +
+          "try{Start-Process -FilePath 'powershell.exe' -Verb RunAs -Wait -WindowStyle Hidden -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',([char]34+$f+[char]34),([char]34+$r+[char]34))}" +  // [char]34 = a double quote (paths may contain spaces)
+          "catch{Remove-Item -LiteralPath $f -ErrorAction SilentlyContinue;throw 'Administrator permission was not given'};" +
+          "$o=Get-Content -LiteralPath $r -Raw -ErrorAction SilentlyContinue;Remove-Item -LiteralPath $f,$r -ErrorAction SilentlyContinue;" +
+          "if($o -match 'MMW_OK'){'MMW_OK'}else{throw ('Update failed: '+$o)}";
+      }
       return ['C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script];
     }
     var s2 = git
@@ -110,10 +122,12 @@
     var P = window.cep && window.cep.process;
     if (!P || !P.createProcess || !ROOT) return Promise.reject(new Error('Updating only works inside After Effects.'));
     var git = isGit();
-    if (!writable()) return Promise.reject(new Error('The extension folder is read-only (installed for all users): ' + ROOT + '. Reinstall it in your user extensions folder, or update it by hand.'));
+    // read-only folder (installed for all users): on Windows ask for administrator permission (UAC)
+    var elevate = !writable();
+    if (elevate && (!WIN || git)) return Promise.reject(new Error('The extension folder is read-only (installed for all users): ' + ROOT + '. Reinstall it in your user extensions folder, or update it by hand.'));
     return new Promise(function (res, rej) {
       var r, out = '', err = '';
-      try { r = P.createProcess.apply(P, command(git)); } catch (e) { return rej(new Error('Cannot start the updater: ' + e.message)); }
+      try { r = P.createProcess.apply(P, command(git, elevate)); } catch (e) { return rej(new Error('Cannot start the updater: ' + e.message)); }
       if (!r || r.err !== 0) return rej(new Error('Cannot start the updater'));
       P.stdout(r.data, function (c) { out += c; });
       if (P.stderr) P.stderr(r.data, function (c) { err += c; });
@@ -130,5 +144,8 @@
     });
   }
 
-  window.Updater = { check: check, startupCheck: startupCheck, cached: cached, install: install, local: local, cmp: cmp, isGit: isGit, REPO: REPO };
+  // Windows install for all users: the update will show the administrator (UAC) prompt
+  function needsAdmin() { return !!(window.cep && ROOT && WIN && !isGit() && !writable()); }
+
+  window.Updater = { needsAdmin: needsAdmin, check: check, startupCheck: startupCheck, cached: cached, install: install, local: local, cmp: cmp, isGit: isGit, REPO: REPO };
 })();

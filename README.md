@@ -2,7 +2,7 @@
 
 An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets and expressions together in **one main panel plus dockable sub panels** to speed up motion design work.
 
-## Features (v0.6.2)
+## Features (v0.6.3)
 
 What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 
@@ -93,7 +93,7 @@ What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 ### Updates
 - **Update** button (arrow, right of the Contact icons in MenMen Tools). A few seconds after After Effects starts, one panel checks GitHub (`version.json` on the main branch); when a newer version exists the button gets a dot and a dialog asks **Later** / **Update now**. The button also checks on demand.
 - Update now downloads the main branch zip and copies it over the installed extension folder (macOS: curl + ditto, Windows: PowerShell + robocopy). The folder is mirrored: files the new version no longer has are deleted, except in `library/` (your scripts) and `presets/` (your presets), which only receive new files. Settings (userData) and `Documents/MenMen Workflow/Scripts` are outside the extension and untouched. A git checkout is updated with `git pull --ff-only`. The panels reload afterwards; restart After Effects if something looks off.
-- An extension installed for all users (read-only folder) cannot update itself: reinstall it in the user extensions folder.
+- An extension installed for all users (read-only folder): on Windows the update asks for administrator permission (UAC prompt); on macOS reinstall it in the user extensions folder.
 - **Publishing an update:** push the changes to main, then raise `version` in `version.json` (and list the changes in `notes`). Users are only offered a version higher than theirs.
 
 ### AE native look

@@ -4,6 +4,15 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.6.3 – Update asks for administrator permission on Windows
+
+**Changed**
+- **Update** on Windows when the plugin is installed for all users (`C:\Program Files (x86)\Common Files\Adobe\CEP\extensions`): instead of stopping with *"The extension folder is read-only"*, it runs the update with administrator rights.
+  - Windows shows its **User Account Control** prompt. Click **Yes** and the update runs as usual.
+  - Click **No** and the dialog says permission was not given, then offers *Try again*.
+  - The update dialog tells you beforehand that Windows will ask.
+- macOS installs for all users still need a manual update, or moving the plugin to the user extensions folder.
+
 ## 0.6.2 – Field Shape: Circle and Ring only
 
 **Changed**
