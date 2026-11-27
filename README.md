@@ -1,8 +1,8 @@
 # MenMen Workflow
 
-An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets and expressions together in **one main panel plus the MenMen Tools panel** to speed up motion design work.
+An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets and expressions together in **one main panel plus dockable sub panels** to speed up motion design work.
 
-## Features (v0.9.0)
+## Features (v0.6.4)
 
 What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 
@@ -13,6 +13,7 @@ What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
   - **12 tool categories** plus **Scripts** (your own script library): click a category to open its tool menu,
   - **User panels** (your own panels) and **Add New Item**.
   - When the panel is short and wide, it switches to a horizontal icon-only bar.
+- **Dock**: in the menu of a category or user panel, click the Dock icon to open it in **MenMen Panel 1–4** (sub panels that dock like any AE panel).
 - **Sub panels** show one category or one user panel, as a list or a grid.
   - Category panels: hide the tools you don't use; "Unhide all" brings them back temporarily.
   - User panels: drag to reorder, right-click to edit / delete items.
@@ -81,12 +82,6 @@ What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
   - Presets: **High** (800 px, 30 fps, 256 colors, dither), **Balanced** (640 px, 25 fps, 128 colors, light dither), **Small** (480 px, 15 fps, 64 colors), **Tiny** (320 px, 12 fps, 32 colors); every field can be changed (custom).
   - On a test animation the delta encoding is 10-38x smaller than writing full frames, and matches or beats ffmpeg's palettegen/paletteuse (diff mode) at the same settings.
 
-### FX Search
-- **FX Search** (View, and in MenMen Tools): search every installed effect, the presets / scripts of the library and the MenMen tools in one box. Enter applies to the selected layers (no selection: a new adjustment layer), Shift+Enter puts an effect on a new adjustment layer, Ctrl/Cmd+Enter keeps the search open. Star favorites; Favorites and Recent show when the box is empty.
-- **Clicking the tool** opens its settings: the shortcut (Ctrl/Shift + Space, Ctrl/Shift + Tab or a custom one), what to search, where Enter applies, Reload effects, Clear Recent.
-- **In a MenMen panel** the shortcut pops the search up right under the mouse pointer.
-- **Anywhere in After Effects**: *Apply shortcut to After Effects* copies `hotkey/MenMen FX Search.jsx` into After Effects' Scripts folder (Windows asks for administrator permission) and writes the shortcut into After Effects' keyboard shortcut file (`ExecuteScriptMenuItemNN`, a backup `.menmen-backup` is kept). After restarting After Effects the key opens the floating **MenMen FX Search** window (also in `Window ▸ Extensions`). Only the first 20 scripts of File ▸ Scripts can get a key this way.
-
 ### Depth Map (Depth Anything V2)
 - **Depth Map** (View ▸ Depth Map, also in MenMen Tools): select one layer, choose **First frame**, **Current frame** or **Whole layer**, then **Generate**. The depth map (near = white, far = black; *Invert* flips it) is imported right above the layer, into the project folder *MenMen Depth*.
   - Footage and precomp layers: the layer's source is rendered at full source size and the depth layer is parented to the layer, so it follows its animation exactly. Text, shape and solid layers: the comp is rendered with only that layer soloed.
@@ -129,7 +124,7 @@ One `Metronome` null drives the beat tools (BPM, Beats per Bar, Start Time, Mode
 - **Beat Counter**: a text layer showing `BAR n  BEAT m`.
 
 ### Script library
-Every `.jsx`, `.jsxbin` and `.ffx` file in `library/` (inside the extension) or in `Documents/MenMen Workflow/Scripts` appears in the **Scripts** category. Scripts can be favorited, searched and added to user panels like built-in tools; `.ffx` presets are applied to the selected layers. Use the folder and refresh icons in the Scripts header after adding files. Files in `library/` are git-ignored so third-party scripts are not published with this repo.
+Every `.jsx`, `.jsxbin` and `.ffx` file in `library/` (inside the extension) or in `Documents/MenMen Workflow/Scripts` appears in the **Scripts** category. Scripts can be favorited, searched, docked and added to user panels like built-in tools; `.ffx` presets are applied to the selected layers. Use the folder and refresh icons in the Scripts header after adding files. Files in `library/` are git-ignored so third-party scripts are not published with this repo.
 
 Expression-driven tools add sliders so you can tweak them later (Wiggle Freq/Amp, Spin, Fade, Counter…). Hold **Alt / Shift / Ctrl** while clicking for alternate modes; the small A/S/C letters next to a tool name show which modes it has.
 
@@ -146,7 +141,7 @@ Expression-driven tools add sliders so you can tweak them later (Wiggle Freq/Amp
      powershell -ExecutionPolicy Bypass -File scripts\install-dev-win.ps1
      ```
    The script enables `PlayerDebugMode` (allows unsigned extensions) and links the project folder into `CEP/extensions`.
-3. Restart After Effects → `Window ▸ Extensions ▸ MenMen Workflow` (main panel). `MenMen Tools` opens with it, `MenMen Timer` is the Pomodoro / Countdown panel and `MenMen FX Search` is the floating search window.
+3. Restart After Effects → `Window ▸ Extensions ▸ MenMen Workflow` (main panel). `MenMen Tools` opens with it; extra sub panels are under `MenMen Panel 2–4`, and `MenMen Timer` is the Pomodoro / Countdown panel.
 4. Debugging: open Chrome at `http://localhost:8090` (main panel); sub panels 1–4 use ports 8091–8094 (see `.debug`).
 5. After editing files in `host/`: menu ☰ ▸ **Reload host scripts**. After editing `client/`: close and reopen the panel (or press F5 in DevTools).
 
@@ -162,7 +157,7 @@ client/                panel UI (plain HTML/CSS/JS, no build step)
   js/store.js          favorites, user panels, sub panel slots, parameters; file storage + sync
   js/widgets.js        Keyframe Assistant, Easing Presets, Easings Manager, Offset Layers, Set Anchor
   js/ui.js             menu, dialog, toast
-  js/app.js            main panel, category sheets, MenMen Tools, add item, settings
+  js/app.js            main panel, category sheets, docking, sub panels, add item, settings
 host/                  ExtendScript (ES3)
   main.jsx             MMW.load() loads the modules
   lib/core.jsx         MMW.run (undo group + "OK|"/"ERR|"), keyframe/expression helpers

@@ -5,7 +5,7 @@
   var FILE = B.userData ? B.userData.replace(/\\/g, '/') + '/MenMenWorkflow/settings.json' : null;
   var LS_KEY = 'mmw:settings:v2';
   var SYNC = 'com.menmen.workflow.sync';
-  var SLOTS = ['com.menmen.workflow.panel1'];  // MenMen Tools (Panel 2-4 were removed in 0.9.0)
+  var SLOTS = ['com.menmen.workflow.panel1', 'com.menmen.workflow.panel2', 'com.menmen.workflow.panel3', 'com.menmen.workflow.panel4'];
 
   var TOOLS_NAME = 'MenMen Tools', TOOLS_SLOT = 'com.menmen.workflow.panel1';
   var uid = function () { return Math.random().toString(36).slice(2, 9); };
@@ -19,7 +19,7 @@
       it('easings', 2, 1), it('sequencer', 2, 1), it('moveAnchor', 2, 2), it('addNull'), it('clone'), it('cloneMirror'), it('loop'),
       it('elastic'), it('bounce'), it('fixKeysTime'), it('easingPresets'),
       it('extractShapes'), it('mergeShapes'), it('nullsToPoint'), it('selectPaths'),
-      it('cropComp'), it('preCompose'), it('unPreComp'), it('positionTrace'), it('exportPng'), it('exportGif'), it('depthMap'), it('fxSearch')
+      it('cropComp'), it('preCompose'), it('unPreComp'), it('positionTrace'), it('exportPng'), it('exportGif'), it('depthMap')
     ];
   }
 
@@ -114,11 +114,6 @@
       if (!tp.items.some(function (x) { return x.tool === 'depthMap'; })) tp.items.splice(di < 0 ? tp.items.length : di + 1, 0, { id: uid(), type: 'tool', tool: 'depthMap' });
     }
     s.depthAdded = true;
-    if (!s.fxAdded) {  // FX Search came later: add it after Depth Map once
-      var fi = tp.items.map(function (x) { return x.tool; }).indexOf('depthMap');
-      if (!tp.items.some(function (x) { return x.tool === 'fxSearch'; })) tp.items.splice(fi < 0 ? tp.items.length : fi + 1, 0, { id: uid(), type: 'tool', tool: 'fxSearch' });
-    }
-    s.fxAdded = true;
     if (!s.qaAdded && s.userPanels.quick) {  // older settings: add Quick Access under the Graph Editor once
       var qi = s.userPanels.quick.items, at = 0;
       for (var i = 0; i < qi.length; i++) if (qi[i].type === 'tool' && qi[i].tool === 'easyKeyframes') { at = i + 1; break; }
@@ -147,35 +142,14 @@
     var parsed = null, raw = readRaw();
     if (raw) { try { parsed = JSON.parse(raw); } catch (e) { console.warn('settings.json is corrupt, using defaults', e); } }
     S.data = normalize(parsed);
-    applyUsage(S.data.usage);  // runs counted here but not written yet stay counted
     return S.data;
   };
-
-  // Run counts (Quick Access) come from every panel. Each panel keeps the runs it has not written yet
-  // and adds them to the counts on disk when it saves, so panels saving at the same time never wipe
-  // each other's runs (the whole file used to be "last writer wins").
-  var usageDelta = {}, usageReset = false, usageAsIs = false;  // usageAsIs: reset / import write S.data.usage itself
-  function applyUsage(u) {
-    if (usageReset) { for (var k0 in u) delete u[k0]; }
-    Object.keys(usageDelta).forEach(function (id) {
-      var d = usageDelta[id];
-      if (d.forget) { delete u[id]; return; }
-      var x = u[id] || (u[id] = { n: 0, t: 0 });
-      x.n += d.n; x.t = Math.max(x.t || 0, d.t);
-    });
-  }
-  function diskUsage() {
-    try { var j = JSON.parse(readRaw() || 'null'); return j && j.usage && typeof j.usage === 'object' ? j.usage : {}; } catch (e) { return {}; }
-  }
 
   var timer = null;
   var pending = null;
   S.save = function (immediate, delay) {
     clearTimeout(timer);
     var go = function () {
-      // run counts: what is on disk now (other panels' runs) + the runs counted here since the last write
-      if (!usageAsIs) { var u = diskUsage(); applyUsage(u); S.data.usage = u; }
-      usageDelta = {}; usageReset = false; usageAsIs = false;
       var json = JSON.stringify(S.data, null, 2);
       if (FILE && B.fs.available) B.fs.write(FILE, json);
       try { localStorage.setItem(LS_KEY, json); } catch (e) { /* ignore */ }
@@ -275,11 +249,8 @@
   // ----- usage (Quick Access) -----
   S.track = function (id) {
     if (!id || !window.Tools.get(id)) return;
-    var now = Date.now(), u = S.data.usage[id] || (S.data.usage[id] = { n: 0, t: 0 });
-    u.n++; u.t = now;
-    var d = usageDelta[id];
-    if (!d || d.forget) d = usageDelta[id] = { n: 0, t: 0 };
-    d.n++; d.t = now;
+    var u = S.data.usage[id] || (S.data.usage[id] = { n: 0, t: 0 });
+    u.n++; u.t = Date.now();
     S.save(false, 1500);  // run counts: one write after a burst of clicks, not one per click
   };
   // Most used tools: run count, then most recent. exclude = { toolId: true }
@@ -288,13 +259,9 @@
       .sort(function (a, b) { var x = S.data.usage[a], y = S.data.usage[b]; return (y.n - x.n) || (y.t - x.t); })
       .slice(0, limit);
   };
-  S.forget = function (id) {
-    if (id) { delete S.data.usage[id]; usageDelta[id] = { forget: true }; }
-    else { S.data.usage = {}; usageDelta = {}; usageReset = true; }
-    S.save();
-  };
-  S.reset = function () { S.data = defaults(); usageAsIs = true; S.save(true); };
-  S.importJSON = function (txt) { S.data = normalize(JSON.parse(txt)); usageAsIs = true; S.save(true); };
+  S.forget = function (id) { if (id) delete S.data.usage[id]; else S.data.usage = {}; S.save(); };
+  S.reset = function () { S.data = defaults(); S.save(true); };
+  S.importJSON = function (txt) { S.data = normalize(JSON.parse(txt)); S.save(true); };
   S.exportJSON = function () { return JSON.stringify(S.data, null, 2); };
 
   window.Store = S;

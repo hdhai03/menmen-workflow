@@ -712,34 +712,3 @@ body.native .icon-btn.on, body.native .size-chip.on, body.native .tm-phase.on, b
 body.native .seg-btn.on { box-shadow: inset 0 0 0 1px var(--act-edge); }
 body.native .wr-to.on .wr-to-k { color: var(--act-text); opacity: .7; }
 body.native .ge-tool.ge-act { color: var(--text); }
-
-/* FX Search */
-.fxs { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.fxs-bar { display: flex; gap: 4px; }
-.fxs-input { flex: 1; min-width: 0; height: 28px; padding: 0 8px; font-size: calc(var(--fs) + 1px); }
-.fxs-reload svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; }
-.fxs-list { display: flex; flex-direction: column; max-height: 320px; overflow-y: auto; border: 1px solid var(--line); background: var(--bg); }
-.fxs-group { padding: 5px 8px 2px; color: var(--muted); font-size: calc(var(--fs) - 2px); text-transform: uppercase; letter-spacing: .5px; }
-.fxs-row { display: flex; align-items: center; gap: 6px; padding: 4px 6px; cursor: default; min-width: 0; }
-.fxs-row.on { background: var(--surface-3); }
-.fxs-kind { flex: none; width: 22px; font-size: 9px; font-weight: 700; text-align: center; padding: 1px 0; border: 1px solid var(--line-2); color: var(--muted); }
-.fxs-kind.k-fx { color: var(--accent); border-color: rgba(var(--accent-rgb), .5); }
-.fxs-name { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fxs-sub { flex: 0 1 auto; min-width: 0; max-width: 45%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: calc(var(--fs) - 2px); }
-.fxs-star { flex: none; width: 18px; color: var(--muted); opacity: 0; }
-.fxs-row:hover .fxs-star, .fxs-star.on { opacity: 1; }
-.fxs-star.on { color: #ffc04d; }
-.fxs-empty { padding: 10px 8px; }
-.fxs-hint { line-height: 1.4; }
-body.native .fxs-kind.k-fx { color: var(--text); border-color: var(--line-2); }
-.fxset-checks { display: flex; flex-wrap: wrap; gap: 4px 12px; }
-.fxset-btns { display: flex; gap: 4px; flex-wrap: wrap; }
-.fxset-btns .w-btn { flex: 1 1 auto; padding: 6px 8px; }
-.fxset-note { line-height: 1.4; }
-/* FX Search: a popup at the mouse pointer (no title bar, no dimmed backdrop) */
-.dialog.at-cursor { transform: none; width: min(340px, calc(100vw - 8px)); max-height: calc(100vh - 8px); border: 1px solid var(--line-2); }
-.dialog.at-cursor .dlg-head, .dialog.at-cursor .dlg-tip { display: none; }
-.dialog.at-cursor .dlg-body { padding: 6px; }
-.dialog.at-cursor .fxs-list { max-height: min(300px, calc(100vh - 90px)); }
-.fxset-global { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--line); padding-top: 8px; }
-.fxset-global .w-btn { padding: 6px 8px; }
