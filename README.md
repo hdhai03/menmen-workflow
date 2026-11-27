@@ -2,7 +2,7 @@
 
 An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets and expressions together in **one main panel plus dockable sub panels** to speed up motion design work.
 
-## Features (v0.7.2)
+## Features (v0.8.0)
 
 What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 
@@ -84,6 +84,7 @@ What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 
 ### FX Search
 - **FX Search** (View, and in MenMen Tools): search every installed effect, the presets / scripts of the library and the MenMen tools in one box. Enter applies to the selected layers (no selection: a new adjustment layer), Shift+Enter puts an effect on a new adjustment layer, Ctrl/Cmd+Enter keeps the search open. Star favorites; Favorites and Recent show when the box is empty. Clicking the tool opens its settings: the shortcut (Ctrl/Shift + Space, Ctrl/Shift + Tab or a custom one; it works while a MenMen panel has the focus), what to search (effects, presets & scripts, MenMen tools), where Enter applies, Reload effects and Clear Recent.
+- **Anywhere in After Effects**: `Window > Extensions > MenMen FX Search` opens the search in a floating window (Enter applies and closes it, Esc closes). For a global shortcut, FX Search settings > *Install global shortcut script* copies `hotkey/MenMen FX Search.jsx` into After Effects' Scripts folder (admin permission asked on Windows); restart After Effects and assign a key in Edit > Keyboard Shortcuts.
 
 ### Depth Map (Depth Anything V2)
 - **Depth Map** (View ▸ Depth Map, also in MenMen Tools): select one layer, choose **First frame**, **Current frame** or **Whole layer**, then **Generate**. The depth map (near = white, far = black; *Invert* flips it) is imported right above the layer, into the project folder *MenMen Depth*.

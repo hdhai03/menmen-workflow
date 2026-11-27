@@ -736,3 +736,5 @@ body.native .fxs-kind.k-fx { color: var(--text); border-color: var(--line-2); }
 .fxset-btns { display: flex; gap: 4px; flex-wrap: wrap; }
 .fxset-btns .w-btn { flex: 1 1 auto; padding: 6px 8px; }
 .fxset-note { line-height: 1.4; }
+.fxset-global { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--line); padding-top: 8px; }
+.fxset-global .w-btn { padding: 6px 8px; }

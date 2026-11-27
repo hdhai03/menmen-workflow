@@ -134,11 +134,50 @@
     cr.addEventListener('click', function () { if (ctx.data && ctx.data.fxRecent) ctx.data.fxRecent.length = 0; ctx.save(); cr.textContent = 'Cleared'; });
     row.append(open, rl, cr);
     root.appendChild(row);
+    // global shortcut: a script in After Effects' Scripts folder that opens the floating FX Search window
+    var gl = el('div', 'fxset-global');
+    gl.innerHTML = '<div class="gx-f"><span>Shortcut anywhere in After Effects</span></div>';
+    var inst = el('button', 'w-btn', 'Install global shortcut script'), gs = el('div', 'muted small fxset-note');
+    gs.textContent = 'Adds "MenMen FX Search" to After Effects\' Scripts. Restart After Effects, then give it a key in Edit > Keyboard Shortcuts ' +
+      '(search "MenMen FX Search") - the floating FX Search window then opens from anywhere. Window > Extensions > MenMen FX Search opens it too.';
+    inst.addEventListener('click', function () {
+      inst.textContent = 'Installing…';
+      ctx.query('installFxHotkey', {}).then(function (r) {
+        var j = null; try { j = JSON.parse(r && r.ok ? r.msg : 'null'); } catch (e) { j = null; }
+        if (!r || !r.ok) { inst.textContent = 'Install global shortcut script'; gs.textContent = r ? r.msg : 'Not available outside After Effects'; return; }
+        if (!j) { inst.textContent = 'Installed (preview)'; return; }
+        if (j.ok) { inst.textContent = 'Installed \u2713'; gs.textContent = 'Installed: ' + j.path + '. Restart After Effects, then Edit > Keyboard Shortcuts > search "MenMen FX Search" and press your keys.'; return; }
+        // the Scripts folder needs administrator rights: Windows asks (UAC); macOS: copy it by hand
+        var P = window.cep && window.cep.process, win = navigator.platform.indexOf('Win') === 0;
+        if (win && P && P.createProcess) {
+          var psq = function (x) { return "'" + String(x).replace(/'/g, "''") + "'"; };
+          var inner = 'Copy-Item -LiteralPath ' + psq(j.src) + ' -Destination ' + psq(j.path) + ' -Force';
+          var cmd = "try{Start-Process -FilePath 'powershell.exe' -Verb RunAs -Wait -WindowStyle Hidden -ArgumentList @('-NoProfile','-Command'," + psq(inner) + ")}catch{'DENIED'}";
+          var pr = P.createProcess('C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', '-NoProfile', '-NonInteractive', '-Command', cmd), out = '';
+          if (pr && pr.err === 0) {
+            P.stdout(pr.data, function (c) { out += c; });
+            P.onquit(pr.data, function () {
+              var done = window.cep.fs.stat(j.path).err === 0 && !/DENIED/.test(out);
+              inst.textContent = done ? 'Installed \u2713' : 'Install global shortcut script';
+              gs.textContent = done ? 'Installed: ' + j.path + '. Restart After Effects, then Edit > Keyboard Shortcuts > search "MenMen FX Search".'
+                : 'Administrator permission was not given. Copy ' + j.src + ' to ' + j.path + ' by hand.';
+            });
+            gs.textContent = 'Windows asks for administrator permission: click Yes.';
+            return;
+          }
+        }
+        inst.textContent = 'Install global shortcut script';
+        gs.textContent = 'The Scripts folder is protected. Copy ' + j.src + ' to ' + j.path + ' (your password may be asked), then restart After Effects.';
+        ctx.query('revealFile', { path: j.src });
+      });
+    });
+    gl.append(inst, gs);
+    root.appendChild(gl);
     var info = el('div', 'muted small fxset-note');
     function note() {
       var k = shortcutOf(d);
       info.textContent = (k ? 'Press ' + k.replace(/\+/g, ' + ') + ' in a MenMen panel to open the search. ' : 'Set a custom shortcut. ') +
-        'After Effects does not give panels global shortcuts, so click a MenMen panel first.';
+        '(works while a MenMen panel has the focus - for a shortcut anywhere, install the script below).';
     }
     note();
     root.appendChild(info);
