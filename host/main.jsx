@@ -32,7 +32,8 @@ $.global.MMW.load = function (root, force) {
         "quickrow.jsx",
         "export.jsx",
         "depth.jsx",
-        "pathviz.jsx"
+        "pathviz.jsx",
+        "fxsearch.jsx"
     ];
     var errs = [], sig = root, i, k, n = 0;
     M.root = root;

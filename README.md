@@ -2,7 +2,7 @@
 
 An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets and expressions together in **one main panel plus dockable sub panels** to speed up motion design work.
 
-## Features (v0.6.4)
+## Features (v0.7.0)
 
 What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 
@@ -81,6 +81,9 @@ What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
   - exact timing (centisecond delays with carry), looping via NETSCAPE2.0.
   - Presets: **High** (800 px, 30 fps, 256 colors, dither), **Balanced** (640 px, 25 fps, 128 colors, light dither), **Small** (480 px, 15 fps, 64 colors), **Tiny** (320 px, 12 fps, 32 colors); every field can be changed (custom).
   - On a test animation the delta encoding is 10-38x smaller than writing full frames, and matches or beats ffmpeg's palettegen/paletteuse (diff mode) at the same settings.
+
+### FX Search
+- **FX Search** (View, and in MenMen Tools): search every installed effect, the presets / scripts of the library and the MenMen tools in one box. Enter applies to the selected layers (no selection: a new adjustment layer), Shift+Enter puts an effect on a new adjustment layer, Ctrl/Cmd+Enter keeps the search open. Star favorites; Favorites and Recent show when the box is empty. Shortcut: **Ctrl+Space** while a MenMen panel has the focus. The reload button re-reads the effect list after installing plugins.
 
 ### Depth Map (Depth Anything V2)
 - **Depth Map** (View ▸ Depth Map, also in MenMen Tools): select one layer, choose **First frame**, **Current frame** or **Whole layer**, then **Generate**. The depth map (near = white, far = black; *Invert* flips it) is imported right above the layer, into the project folder *MenMen Depth*.

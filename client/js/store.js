@@ -19,7 +19,7 @@
       it('easings', 2, 1), it('sequencer', 2, 1), it('moveAnchor', 2, 2), it('addNull'), it('clone'), it('cloneMirror'), it('loop'),
       it('elastic'), it('bounce'), it('fixKeysTime'), it('easingPresets'),
       it('extractShapes'), it('mergeShapes'), it('nullsToPoint'), it('selectPaths'),
-      it('cropComp'), it('preCompose'), it('unPreComp'), it('positionTrace'), it('exportPng'), it('exportGif'), it('depthMap')
+      it('cropComp'), it('preCompose'), it('unPreComp'), it('positionTrace'), it('exportPng'), it('exportGif'), it('depthMap'), it('fxSearch')
     ];
   }
 
@@ -114,6 +114,11 @@
       if (!tp.items.some(function (x) { return x.tool === 'depthMap'; })) tp.items.splice(di < 0 ? tp.items.length : di + 1, 0, { id: uid(), type: 'tool', tool: 'depthMap' });
     }
     s.depthAdded = true;
+    if (!s.fxAdded) {  // FX Search came later: add it after Depth Map once
+      var fi = tp.items.map(function (x) { return x.tool; }).indexOf('depthMap');
+      if (!tp.items.some(function (x) { return x.tool === 'fxSearch'; })) tp.items.splice(fi < 0 ? tp.items.length : fi + 1, 0, { id: uid(), type: 'tool', tool: 'fxSearch' });
+    }
+    s.fxAdded = true;
     if (!s.qaAdded && s.userPanels.quick) {  // older settings: add Quick Access under the Graph Editor once
       var qi = s.userPanels.quick.items, at = 0;
       for (var i = 0; i < qi.length; i++) if (qi[i].type === 'tool' && qi[i].tool === 'easyKeyframes') { at = i + 1; break; }

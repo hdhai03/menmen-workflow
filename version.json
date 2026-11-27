@@ -1,7 +1,7 @@
 {
-  "version": "0.6.4",
+  "version": "0.7.0",
   "date": "2026-11-27",
   "notes": [
-    "Align / Distribute keep the layers selected after applying"
+    "FX Search: search every effect, preset and MenMen tool - Enter applies to the selected layers, Shift+Enter on a new adjustment layer, favorites and recent; Ctrl+Space in a MenMen panel"
   ]
 }

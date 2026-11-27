@@ -4,6 +4,20 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.7.0 – FX Search
+
+**Added**
+- **FX Search** (View; also in MenMen Tools after Depth Map): one search box for **every installed effect** (third-party plugins included), your **presets / scripts** in the library and all **MenMen tools**.
+  - Type a few letters (`gaus`, `turb disp`, `glow`): effects come first, words can be in any order.
+  - **Enter** applies the effect to the selected layers. With no layer selected, it goes on a new adjustment layer.
+  - **Shift+Enter** always puts the effect on a new adjustment layer above the selection.
+  - **Ctrl/Cmd+Enter** applies the effect and keeps the search open.
+  - Tools, presets and scripts run as if clicked; a tool with options opens its dialog.
+  - **★ Favorites** and **Recent** show up as soon as the search opens.
+  - The applied effect is selected, so Effect Controls shows it.
+  - **Shortcut:** **Ctrl+Space** while a MenMen panel has the focus.
+- The effect list is read once and remembered. The reload button reads it again after you install new plugins.
+
 ## 0.6.4 – Layers stay selected
 
 **Fixed**

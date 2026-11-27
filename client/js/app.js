@@ -343,6 +343,8 @@
     return {
       run: function (id, o, e) { S.track(t.id); qaSoon(); return exec(id, o, e, t.name); },
       query: function (id, o) { return B.run(id, o || {}); },  // silent: no toast, not counted
+      data: S.data,  // FX Search: favorites / recent
+      runTool: function (id, e) { var x = T.get(id); if (x) runTool(x, e); },
       save: function () { S.save(); },
       lib: {
         list: function () { return S.data.curves; },
@@ -1266,5 +1268,9 @@
     setTimeout(function () { updateNow(false); }, B.isMain ? 4000 : 2500);
     B.on('com.menmen.workflow.updated', function () { setTimeout(function () { location.reload(); }, 300); });
   }
+  // FX Search shortcut: Ctrl+Space while a MenMen panel has the focus
+  window.addEventListener('keydown', function (e) {
+    if (e.code === 'Space' && e.ctrlKey && !e.altKey && T.get('fxSearch')) { e.preventDefault(); openWidget(T.get('fxSearch')); }
+  });
   window.MMWApp = { render: render, state: st, dock: dock };
 })();
