@@ -1,7 +1,8 @@
 {
-  "version": "0.8.1",
+  "version": "0.9.0",
   "date": "2026-11-27",
   "notes": [
-    "FX Search pops up right under the mouse pointer (the 0.8.0 floating window is removed)"
+    "FX Search anywhere in After Effects: set the shortcut in FX Search settings > Apply shortcut to After Effects, then restart After Effects",
+    "Removed MenMen Panel 2-4 (restart After Effects after updating)"
   ]
 }

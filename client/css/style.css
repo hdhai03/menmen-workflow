@@ -741,3 +741,5 @@ body.native .fxs-kind.k-fx { color: var(--text); border-color: var(--line-2); }
 .dialog.at-cursor .dlg-head, .dialog.at-cursor .dlg-tip { display: none; }
 .dialog.at-cursor .dlg-body { padding: 6px; }
 .dialog.at-cursor .fxs-list { max-height: min(300px, calc(100vh - 90px)); }
+.fxset-global { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--line); padding-top: 8px; }
+.fxset-global .w-btn { padding: 6px 8px; }

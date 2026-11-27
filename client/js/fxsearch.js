@@ -134,11 +134,61 @@
     cr.addEventListener('click', function () { if (ctx.data && ctx.data.fxRecent) ctx.data.fxRecent.length = 0; ctx.save(); cr.textContent = 'Cleared'; });
     row.append(open, rl, cr);
     root.appendChild(row);
+    // global shortcut: the panel installs the "MenMen FX Search" script into After Effects' Scripts folder and
+    // writes the chosen key into After Effects' shortcut file; after a restart the key opens the floating
+    // FX Search window from anywhere in After Effects
+    var gl = el('div', 'fxset-global');
+    var inst = el('button', 'w-btn w-primary', 'Apply shortcut to After Effects'), gs = el('div', 'muted small fxset-note');
+    gs.textContent = 'Makes the shortcut work anywhere in After Effects (timeline, viewer...). Restart After Effects afterwards.';
+    function psq(x) { return "'" + String(x).replace(/'/g, "''") + "'"; }
+    function elevatedCopy(src, dst, done) {  // Windows: the Scripts folder is in Program Files
+      var P = window.cep && window.cep.process;
+      if (!P || !P.createProcess || navigator.platform.indexOf('Win') !== 0) return done(false);
+      var cmd = "try{Start-Process -FilePath 'powershell.exe' -Verb RunAs -Wait -WindowStyle Hidden -ArgumentList @('-NoProfile','-Command'," +
+        psq('Copy-Item -LiteralPath ' + psq(src) + ' -Destination ' + psq(dst) + ' -Force') + ")}catch{'DENIED'}";
+      var pr = P.createProcess('C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', '-NoProfile', '-NonInteractive', '-Command', cmd), out = '';
+      if (!pr || pr.err !== 0) return done(false);
+      gs.textContent = 'Windows asks for administrator permission to add the script: click Yes.';
+      P.stdout(pr.data, function (c) { out += c; });
+      P.onquit(pr.data, function () { done(window.cep.fs.stat(dst).err === 0 && !/DENIED/.test(out)); });
+    }
+    function writeShortcut() {
+      var k = shortcutOf(d);
+      if (!k) { gs.textContent = 'Choose or set a shortcut first.'; inst.disabled = false; return; }
+      ctx.query('fxShortcutApply', { combo: k }).then(function (r) {
+        inst.disabled = false;
+        var j = null; try { j = JSON.parse(r && r.ok ? r.msg : 'null'); } catch (e) { j = null; }
+        if (!j) { inst.textContent = 'Apply shortcut to After Effects'; gs.textContent = r && !r.ok ? r.msg : '(preview) the shortcut would be written to After Effects.'; return; }
+        d.globalCombo = j.ok ? k : ''; ctx.save();
+        gs.textContent = j.ok ? k.replace(/\+/g, ' + ') + ' is set for After Effects (File > Scripts #' + j.number + '). Restart After Effects - then the key opens FX Search anywhere.' : j.msg;
+        inst.textContent = j.ok ? 'Applied \u2713' : 'Apply shortcut to After Effects';
+      });
+    }
+    inst.addEventListener('click', function () {
+      inst.disabled = true; inst.textContent = 'Applying\u2026';
+      ctx.query('installFxHotkey', {}).then(function (r) {
+        var j = null; try { j = JSON.parse(r && r.ok ? r.msg : 'null'); } catch (e) { j = null; }
+        if (!j) { if (r && !r.ok) { gs.textContent = r.msg; inst.disabled = false; inst.textContent = 'Apply shortcut to After Effects'; return; } return writeShortcut(); }
+        if (j.ok) return writeShortcut();
+        elevatedCopy(j.src, j.path, function (ok) {
+          if (ok) return writeShortcut();
+          inst.disabled = false; inst.textContent = 'Apply shortcut to After Effects';
+          gs.textContent = 'After Effects\' Scripts folder is protected. Copy ' + j.src + ' to ' + j.path + ', then click again.';
+          ctx.query('revealFile', { path: j.src });
+        });
+      });
+    });
+    // a key applied before but missing from the shortcut file again (After Effects rewrote it): say so
+    if (d.globalCombo && B.inCEP) ctx.query('fxShortcutCheck', { combo: d.globalCombo }).then(function (r) {
+      if (r && r.ok && r.msg === '0') gs.textContent = 'After Effects reset the global shortcut - click Apply again, then restart After Effects.';
+    });
+    gl.append(inst, gs);
+    root.appendChild(gl);
     var info = el('div', 'muted small fxset-note');
     function note() {
       var k = shortcutOf(d);
-      info.textContent = (k ? 'Press ' + k.replace(/\+/g, ' + ') + ' in a MenMen panel to open the search. ' : 'Set a custom shortcut. ') +
-        'After Effects does not give panels global shortcuts, so click a MenMen panel first.';
+      info.textContent = (k ? k.replace(/\+/g, ' + ') + ' opens FX Search in the MenMen panels right away' : 'Set a custom shortcut') +
+        (d.globalCombo === k && k ? ', and anywhere in After Effects.' : '; click Apply to use it anywhere in After Effects.');
     }
     note();
     root.appendChild(info);

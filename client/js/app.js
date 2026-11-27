@@ -1,6 +1,6 @@
 /* app.js - MenMen Workflow UI.
  *  - Main panel (com.menmen.workflow.main): search, favorites, 12 tool categories, user panels, add items.
- *  - Sub panels (panel1..4): show one category or one user panel docked from the main panel. */
+ *  - MenMen Tools (panel1): the user's tool layout, opened together with the main panel. */
 (function () {
   var B = window.Bridge, S = window.Store, T = window.Tools, W = window.Widgets, U = window.UI;
   var el = U.el, esc = U.esc;
@@ -146,7 +146,6 @@
   }
   var ICONS = {
     back: '<path d="M10 3L5 8l5 5"/>', close: '<path d="M4 4l8 8M12 4l-8 8"/>',
-    dock: '<rect x="2.5" y="2.5" width="11" height="11"/><path d="M2.5 6h11M8 9v3M6.5 10.5L8 12l1.5-1.5"/>',
     menu: '<path d="M3 4.5h10M3 8h10M3 11.5h10"/>', edit: '<path d="M11.3 2.3l2.4 2.4-8.2 8.2H3.1v-2.4z"/>',
     grid: '<rect x="2.5" y="2.5" width="4.5" height="4.5"/><rect x="9" y="2.5" width="4.5" height="4.5"/><rect x="2.5" y="9" width="4.5" height="4.5"/><rect x="9" y="9" width="4.5" height="4.5"/>',
     list: '<path d="M5.5 4h8M5.5 8h8M5.5 12h8"/><circle cx="2.8" cy="4" r=".8"/><circle cx="2.8" cy="8" r=".8"/><circle cx="2.8" cy="12" r=".8"/>',
@@ -504,7 +503,6 @@
     head.appendChild(el('span', 'spacer'));
     if (u) head.appendChild(svgBtn('', 'Add item', ICONS.plus, function () { addItemDialog(sh.id); }));
     if (c && c.id === 'scripts') scriptButtons().forEach(function (b) { head.appendChild(b); });
-    head.appendChild(svgBtn('', 'Dock as panel', ICONS.dock, function () { dock(sh.kind, sh.id); }));
     head.appendChild(svgBtn('', 'Close', ICONS.close, closeSheet));
     sheet.appendChild(head);
     var list = el('div', 'sh-body');
@@ -553,36 +551,14 @@
       { label: 'Open Timer (Pomodoro / Countdown)', onClick: function () { if (!B.openPanel('com.menmen.workflow.timer')) U.toast('(preview) open client/timer.html', true); } },
       { label: 'Open Scripts folder', onClick: function (e) { exec('openScriptsFolder', { root: B.extPath }, e, 'Scripts'); } },
       { label: 'Refresh Scripts', onClick: function () { loadLibrary(true); } },
-      '-',
-      { header: 'Sub panels' }
-    ].concat(S.SLOTS.map(function (ext, i) {
-      var name = S.contentName(S.slot(ext));
-      return { label: 'Panel ' + (i + 1), hint: name || 'empty', onClick: function () { openSlot(ext); } };
-    })).concat(['-',
+      { label: 'Open ' + S.TOOLS_NAME, onClick: openTools }
+    ].concat(['-',
       { label: 'Back up settings…', onClick: exportSettings },
       { label: 'Restore settings…', onClick: importSettings },
       { label: 'Reload host scripts', onClick: function () { loadHost(true); } },
       { label: 'Diagnostics…', onClick: diagnostics },
       { label: 'About MenMen Workflow', onClick: about }
     ]), { minWidth: 210 });
-  }
-
-  // ============ dock ============
-  function openSlot(ext) {
-    if (!B.openPanel(ext)) U.toast('(preview) open ' + ext.replace(/^.*\./, ''), true);
-  }
-  function dock(kind, id) {
-    var found = S.findSlot(kind, id);
-    var go = function (ext) {
-      S.setSlot(ext, kind, id);
-      openSlot(ext);
-      U.toast('Docked to MenMen Panel ' + ext.slice(-1), true);
-    };
-    if (found) return go(found.ext);
-    // no free slot → ask which panel to replace
-    U.menu(window.innerWidth / 2 - 100, 60, [{ header: 'Replace which panel?' }].concat(S.SLOTS.map(function (ext, i) {
-      return { label: 'Panel ' + (i + 1), hint: S.contentName(S.slot(ext)) || '', onClick: function () { go(ext); } };
-    })), { minWidth: 200 });
   }
 
   // ============ user panels & items ============
@@ -616,7 +592,6 @@
     U.menu(e.clientX, e.clientY, [
       { header: u.name },
       { label: 'Open', onClick: function () { openSheet({ kind: 'user', id: id }); } },
-      { label: 'Dock as panel', onClick: function () { dock('user', id); } },
       { label: 'Rename…', onClick: function () { U.prompt('Rename', 'Name', u.name, function (v) { u.name = v; S.save(); render(); }); } },
       '-',
       { label: 'Delete user panel', danger: true, onClick: function () {
@@ -1036,9 +1011,8 @@
       var id = S.newUserPanel(v);
       S.data.userPanels[id].items = S.quickItems();
       S.save();
-      var slot = S.findSlot('user', id);
-      if (slot) { S.setSlot(slot.ext, 'user', id); S.data.slots[slot.ext].view = 'layout'; S.save(true); openSlot(slot.ext); }
       render();
+      if (B.isMain) openSheet({ kind: 'user', id: id, view: 'layout' });
     });
   }
 
@@ -1159,7 +1133,7 @@
   function about() {
     var box = el('div', 'about');
     box.innerHTML = '<h3>MenMen Workflow</h3><p class="muted">v0.3.0 · ' + T.list.length + ' tools · ' + T.CATS.length + ' categories</p>' +
-      '<p>The main panel holds every tool; MenMen Tools is Panel 1; dock categories or user panels to MenMen Panel 2–4.</p><p class="muted small" id="hostInfo">Checking host…</p>';
+      '<p>The main panel holds every tool; MenMen Tools is the quick layout panel; FX Search opens from anywhere with its shortcut.</p><p class="muted small" id="hostInfo">Checking host…</p>';
     U.dialog('About', box, [{ label: 'Close', primary: true }]);
     B.run('hostInfo').then(function (r) { var n = document.getElementById('hostInfo'); if (n) n.textContent = r.msg; });
   }
@@ -1291,8 +1265,17 @@
     if (window.ResizeObserver) new ResizeObserver(place).observe(dlg);  // the result list grows as you type
   }
   window.addEventListener('mmw-fxsearch', openFxSearch);
+  if (B.inCEP) {
+    // the global shortcut script asks for the floating FX Search window
+    B.on('com.menmen.workflow.openfx', function () { if (B.isMain || B.panelNo === '1') B.openPanel('com.menmen.workflow.fxsearch'); });
+    // tools picked in the floating window that need a panel (dialogs, widgets) run here, in MenMen Tools
+    if (B.panelNo === '1') B.on('com.menmen.workflow.runtool', function (d) {
+      var x = d && T.get(d.id);
+      if (x) runTool(x, { altKey: d.alt, shiftKey: d.shift, ctrlKey: d.ctrl, metaKey: false, preventDefault: function () {}, stopPropagation: function () {} });
+    });
+  }
   window.addEventListener('keydown', function (e) {
     if (window.FxSearch && FxSearch.matches(e, S.widgetData('fxSearch'))) { e.preventDefault(); e.stopPropagation(); openFxSearch(); }
   }, true);
-  window.MMWApp = { render: render, state: st, dock: dock };
+  window.MMWApp = { render: render, state: st };
 })();

@@ -4,6 +4,20 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.9.0 – FX Search anywhere, set from the panel; fewer panels
+
+**Added**
+- **FX Search anywhere in After Effects**, with the shortcut set in the plugin.
+  - In FX Search settings, choose the shortcut, then click **Apply shortcut to After Effects**. The panel copies the *MenMen FX Search* script into After Effects' Scripts folder (Windows asks for administrator permission) and writes the shortcut into After Effects' keyboard shortcut file. A one-time backup of that file is kept as `.menmen-backup`.
+  - **Restart After Effects**: the key then opens the floating **MenMen FX Search** window from anywhere (timeline, viewer, any panel). Enter applies and closes it, Esc closes it.
+  - If After Effects later resets the shortcut, the settings say so: click Apply again.
+  - Limits: the window opens where After Effects puts it, not under the pointer. Only the first 20 scripts of File > Scripts can get a key.
+- Inside a MenMen panel, the shortcut still pops the search up under the mouse pointer.
+
+**Removed**
+- **MenMen Panel 2–4** and docking categories / user panels into them. User panels open in the main panel; MenMen Tools stays.
+- **Update note**: the extension's panels changed, so **restart After Effects** after updating.
+
 ## 0.8.1 – FX Search pops up at the mouse
 
 **Changed**

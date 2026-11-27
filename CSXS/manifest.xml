@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="7.0" ExtensionBundleId="com.menmen.workflow" ExtensionBundleVersion="0.8.1" ExtensionBundleName="MenMen Workflow"
+<ExtensionManifest Version="7.0" ExtensionBundleId="com.menmen.workflow" ExtensionBundleVersion="0.9.0" ExtensionBundleName="MenMen Workflow"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <ExtensionList>
-    <Extension Id="com.menmen.workflow.main" Version="0.8.1" />
-    <Extension Id="com.menmen.workflow.panel1" Version="0.8.1" />
-    <Extension Id="com.menmen.workflow.panel2" Version="0.8.1" />
-    <Extension Id="com.menmen.workflow.panel3" Version="0.8.1" />
-    <Extension Id="com.menmen.workflow.panel4" Version="0.8.1" />
-    <Extension Id="com.menmen.workflow.timer" Version="0.8.1" />
-    <Extension Id="com.menmen.workflow.bar" Version="0.8.1" />
+    <Extension Id="com.menmen.workflow.main" Version="0.9.0" />
+    <Extension Id="com.menmen.workflow.panel1" Version="0.9.0" />
+    <Extension Id="com.menmen.workflow.timer" Version="0.9.0" />
+    <Extension Id="com.menmen.workflow.bar" Version="0.9.0" />
+    <Extension Id="com.menmen.workflow.fxsearch" Version="0.9.0" />
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>
@@ -57,53 +55,18 @@
         </UI>
       </DispatchInfo>
     </Extension>
-    <Extension Id="com.menmen.workflow.panel2">
+    <Extension Id="com.menmen.workflow.fxsearch">
       <DispatchInfo>
         <Resources>
-          <MainPath>./client/index.html</MainPath>
-          <ScriptPath>./host/main.jsx</ScriptPath>
+          <MainPath>./client/fxsearch.html</MainPath>
         </Resources>
         <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle>
         <UI>
-          <Type>Panel</Type>
-          <Menu>MenMen Panel 2</Menu>
+          <Type>Modeless</Type>
+          <Menu>MenMen FX Search</Menu>
           <Geometry>
-            <Size><Height>360</Height><Width>300</Width></Size>
-            <MinSize><Height>80</Height><Width>80</Width></MinSize>
-          </Geometry>
-        </UI>
-      </DispatchInfo>
-    </Extension>
-    <Extension Id="com.menmen.workflow.panel3">
-      <DispatchInfo>
-        <Resources>
-          <MainPath>./client/index.html</MainPath>
-          <ScriptPath>./host/main.jsx</ScriptPath>
-        </Resources>
-        <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle>
-        <UI>
-          <Type>Panel</Type>
-          <Menu>MenMen Panel 3</Menu>
-          <Geometry>
-            <Size><Height>360</Height><Width>300</Width></Size>
-            <MinSize><Height>80</Height><Width>80</Width></MinSize>
-          </Geometry>
-        </UI>
-      </DispatchInfo>
-    </Extension>
-    <Extension Id="com.menmen.workflow.panel4">
-      <DispatchInfo>
-        <Resources>
-          <MainPath>./client/index.html</MainPath>
-          <ScriptPath>./host/main.jsx</ScriptPath>
-        </Resources>
-        <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle>
-        <UI>
-          <Type>Panel</Type>
-          <Menu>MenMen Panel 4</Menu>
-          <Geometry>
-            <Size><Height>360</Height><Width>300</Width></Size>
-            <MinSize><Height>80</Height><Width>80</Width></MinSize>
+            <Size><Height>420</Height><Width>460</Width></Size>
+            <MinSize><Height>200</Height><Width>300</Width></MinSize>
           </Geometry>
         </UI>
       </DispatchInfo>

@@ -5,7 +5,7 @@
   var FILE = B.userData ? B.userData.replace(/\\/g, '/') + '/MenMenWorkflow/settings.json' : null;
   var LS_KEY = 'mmw:settings:v2';
   var SYNC = 'com.menmen.workflow.sync';
-  var SLOTS = ['com.menmen.workflow.panel1', 'com.menmen.workflow.panel2', 'com.menmen.workflow.panel3', 'com.menmen.workflow.panel4'];
+  var SLOTS = ['com.menmen.workflow.panel1'];  // MenMen Tools (Panel 2-4 were removed in 0.9.0)
 
   var TOOLS_NAME = 'MenMen Tools', TOOLS_SLOT = 'com.menmen.workflow.panel1';
   var uid = function () { return Math.random().toString(36).slice(2, 9); };
