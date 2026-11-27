@@ -4,12 +4,12 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
-## 0.6.5 – Easier to read one-line rows
+## 0.6.6 – Easier to read one-line rows
 
 **Changed**
 - **MenMen Tools**: the Add, Align, Distribute and Split rows have a little more space between them.
 - The *To:* switch and the *Distribute:* label have the same width, so the icon rows line up.
-- The Split row reads **Split text by: Line / Word / Char**; it used to read *By:*.
+- The Split row starts with the label **Split text by:**; the lit button (Line / Word / Char) shows the choice. It used to read *By: Word*.
 
 ## 0.6.4 – Layers stay selected
 

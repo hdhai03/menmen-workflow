@@ -716,5 +716,5 @@ body.native .ge-tool.ge-act { color: var(--text); }
    To: / Distribute: cells the same width so the rows line up */
 .q-slim + .q-slim { align-self: end; height: calc(100% - 3px); }
 .w-alrow > .wr-to, .w-distrow > .wr-dist-lbl { flex: 0 0 74px; min-width: 74px; justify-content: center; }
-.w-split > .wr-by { justify-content: center; }
+.w-split > .wr-by { justify-content: center; color: var(--muted); font-weight: 400; background: transparent; border-color: transparent; padding: 0 6px 0 2px; min-width: 0; }
 .w-distrow > .wr-dist-lbl { padding: 0; }

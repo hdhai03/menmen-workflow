@@ -2,7 +2,7 @@
 
 An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets and expressions together in **one main panel plus dockable sub panels** to speed up motion design work.
 
-## Features (v0.6.5)
+## Features (v0.6.6)
 
 What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 
