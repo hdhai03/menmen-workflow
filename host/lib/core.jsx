@@ -1,5 +1,5 @@
 // core.jsx - helpers shared by all tools (ES3, ExtendScript).
-MMW.VERSION = "0.6.3";
+MMW.VERSION = "0.6.4";
 
 MMW.fail = function (msg) { throw new Error(msg); };
 
@@ -207,7 +207,11 @@ MMW.removeLayerAndSource = function (layer) {
 };
 
 // Helper layer used to ask AE for the value of an expression (toComp, sourceRectAtTime...).
+// Adding the helper null selects it and deselects everything else, so the selection is put back
+// when the helper is removed (Align, Distribute... keep the layers selected).
 MMW.helper = function (comp) {
+    var sel = [], si;
+    for (si = 0; si < comp.selectedLayers.length; si++) sel.push(comp.selectedLayers[si]);
     var h = comp.layers.addNull();
     h.name = "__mmw_helper__";
     h.enabled = false;
@@ -221,7 +225,10 @@ MMW.helper = function (comp) {
             p.expression = expr;
             return p.valueAtTime(t, false);
         },
-        remove: function () { MMW.removeLayerAndSource(h); }
+        remove: function () {
+            MMW.removeLayerAndSource(h);
+            for (var i = 0; i < sel.length; i++) { try { sel[i].selected = true; } catch (e) {} }
+        }
     };
 };
 

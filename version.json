@@ -1,7 +1,7 @@
 {
-  "version": "0.6.3",
-  "date": "2026-11-24",
+  "version": "0.6.4",
+  "date": "2026-11-27",
   "notes": [
-    "Update on Windows installs for all users (Program Files): asks for administrator permission (UAC) instead of failing"
+    "Align / Distribute keep the layers selected after applying"
   ]
 }

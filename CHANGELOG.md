@@ -4,6 +4,11 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.6.4 – Layers stay selected
+
+**Fixed**
+- **Align / Distribute** (and other tools that measure layers, like Arrange Grid, Crop Comp to Layer and the Area Effector placement) no longer deselect your layers. They briefly add a hidden helper layer, which used to take the selection; the selection is now restored, so you can click several align buttons in a row.
+
 ## 0.6.3 – Update asks for administrator permission on Windows
 
 **Changed**
