@@ -1,7 +1,7 @@
 {
-  "version": "0.8.0",
+  "version": "0.7.2",
   "date": "2026-11-27",
   "notes": [
-    "Floating FX Search window (Window > Extensions > MenMen FX Search) that can open from anywhere with a global shortcut (FX Search settings > Install global shortcut script) - restart After Effects after this update"
+    "Quick Access counts tools used in every MenMen panel (runs from other panels were being overwritten)"
   ]
 }

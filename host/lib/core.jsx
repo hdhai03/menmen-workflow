@@ -1,5 +1,5 @@
 // core.jsx - helpers shared by all tools (ES3, ExtendScript).
-MMW.VERSION = "0.8.0";
+MMW.VERSION = "0.7.2";
 
 MMW.fail = function (msg) { throw new Error(msg); };
 
@@ -7,7 +7,7 @@ MMW.fail = function (msg) { throw new Error(msg); };
 MMW.READ_ONLY = { diskCacheInfo: 1, exportInfo: 1, readEase: 1, hostInfo: 1, listLibrary: 1, openScriptsFolder: 1,
     revealFile: 1, removeFolder: 1, gifFrames: 1, exportPng: 1, purgeCache: 1, revealProjectFolder: 1, revealLayerSource: 1,
     depthInfo: 1, depthFrames: 1, depthReady: 1,
-    pathVisualizer: 1, listEffects: 1, installFxHotkey: 1 };  // Path Visualizer opens its own undo groups
+    pathVisualizer: 1, listEffects: 1 };  // Path Visualizer opens its own undo groups
 
 // Runs a tool inside an undo group and returns "OK|msg" or "ERR|msg" to the panel.
 MMW.run = function (id, opts) {

@@ -16,19 +16,6 @@
         return "[" + out.join(",") + "]";
     };
 
-    // Copies hotkey/MenMen FX Search.jsx into After Effects' Scripts folder (needed for a global shortcut).
-    // Returns JSON {ok, path, src}: ok false when the folder is not writable (the panel then asks for admin rights).
-    T.installFxHotkey = function () {
-        var src = new File(MMW.root + "/hotkey/MenMen FX Search.jsx");
-        if (!src.exists) MMW.fail("Script not found: " + src.fsName);
-        var app0 = Folder.appPackage, dirs = [new Folder(app0.fsName + "/Scripts"), new Folder(app0.parent.fsName + "/Scripts")], dir = null;
-        for (var i = 0; i < dirs.length; i++) if (dirs[i].exists) { dir = dirs[i]; break; }
-        if (!dir) MMW.fail("After Effects' Scripts folder was not found next to " + app0.fsName);
-        var dest = new File(dir.fsName + "/MenMen FX Search.jsx"), ok = false;
-        try { ok = src.copy(dest.fsName); } catch (e) { ok = false; }
-        return "{" + '"ok":' + (ok ? "true" : "false") + ',"path":' + q(dest.fsName) + ',"src":' + q(src.fsName) + "}";
-    };
-
     function canTakeEffects(L) {
         return L instanceof AVLayer && L.property("ADBE Effect Parade") !== null;  // AV, text, shape layers
     }

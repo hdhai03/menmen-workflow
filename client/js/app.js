@@ -1277,15 +1277,6 @@
     catStyle(dlg, t.cat).classList.add('tool-dialog', 'widget-dialog', 'wd-fxSearch');
   }
   window.addEventListener('mmw-fxsearch', openFxSearch);
-  if (B.inCEP) {
-    // the global shortcut script asks for the floating FX Search window
-    B.on('com.menmen.workflow.openfx', function () { if (B.isMain || B.panelNo === '1') B.openPanel('com.menmen.workflow.fxsearch'); });
-    // tools picked in the floating window that need a panel (dialogs, widgets) run here, in MenMen Tools
-    if (B.panelNo === '1') B.on('com.menmen.workflow.runtool', function (d) {
-      var x = d && T.get(d.id);
-      if (x) runTool(x, { altKey: d.alt, shiftKey: d.shift, ctrlKey: d.ctrl, metaKey: false, preventDefault: function () {}, stopPropagation: function () {} });
-    });
-  }
   window.addEventListener('keydown', function (e) {
     if (window.FxSearch && FxSearch.matches(e, S.widgetData('fxSearch'))) { e.preventDefault(); e.stopPropagation(); openFxSearch(); }
   }, true);
