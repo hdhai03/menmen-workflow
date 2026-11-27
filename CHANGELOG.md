@@ -4,6 +4,15 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.8.1 – FX Search pops up at the mouse
+
+**Changed**
+- **FX Search** now pops up **right under the mouse pointer**, like FX Console: a compact box with no title bar and no dimmed background, kept inside the panel.
+  - It opens with the shortcut or *Open FX Search*.
+  - The search field sits where the pointer is, ready to type.
+  - Click outside or press **Esc** to close it.
+- The floating window and global shortcut script from 0.8.0 are removed. FX Search stays a popup inside the MenMen panels.
+
 ## 0.7.2 – Quick Access counts tools from every panel
 
 **Fixed**

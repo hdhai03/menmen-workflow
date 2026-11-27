@@ -1269,12 +1269,26 @@
     B.on('com.menmen.workflow.updated', function () { setTimeout(function () { location.reload(); }, 300); });
   }
   // FX Search: the tool opens its settings; the shortcut set there (Ctrl+Space by default) opens the search
+  // the search pops up right under the mouse pointer (last position seen in this panel), like FX Console
+  var mouse = { x: window.innerWidth / 2, y: window.innerHeight / 3 };
+  document.addEventListener('mousemove', function (e) { mouse.x = e.clientX; mouse.y = e.clientY; }, true);
+  document.addEventListener('mousedown', function (e) { mouse.x = e.clientX; mouse.y = e.clientY; }, true);
   function openFxSearch() {
     var t = T.get('fxSearch'); if (!t || !W.fxSearch) return;
     var body = el('div', 'widget-host');
     body.appendChild(W.fxSearch(S.widgetData('fxSearch'), widgetCtx(t)));
     var dlg = U.dialog('FX Search', body, []);
-    catStyle(dlg, t.cat).classList.add('tool-dialog', 'widget-dialog', 'wd-fxSearch');
+    catStyle(dlg, t.cat).classList.add('tool-dialog', 'widget-dialog', 'wd-fxSearch', 'at-cursor');
+    var ov = document.getElementById('overlay'); if (ov) ov.classList.add('clear');
+    var at = { x: mouse.x, y: mouse.y };
+    var place = function () {  // the search box starts at the pointer; the popup stays inside the panel
+      var w = dlg.offsetWidth, h = dlg.offsetHeight, W2 = window.innerWidth, H2 = window.innerHeight;
+      var x = Math.max(4, Math.min(at.x - 24, W2 - w - 4)), y = at.y - 14;
+      if (y + h > H2 - 4) y = Math.max(4, H2 - h - 4);
+      dlg.style.left = Math.max(4, x) + 'px'; dlg.style.top = Math.max(4, y) + 'px';
+    };
+    place();
+    if (window.ResizeObserver) new ResizeObserver(place).observe(dlg);  // the result list grows as you type
   }
   window.addEventListener('mmw-fxsearch', openFxSearch);
   window.addEventListener('keydown', function (e) {
