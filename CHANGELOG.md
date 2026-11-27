@@ -4,6 +4,16 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.7.1 – FX Search settings
+
+**Changed**
+- **Clicking FX Search** opens its **settings**. The search itself opens with the shortcut:
+  - **Shortcut**: Ctrl + Space (default), Shift + Space, Ctrl + Tab, Shift + Tab, or **Custom**. For Custom, click the field and press the keys (a modifier or an F key is required).
+  - **Search in**: Effects, Presets & scripts, MenMen tools; each can be turned off.
+  - **Enter applies effects to**: the selected layers (Shift = a new adjustment layer), or the other way round.
+  - Buttons: **Open FX Search**, **Reload effects**, **Clear Recent**.
+- The shortcut works in every MenMen panel that has the focus. After Effects does not give panels global shortcuts.
+
 ## 0.7.0 – FX Search
 
 **Added**

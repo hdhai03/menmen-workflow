@@ -1268,9 +1268,17 @@
     setTimeout(function () { updateNow(false); }, B.isMain ? 4000 : 2500);
     B.on('com.menmen.workflow.updated', function () { setTimeout(function () { location.reload(); }, 300); });
   }
-  // FX Search shortcut: Ctrl+Space while a MenMen panel has the focus
+  // FX Search: the tool opens its settings; the shortcut set there (Ctrl+Space by default) opens the search
+  function openFxSearch() {
+    var t = T.get('fxSearch'); if (!t || !W.fxSearch) return;
+    var body = el('div', 'widget-host');
+    body.appendChild(W.fxSearch(S.widgetData('fxSearch'), widgetCtx(t)));
+    var dlg = U.dialog('FX Search', body, []);
+    catStyle(dlg, t.cat).classList.add('tool-dialog', 'widget-dialog', 'wd-fxSearch');
+  }
+  window.addEventListener('mmw-fxsearch', openFxSearch);
   window.addEventListener('keydown', function (e) {
-    if (e.code === 'Space' && e.ctrlKey && !e.altKey && T.get('fxSearch')) { e.preventDefault(); openWidget(T.get('fxSearch')); }
-  });
+    if (window.FxSearch && FxSearch.matches(e, S.widgetData('fxSearch'))) { e.preventDefault(); e.stopPropagation(); openFxSearch(); }
+  }, true);
   window.MMWApp = { render: render, state: st, dock: dock };
 })();

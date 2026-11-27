@@ -1,7 +1,8 @@
 /* fxsearch.js - FX Search: one search box for every installed effect, the presets / scripts in the library
  * and the MenMen tools. Enter applies the highlighted item to the selected layers; Shift+Enter puts an
  * effect on a new adjustment layer. Empty search shows Favorites (star) and Recent.
- * Open it from the tool, or with Ctrl+Space while a MenMen panel has the focus. */
+ * Clicking the tool opens its settings (shortcut, what to search, where Enter applies); the shortcut
+ * (Ctrl+Space by default) opens the search while a MenMen panel has the focus. */
 (function () {
   var B = window.Bridge, W = window.Widgets, T = window.Tools;
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
@@ -31,17 +32,42 @@
   }
 
   // every searchable item: {key, kind: 'fx' | 'tool' | 'script', name, sub, ...}
-  function items() {
-    var out = [];
-    (effects || []).forEach(function (e) { out.push({ key: 'fx:' + e.m, kind: 'fx', name: e.n, sub: e.c, match: e.m }); });
+  function items(d) {
+    var out = [], sc = scope(d);
+    if (sc.fx) (effects || []).forEach(function (e) { out.push({ key: 'fx:' + e.m, kind: 'fx', name: e.n, sub: e.c, match: e.m }); });
     T.list.forEach(function (t) {
-      if (t.widget === 'fxSearch') return;
+      if (t.id === 'fxSearch') return;
       var scr = t.cat === 'scripts';
+      if (scr ? !sc.scripts : !sc.tools) return;
       out.push({ key: 'tool:' + t.id, kind: scr ? 'script' : 'tool', name: t.name, sub: scr ? (/\.ffx$/i.test(t.file || '') ? 'Preset' : 'Script') : 'MenMen · ' + (T.cat(t.cat) || {}).name, tool: t.id });
     });
     return out;
   }
   var KIND = { fx: 'FX', tool: 'MM', script: 'JS' };
+  function scope(d) { var s = d.scope || {}; return { fx: s.fx !== false, scripts: s.scripts !== false, tools: s.tools !== false }; }
+
+  // ---------- shortcut ----------
+  var SHORTCUTS = [['ctrl+space', 'Ctrl + Space'], ['shift+space', 'Shift + Space'], ['ctrl+tab', 'Ctrl + Tab'], ['shift+tab', 'Shift + Tab'], ['custom', 'Custom']];
+  function keyName(e) {  // "Ctrl+Alt+F" from a key event (physical key, so it does not depend on the layout)
+    var k = e.code || e.key || '';
+    k = k.replace(/^Key/, '').replace(/^Digit/, '').replace(/^Arrow/, '');
+    if (/^(Control|Shift|Alt|Meta)(Left|Right)?$/.test(k)) return '';
+    return (e.ctrlKey ? 'Ctrl+' : '') + (e.metaKey ? 'Cmd+' : '') + (e.altKey ? 'Alt+' : '') + (e.shiftKey ? 'Shift+' : '') + k;
+  }
+  function shortcutOf(d) {
+    var s = d.shortcut || 'ctrl+space';
+    if (s === 'custom') return d.custom || '';
+    return { 'ctrl+space': 'Ctrl+Space', 'shift+space': 'Shift+Space', 'ctrl+tab': 'Ctrl+Tab', 'shift+tab': 'Shift+Tab' }[s] || 'Ctrl+Space';
+  }
+  // the panels call this on every keydown
+  function matches(e, d) {
+    var want = shortcutOf(d || {});
+    if (!want) return false;
+    var t = e.target, typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    if (typing && !/^(Ctrl|Cmd|Alt)\+/.test(want) && !/^F\d+$/.test(want)) return false;  // Shift+Space still types in fields
+    return keyName(e) === want;
+  }
+  window.FxSearch = { matches: matches, shortcutOf: shortcutOf };
 
   // all words must appear; names starting with / words starting with the query rank first
   function score(it, words, q) {
@@ -58,6 +84,67 @@
     return s - n.length * 0.15;
   }
 
+  // ---------- settings (what clicking the tool shows) ----------
+  W.fxSearchSettings = function (d, ctx) {
+    var root = el('div', 'w gx fxset');
+    function field(label, node) { var f = el('label', 'gx-f', '<span>' + label + '</span>'); f.appendChild(node); root.appendChild(f); return f; }
+    // shortcut
+    var sel = el('select', 'input');
+    SHORTCUTS.forEach(function (o) { var op = el('option', null, o[1]); op.value = o[0]; sel.appendChild(op); });
+    sel.value = d.shortcut || 'ctrl+space';
+    field('Shortcut', sel);
+    var cap = el('input', 'input fxset-cap'); cap.readOnly = true; cap.placeholder = 'Click here, then press the keys';
+    cap.value = d.custom || '';
+    var capF = field('Custom shortcut', cap);
+    function showCap() { capF.style.display = sel.value === 'custom' ? '' : 'none'; }
+    showCap();
+    sel.addEventListener('change', function () { d.shortcut = sel.value; showCap(); ctx.save(); note(); if (sel.value === 'custom') cap.focus(); });
+    cap.addEventListener('keydown', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var k = keyName(e);
+      if (!k || k === 'Escape') return;
+      if (!/\+/.test(k) && !/^F\d+$/.test(k)) { cap.value = ''; cap.placeholder = 'Use a modifier (Ctrl / Alt / Shift) or an F key'; return; }
+      cap.value = k; d.custom = k; ctx.save(); note();
+    });
+    // what to search
+    var sc = scope(d), box = el('div', 'fxset-checks');
+    [['fx', 'Effects'], ['scripts', 'Presets & scripts'], ['tools', 'MenMen tools']].forEach(function (o) {
+      var l = el('label', 'dm-check small', '<input type="checkbox"> ' + o[1]), c = l.firstChild;
+      c.checked = sc[o[0]];
+      c.addEventListener('change', function () { d.scope = d.scope || {}; d.scope[o[0]] = c.checked; ctx.save(); });
+      box.appendChild(l);
+    });
+    field('Search in', box);
+    // where Enter applies
+    var ent = el('select', 'input');
+    [['layers', 'Selected layers (Shift: new adjustment layer)'], ['adjust', 'New adjustment layer (Shift: selected layers)']].forEach(function (o) {
+      var op = el('option', null, o[1]); op.value = o[0]; ent.appendChild(op);
+    });
+    ent.value = d.enter || 'layers';
+    ent.addEventListener('change', function () { d.enter = ent.value; ctx.save(); });
+    field('Enter applies effects to', ent);
+    // actions
+    var row = el('div', 'fxset-btns');
+    var open = el('button', 'w-btn w-primary', 'Open FX Search');
+    open.addEventListener('click', function () { if (window.UI) window.UI.close(); setTimeout(function () { window.dispatchEvent(new CustomEvent('mmw-fxsearch')); }, 0); });
+    var rl = el('button', 'w-btn', 'Reload effects');
+    rl.title = 'Read the installed effects again (after installing plugins)';
+    rl.addEventListener('click', function () { rl.textContent = 'Reading…'; loadEffects(ctx, true).then(function (l) { rl.textContent = l.length + ' effects'; }); });
+    var cr = el('button', 'w-btn', 'Clear Recent');
+    cr.addEventListener('click', function () { if (ctx.data && ctx.data.fxRecent) ctx.data.fxRecent.length = 0; ctx.save(); cr.textContent = 'Cleared'; });
+    row.append(open, rl, cr);
+    root.appendChild(row);
+    var info = el('div', 'muted small fxset-note');
+    function note() {
+      var k = shortcutOf(d);
+      info.textContent = (k ? 'Press ' + k.replace(/\+/g, ' + ') + ' in a MenMen panel to open the search. ' : 'Set a custom shortcut. ') +
+        'After Effects does not give panels global shortcuts, so click a MenMen panel first.';
+    }
+    note();
+    root.appendChild(info);
+    return root;
+  };
+
   W.fxSearch = function (d, ctx) {
     var data = ctx.data || {}, fav = data.fxFav || (data.fxFav = []), recent = data.fxRecent || (data.fxRecent = []);
     var root = el('div', 'w fxs');
@@ -67,7 +154,8 @@
     reload.title = 'Reload the effect list (after installing plugins)';
     bar.append(input, reload);
     var list = el('div', 'fxs-list'), hint = el('div', 'fxs-hint muted small',
-      'Enter: apply · Shift+Enter: on a new adjustment layer · ↑↓: choose · ★: favorite');
+      (d.enter === 'adjust' ? 'Enter: on a new adjustment layer \u00B7 Shift+Enter: on the selected layers' : 'Enter: apply \u00B7 Shift+Enter: on a new adjustment layer') +
+      ' \u00B7 \u2191\u2193: choose \u00B7 \u2605: favorite');
     root.append(bar, list, hint);
 
     var rows = [], cur = 0, all = [];
@@ -127,7 +215,7 @@
     }
     function run(it, e) {
       remember(it.key);
-      var adjust = !!(e && e.shiftKey), keep = !!(e && (e.ctrlKey || e.metaKey)) && it.kind === 'fx';
+      var adjust = !!(e && e.shiftKey) !== (d.enter === 'adjust'), keep = !!(e && (e.ctrlKey || e.metaKey)) && it.kind === 'fx';
       // close first: a tool may open its own dialog (Ctrl/Cmd+Enter on an effect keeps the search open)
       if (window.UI && !keep) window.UI.close();
       if (it.kind === 'fx') ctx.run('applyEffect', { match: it.match, name: it.name, adjust: adjust }, e);
@@ -144,11 +232,11 @@
     });
     reload.addEventListener('click', function () {
       list.innerHTML = '<div class="fxs-empty muted small">Reading the effects…</div>';
-      loadEffects(ctx, true).then(function () { all = items(); render(); input.focus(); });
+      loadEffects(ctx, true).then(function () { all = items(d); render(); input.focus(); });
     });
 
     list.innerHTML = '<div class="fxs-empty muted small">Reading the effects…</div>';
-    loadEffects(ctx).then(function () { all = items(); render(); });
+    loadEffects(ctx).then(function () { all = items(d); render(); });
     setTimeout(function () { input.focus(); }, 40);
     return root;
   };

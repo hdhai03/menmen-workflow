@@ -732,3 +732,7 @@ body.native .ge-tool.ge-act { color: var(--text); }
 .fxs-empty { padding: 10px 8px; }
 .fxs-hint { line-height: 1.4; }
 body.native .fxs-kind.k-fx { color: var(--text); border-color: var(--line-2); }
+.fxset-checks { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.fxset-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.fxset-btns .w-btn { flex: 1 1 auto; padding: 6px 8px; }
+.fxset-note { line-height: 1.4; }

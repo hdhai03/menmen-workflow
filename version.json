@@ -1,7 +1,7 @@
 {
-  "version": "0.7.0",
+  "version": "0.7.1",
   "date": "2026-11-27",
   "notes": [
-    "FX Search: search every effect, preset and MenMen tool - Enter applies to the selected layers, Shift+Enter on a new adjustment layer, favorites and recent; Ctrl+Space in a MenMen panel"
+    "FX Search: clicking the tool opens its settings - shortcut (Ctrl/Shift + Space, Ctrl/Shift + Tab or custom), what to search, where Enter applies"
   ]
 }

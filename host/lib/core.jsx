@@ -1,5 +1,5 @@
 // core.jsx - helpers shared by all tools (ES3, ExtendScript).
-MMW.VERSION = "0.7.0";
+MMW.VERSION = "0.7.1";
 
 MMW.fail = function (msg) { throw new Error(msg); };
 
