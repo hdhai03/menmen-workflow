@@ -1,8 +1,8 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "date": "2026-11-27",
   "notes": [
-    "Back to the 0.6.4 feature set (no FX Search; MenMen Panel 2-4 are back) - restart After Effects after updating",
-    "MenMen Tools: more space between the Add / Align / Distribute / Split rows; the Split row is labelled \"Split text by:\""
+    "Add Solid opens the Solid Settings dialog (Alt: instant solid)",
+    "Add Text: centered paragraph and anchor point, at the comp center"
   ]
 }

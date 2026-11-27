@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="7.0" ExtensionBundleId="com.menmen.workflow" ExtensionBundleVersion="1.0.0" ExtensionBundleName="MenMen Workflow"
+<ExtensionManifest Version="7.0" ExtensionBundleId="com.menmen.workflow" ExtensionBundleVersion="1.0.1" ExtensionBundleName="MenMen Workflow"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <ExtensionList>
-    <Extension Id="com.menmen.workflow.main" Version="1.0.0" />
-    <Extension Id="com.menmen.workflow.panel1" Version="1.0.0" />
-    <Extension Id="com.menmen.workflow.panel2" Version="1.0.0" />
-    <Extension Id="com.menmen.workflow.panel3" Version="1.0.0" />
-    <Extension Id="com.menmen.workflow.panel4" Version="1.0.0" />
-    <Extension Id="com.menmen.workflow.timer" Version="1.0.0" />
-    <Extension Id="com.menmen.workflow.bar" Version="1.0.0" />
+    <Extension Id="com.menmen.workflow.main" Version="1.0.1" />
+    <Extension Id="com.menmen.workflow.panel1" Version="1.0.1" />
+    <Extension Id="com.menmen.workflow.panel2" Version="1.0.1" />
+    <Extension Id="com.menmen.workflow.panel3" Version="1.0.1" />
+    <Extension Id="com.menmen.workflow.panel4" Version="1.0.1" />
+    <Extension Id="com.menmen.workflow.timer" Version="1.0.1" />
+    <Extension Id="com.menmen.workflow.bar" Version="1.0.1" />
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>

@@ -762,12 +762,12 @@
 
   // Add: Solid / Adjustment / Null / Camera / Light / Text / Shape (above the top selected layer)
   var ADD = [
-    ['solid', 'Solid', 'Solid (comp size) · Alt: pick the color', '<rect x="2.5" y="3.5" width="11" height="9" fill="currentColor" stroke="none" opacity=".85"/>'],
+    ['solid', 'Solid', 'Solid: opens Solid Settings (name, size, color) · Alt: instant solid in the last color', '<rect x="2.5" y="3.5" width="11" height="9" fill="currentColor" stroke="none" opacity=".85"/>'],
     ['adjustment', 'Adj', 'Adjustment layer', '<circle cx="8" cy="8" r="5.5"/><path d="M8 2.5v11A5.5 5.5 0 0 0 8 2.5z" fill="currentColor"/>'],
     ['null', 'Null', 'Null object', '<rect x="3" y="3" width="10" height="10"/><path d="M3 3l10 10"/>'],
     ['camera', 'Cam', '3D camera · Alt: with a control null (rig)', '<rect x="1.5" y="5" width="9" height="7"/><path d="M10.5 7.5l4-2v6l-4-2"/>'],
     ['light', 'Light', 'Point light', '<circle cx="8" cy="7" r="3.5"/><path d="M6.5 12.5h3M7 14.5h2"/>'],
-    ['text', 'Text', 'Text layer', '<path d="M3 4V3h10v1M8 3v10M6 13h4"/>'],
+    ['text', 'Text', 'Text layer: centered, anchor in the middle, at the comp center', '<path d="M3 4V3h10v1M8 3v10M6 13h4"/>'],
     ['shape', 'Shape', 'Shape layer with a rectangle · Alt: empty shape layer', '<path d="M8 2l6 10H2z"/>']
   ];
   W.addRow = function (d, ctx) {

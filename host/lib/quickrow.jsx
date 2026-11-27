@@ -99,6 +99,7 @@
 
     // ---------- add layer ----------
     // New layer goes above the top selected layer; Alt on camera = with a 3D null rig.
+    // Solid: After Effects' Solid Settings dialog (Alt: instant solid in the last color). Text: centered.
     function place(c, L) {
         var sel = c.selectedLayers, top = null;
         for (var i = 0; i < sel.length; i++) if (!top || sel[i].index < top.index) top = sel[i];
@@ -114,14 +115,17 @@
         var L, k = o.kind || "solid", cx = c.width / 2, cy = c.height / 2;
         switch (k) {
             case "solid":
-                var col = o.color || lastColor;
-                if (o.alt) {  // Alt: pick the color
-                    var picked = $.colorPicker(-1);
-                    if (picked < 0) return "Cancelled";
-                    col = [(picked >> 16 & 255) / 255, (picked >> 8 & 255) / 255, (picked & 255) / 255];
-                    lastColor = col;
+                if (!o.alt) {  // like Layer > New > Solid: After Effects' own Solid Settings (name, size, color)
+                    var before = c.numLayers, sid = 0;
+                    try { sid = app.findMenuCommandId("Solid..."); } catch (e0) {}
+                    app.executeCommand(sid || 2038);
+                    if (c.numLayers === before) return "Cancelled";
+                    var made = c.selectedLayers.length ? c.selectedLayers[0] : c.layer(1);
+                    try { lastColor = made.source.mainSource.color; } catch (e1) {}
+                    return made.name;
                 }
-                L = c.layers.addSolid(col, MMW.uniqueLayerName(c, "Solid"), c.width, c.height, c.pixelAspect, c.duration);
+                // Alt: an instant comp-size solid in the last color used
+                L = c.layers.addSolid(o.color || lastColor, MMW.uniqueLayerName(c, "Solid"), c.width, c.height, c.pixelAspect, c.duration);
                 break;
             case "adjustment":
                 L = c.layers.addSolid([1, 1, 1], MMW.uniqueLayerName(c, "Adjustment Layer"), c.width, c.height, c.pixelAspect, c.duration);
@@ -148,9 +152,15 @@
                 L = c.layers.addLight(MMW.uniqueLayerName(c, "Light"), [cx, cy]);
                 try { L.lightType = LightType.POINT; } catch (e) { /* default */ }
                 break;
-            case "text":
+            case "text":  // centered paragraph, anchor in the middle of the text, at the comp center
                 L = c.layers.addText(o.text || "Text");
                 L.name = MMW.uniqueLayerName(c, "Text");
+                var td = L.property("ADBE Text Properties").property("ADBE Text Document"), doc = td.value;
+                doc.justification = ParagraphJustification.CENTER_JUSTIFY;
+                td.setValue(doc);
+                var r = L.sourceRectAtTime(c.time, false);
+                L.transform.anchorPoint.setValue([r.left + r.width / 2, r.top + r.height / 2]);
+                L.transform.position.setValue([cx, cy]);
                 break;
             case "shape":
                 L = c.layers.addShape();

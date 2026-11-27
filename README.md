@@ -2,7 +2,7 @@
 
 An extension for **Adobe After Effects 2022+** (CEP). It brings scripts, widgets and expressions together in **one main panel plus dockable sub panels** to speed up motion design work.
 
-## Features (v1.0.0)
+## Features (v1.0.1)
 
 What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 
@@ -59,7 +59,7 @@ What changed in each version: see [CHANGELOG.md](CHANGELOG.md).
 - **Contact**: Facebook / Instagram / Behance of the author (opens in the browser).
 - **Disk cache** meter (% of the max size set in Preferences ▸ Media & Disk Cache; click to refresh) + **Purge** (all memory caches; Alt = also empty the disk cache, AE asks to confirm).
 - **Graph Editor** (full), **Quick Access** (10 most used tools).
-- **Add** row: Solid (Alt: pick color), Adjustment, Null, Camera (Alt: with a 3D control null), Light, Text, Shape (Alt: empty) - added above the selected layer.
+- **Add** row: Solid (After Effects' Solid Settings dialog: name, size, color; Alt: instant solid in the last color), Adjustment, Null, Camera (Alt: with a 3D control null), Light, Text (centered paragraph, anchor in the middle, at the comp center), Shape (Alt: empty) - added above the selected layer.
 - **Align** row: **To: Comp / To: Sel** switch + align left / center / right / top / middle / bottom.
 - **Split** row: the first box shows **By: Line / Word / Char** (pick with the three buttons); select a point text layer and click **Split** to get one layer per line / word / character, each exactly where it was (anchor centered; Alt = anchor on the baseline). The original is hidden. Paragraph (box) text must be converted to point text first.
 - Easings copy/paste, Offset Layers, anchor grid and one-click tools.

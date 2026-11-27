@@ -4,6 +4,12 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 1.0.1 – Add Solid and Add Text
+
+**Changed**
+- **Add > Solid** opens After Effects' own **Solid Settings** dialog (name, size, color), like *Layer > New > Solid*. **Alt** adds a comp-size solid at once, in the last color used.
+- **Add > Text** creates the text **centered**: centered paragraph, anchor point in the middle of the text, placed at the comp center.
+
 ## 1.0.0 – Back to the 0.6.4 feature set, easier rows
 
 Numbered 1.0.0 so that installs on 0.7–0.9 are offered this version.
