@@ -790,7 +790,7 @@
     return root;
   };
 
-  // Split text row: "By: …" readout, Line / Word / Char choice, Split button
+  // Split text row: "Split text by: …" readout, Line / Word / Char choice, Split button
   W.splitRow = function (d, ctx) {
     if (!d.by) d.by = 'word';
     var NAMES = { line: 'Line', word: 'Word', char: 'Char' };
@@ -798,7 +798,7 @@
     var by = el('div', 'wr-by');
     var opts = el('div', 'wr-seg');
     var paint = function () {
-      by.innerHTML = '<span class="wr-to-k">By:</span> ' + NAMES[d.by];
+      by.innerHTML = '<span class="wr-to-k">Split text by:</span> ' + NAMES[d.by];
       opts.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.by === d.by); });
     };
     [['line', 'Line', 'One layer per line'], ['word', 'Word', 'One layer per word'], ['char', 'Char', 'One layer per character']].forEach(function (o) {

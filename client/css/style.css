@@ -712,3 +712,9 @@ body.native .icon-btn.on, body.native .size-chip.on, body.native .tm-phase.on, b
 body.native .seg-btn.on { box-shadow: inset 0 0 0 1px var(--act-edge); }
 body.native .wr-to.on .wr-to-k { color: var(--act-text); opacity: .7; }
 body.native .ge-tool.ge-act { color: var(--text); }
+/* one-line rows (Add / Align / Distribute / Split) in MenMen Tools: a bit of air between them, and the
+   To: / Distribute: cells the same width so the rows line up */
+.q-slim + .q-slim { align-self: end; height: calc(100% - 3px); }
+.w-alrow > .wr-to, .w-distrow > .wr-dist-lbl { flex: 0 0 74px; min-width: 74px; justify-content: center; }
+.w-split > .wr-by { justify-content: center; }
+.w-distrow > .wr-dist-lbl { padding: 0; }
