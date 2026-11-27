@@ -4,7 +4,20 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
-## 0.6.6 – Easier to read one-line rows
+## 1.0.0 – Back to the 0.6.4 feature set, easier rows
+
+Numbered 1.0.0 so that installs on 0.7–0.9 are offered this version.
+
+**Changed**
+- The plugin is back to the **0.6.4** feature set.
+  - FX Search, its floating window and global shortcut, and the Quick Access merge from 0.7.2 are removed.
+  - **MenMen Panel 2–4** are back.
+  - **Restart After Effects** after updating.
+- If you used FX Search's *Apply shortcut to After Effects* in 0.9.0:
+  - delete `MenMen FX Search.jsx` from After Effects' Scripts folder;
+  - to restore your keyboard shortcuts, use the `…Shortcuts.txt.menmen-backup` file next to After Effects' shortcut file.
+
+### Easier to read one-line rows
 
 **Changed**
 - **MenMen Tools**: the Add, Align, Distribute and Split rows have a little more space between them.
