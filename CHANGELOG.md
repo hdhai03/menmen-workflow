@@ -4,6 +4,20 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 1.0.2 – Stagger offsets keyframes
+
+**Added**
+- **Stagger** (Num / Step + align / down / up / random) now staggers **selected keyframes** as well as layers.
+  - **Keys on several layers**: each layer's keys move as a group, Num frames apart. Spacing inside a layer is kept.
+  - **Keys on several properties of one layer**: each property moves Num frames after the previous one, top to bottom.
+  - **Several keys of one property**: the keys spread out, each one Num frames more than the one before.
+  - **Align** moves the selected keys to the playhead, keeping their spacing.
+  - Up / Random change the order. Step groups units together, as with layers. Clicking again adds more offset.
+  - With no keyframes selected, Stagger offsets layers as before.
+
+**Fixed**
+- Keyframes on a single layer did not move at all, because the first layer always gets offset 0.
+
 ## 1.0.1 – Add Solid and Add Text
 
 **Changed**

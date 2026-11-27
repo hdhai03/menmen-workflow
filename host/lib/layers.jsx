@@ -158,24 +158,57 @@
             }
         }
         function slot(pos) { return Math.floor(pos / group); }
+        // Selected keyframes are staggered instead of layers. What gets its own offset depends on the selection:
+        //  keys on several layers -> per layer; on one layer but several properties -> per property;
+        //  several keys of one property -> per keyframe (each key moves Num x its place, so they spread out).
         var keyed = MMW.keyProps(c, false);
         if (keyed.length) {
-            var minT = {}, i;
-            var nk = 0;
-            for (i = 0; i < keyed.length; i++) {
-                var pos = MMW.indexOf(layers, keyed[i].layer);
-                var target = align ? c.time : null;
-                // keep the spacing between properties of the same layer
-                var lid = keyed[i].layer.index;
-                if (minT[lid] === undefined) {
-                    minT[lid] = 1e9;
-                    for (var q = 0; q < keyed.length; q++) if (keyed[q].layer.index === lid) minT[lid] = Math.min(minT[lid], keyed[q].prop.keyTime(keyed[q].keys[0]));
+            var shuffle = function (a) { for (var r2 = a.length - 1; r2 > 0; r2--) { var j2 = Math.floor(Math.random() * (r2 + 1)), t2 = a[r2]; a[r2] = a[j2]; a[j2] = t2; } return a; };
+            var ordered = function (n) {  // unit positions 0..n-1 in the chosen order
+                var a = []; for (var i0 = 0; i0 < n; i0++) a.push(i0);
+                if (order === "up") a.reverse(); else if (order === "random") shuffle(a);
+                var pos = []; for (var i1 = 0; i1 < a.length; i1++) pos[a[i1]] = i1;
+                return pos;
+            };
+            var lids = {}, nl = 0, nk = 0, i;
+            for (i = 0; i < keyed.length; i++) if (!lids[keyed[i].layer.index]) { lids[keyed[i].layer.index] = true; nl++; }
+            if (nl > 1) {  // per layer, in timeline order (top -> bottom), keeping each layer's own key spacing
+                var ls = [], seen = {};
+                for (i = 0; i < keyed.length; i++) { var li = keyed[i].layer.index; if (!seen[li]) { seen[li] = true; ls.push(li); } }
+                ls.sort(function (x, y) { return x - y; });
+                var lpos = ordered(ls.length), minT = {};
+                for (i = 0; i < keyed.length; i++) {
+                    var lid = keyed[i].layer.index, t0 = keyed[i].prop.keyTime(keyed[i].keys[0]);
+                    minT[lid] = minT[lid] === undefined ? t0 : Math.min(minT[lid], t0);
                 }
-                var delta = align ? target - minT[lid] : slot(pos) * step;
-                MMW.moveKeys(keyed[i].prop, keyed[i].keys, function (d) { return d.t + delta; });
-                nk += keyed[i].keys.length;
+                for (i = 0; i < keyed.length; i++) {
+                    var L0 = keyed[i].layer.index, k = MMW.indexOf(ls, L0);
+                    var dl = align ? c.time - minT[L0] : slot(lpos[k]) * step;
+                    MMW.moveKeys(keyed[i].prop, keyed[i].keys, function (d) { return d.t + dl; });
+                    nk += keyed[i].keys.length;
+                }
+                return align ? "Aligned " + nk + " keyframe(s) of " + nl + " layers to the playhead." : "Offset the keyframes of " + nl + " layers by " + num + " frame(s)" + (group > 1 ? " every " + group : " each") + ".";
             }
-            return align ? "Aligned " + nk + " keyframe(s) to the playhead." : "Offset " + nk + " keyframe(s) across " + layers.length + " layer(s).";
+            if (keyed.length > 1) {  // one layer, several properties: per property (top -> bottom)
+                var ppos = ordered(keyed.length);
+                for (i = 0; i < keyed.length; i++) {
+                    var p0 = keyed[i].prop.keyTime(keyed[i].keys[0]);
+                    var dp = align ? c.time - p0 : slot(ppos[i]) * step;
+                    MMW.moveKeys(keyed[i].prop, keyed[i].keys, function (d) { return d.t + dp; });
+                    nk += keyed[i].keys.length;
+                }
+                return align ? "Aligned " + keyed.length + " properties to the playhead." : "Offset " + keyed.length + " properties by " + num + " frame(s)" + (group > 1 ? " every " + group : " each") + ".";
+            }
+            // one property: per keyframe
+            var K = keyed[0], kpos = ordered(K.keys.length);
+            if (align) {
+                var first = K.prop.keyTime(K.keys[0]);
+                MMW.moveKeys(K.prop, K.keys, function (d) { return d.t + c.time - first; });
+                return "Moved " + K.keys.length + " keyframe(s) to the playhead.";
+            }
+            if (K.keys.length < 2) MMW.fail("Select at least 2 keyframes (or keys on several properties / layers).");
+            MMW.moveKeys(K.prop, K.keys, function (d, idx) { return d.t + slot(kpos[idx]) * step; });
+            return "Spread " + K.keys.length + " keyframes by " + num + " frame(s)" + (group > 1 ? " every " + group : " each") + ".";
         }
         if (!align && layers.length < 2) MMW.fail("Select at least 2 layers (or some keyframes).");
         for (var b = 0; b < layers.length; b++) {

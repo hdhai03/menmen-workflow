@@ -1,8 +1,7 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.2",
   "date": "2026-11-27",
   "notes": [
-    "Add Solid opens the Solid Settings dialog (Alt: instant solid)",
-    "Add Text: centered paragraph and anchor point, at the comp center"
+    "Stagger offsets selected keyframes: per layer, per property, or spreads the keys of one property"
   ]
 }
