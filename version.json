@@ -1,7 +1,7 @@
 {
-  "version": "0.7.1",
+  "version": "0.7.2",
   "date": "2026-11-27",
   "notes": [
-    "FX Search: clicking the tool opens its settings - shortcut (Ctrl/Shift + Space, Ctrl/Shift + Tab or custom), what to search, where Enter applies"
+    "Quick Access counts tools used in every MenMen panel (runs from other panels were being overwritten)"
   ]
 }

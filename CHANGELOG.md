@@ -4,6 +4,13 @@ All notable changes to MenMen Workflow. Versions follow `version.json`; the **Up
 
 ---
 
+## 0.7.2 – Quick Access counts tools from every panel
+
+**Fixed**
+- **Quick Access** lost runs made in other panels. Each panel wrote the whole settings file, so when MenMen Tools saved anything (a graph change, its own run count) shortly after a tool was used in the main panel or a sub panel, that run was overwritten.
+- Now each panel adds its own runs to the counts already on disk, so tools used in **any** MenMen panel count.
+- In a test with runs in the main panel and in MenMen Tools at the same moment, both are counted. Before, only the MenMen Tools runs survived.
+
 ## 0.7.1 – FX Search settings
 
 **Changed**
